@@ -499,6 +499,8 @@ public:
 
     EXPORT static int TransErrorCode(const std::string &Name, int error);
 
+    EXPORT static int TransMoveErrorCode(const string &Name, int error);
+
     static void HandleError(
         napi_env env, int error, napi_value &errorObj, const std::string &Name, int32_t realErr = 0,
         const std::string &errMsg = "");

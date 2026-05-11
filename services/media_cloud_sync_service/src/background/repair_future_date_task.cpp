@@ -38,8 +38,13 @@
 #include "result_set_reader.h"
 #include "photos_po_writer.h"
 #include "photos_po.h"
-#include "lake_file_utils.h"
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+#include "file_scan_utils.h"
+#endif
 #include "medialibrary_related_system_state_manager.h"
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+#include "media_file_access_utils.h"
+#endif
 
 namespace OHOS::Media::Background {
 // LCOV_EXCL_START
@@ -143,7 +148,10 @@ void RepairFutureDateTask::RepairPhotoDate(int32_t &currentRecord, bool &termina
             return;
         }
 
-        std::string tmpPath = LakeFileUtils::GetAssetRealPath(path);
+        std::string tmpPath = path;
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+        tmpPath = MediaFileAccessUtils::GetAssetRealPath(path);
+#endif
         CloudMediaScanService scanService;
         CloudMediaScanService::ScanResult scanResult;
         scanService.ScanDownloadedFile(tmpPath, scanResult);

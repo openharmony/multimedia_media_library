@@ -54,6 +54,8 @@
 #include "get_analysis_process_vo.h"
 #include "get_highlight_album_info_vo.h"
 #include "album_get_assets_vo.h"
+#include "album_change_set_hidden_attribute_vo.h"
+#include "album_change_set_album_name_by_file_vo.h"
 #include "message_parcel.h"
 #include "rdb_utils.h"
 #include "photo_album_column.h"
@@ -70,6 +72,35 @@ static std::vector<std::string> ALBUM_FETCH_COLUMNS = {
 FuzzedDataProvider* FDP;
 shared_ptr<MediaAlbumsControllerService> mediaAlbumsControllerService = nullptr;
 shared_ptr<AnalysisData::MediaAnalysisDataControllerService> analysisDataControllerService = nullptr;
+
+static void AlbumChangeSetHiddenAttributeFuzzer()
+{
+    AlbumChangeSetHiddenAttributeReqBody reqBody;
+    reqBody.albumId = FDP->ConsumeIntegral<int32_t>();
+    reqBody.fileHidden = FDP->ConsumeBool();
+    reqBody.inherited = FDP->ConsumeBool();
+    reqBody.albumType = FDP->ConsumeIntegral<int32_t>();
+    reqBody.albumSubType = FDP->ConsumeIntegral<int32_t>();
+
+    MessageParcel data;
+    MessageParcel reply;
+    reqBody.Marshalling(data);
+    mediaAlbumsControllerService->AlbumChangeSetHiddenAttribute(data, reply);
+}
+
+static void AlbumChangeSetAlbumNameByFileFuzzer()
+{
+    AlbumChangeSetAlbumNameByFileReqBody reqBody;
+    reqBody.albumId = FDP->ConsumeIntegral<int32_t>();
+    reqBody.albumName = FDP->ConsumeBytesAsString(NUM_BYTES);
+    reqBody.albumType = FDP->ConsumeIntegral<int32_t>();
+    reqBody.albumSubType = FDP->ConsumeIntegral<int32_t>();
+
+    MessageParcel data;
+    MessageParcel reply;
+    reqBody.Marshalling(data);
+    mediaAlbumsControllerService->AlbumChangeSetAlbumNameByFile(data, reply);
+}
 
 static void DeleteHighlightAlbumsFuzzer()
 {
@@ -486,6 +517,8 @@ static void AlbumGetAssetsFuzzer()
 
 static void MediaAlbumsControllerServiceFuzzer()
 {
+    AlbumChangeSetHiddenAttributeFuzzer();
+    AlbumChangeSetAlbumNameByFileFuzzer();
     DeleteHighlightAlbumsFuzzer();
     DeletePhotoAlbumsFuzzer();
     CreatePhotoAlbumFuzzer();

@@ -62,6 +62,8 @@ enum class AlbumChangeOperation {
     REMOVE_NICK_NAME,
     UPDATE_IS_REMOVED,
     UPDATE_EXTRA_INFO,
+    SET_HIDDEN_ATTRIBUTE,
+    SET_ALBUM_NAME_BY_FILE,
 };
 
 struct PhotoAlbumPtrCompare {
@@ -129,6 +131,9 @@ public:
     static ani_status SetIsMe(ani_env *env, ani_object object);
     static ani_status Dismiss(ani_env *env, ani_object object);
     static ani_status ResetCoverUri(ani_env *env, ani_object object);
+    static ani_status SetHiddenAttribute(ani_env *env, ani_object object,
+        ani_boolean fileHiddenState, ani_boolean inherited);
+    static ani_status SetAlbumNameByFile(ani_env *env, ani_object object, ani_string name);
     static ani_status DeleteAlbums(ani_env *env, ani_class clazz, ani_object context, ani_object arrayAlbum);
     static ani_status DeleteAlbumsWithUri(ani_env *env, ani_class clazz, ani_object context, ani_object arrayAlbum);
     static ani_status DeleteAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset);
@@ -140,6 +145,7 @@ public:
 
     std::map<std::shared_ptr<PhotoAlbum>, std::vector<std::string>, PhotoAlbumPtrCompare> GetMoveMap() const;
     void RecordMoveAssets(std::vector<std::string>& assetArray, std::shared_ptr<PhotoAlbum>& targetAlbum);
+    bool hiddenInherited_ = false;
 
 private:
     static bool CheckDismissAssetVaild(std::vector<std::string> &dismissAssets,

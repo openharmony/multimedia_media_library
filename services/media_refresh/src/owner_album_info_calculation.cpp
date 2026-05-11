@@ -31,7 +31,8 @@ unordered_map<int32_t, AlbumRefreshInfo> OwnerAlbumInfoCalculation::CalOwnerAlbu
     for (auto &assetChangeData : assetChangeDatas) {
         auto initAlbumId = assetChangeData.infoBeforeChange_.ownerAlbumId_;
         auto modifiedAlbumId = assetChangeData.infoAfterChange_.ownerAlbumId_;
-
+        ACCURATE_INFO("initAlbumId is %{public}d", (int)initAlbumId);
+        ACCURATE_INFO("modifiedAlbumId is %{public}d", (int)modifiedAlbumId);
         // 无效数据
         if (initAlbumId == INVALID_INT32_VALUE && modifiedAlbumId == INVALID_INT32_VALUE) {
             MEDIA_WARN_LOG("assset change data invalid albumId.");

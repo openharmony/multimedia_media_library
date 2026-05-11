@@ -409,6 +409,16 @@ int32_t PhotoAlbum::GetHidden() const
     return hidden_;
 }
 
+void PhotoAlbum::SetFileHidden(bool fileHidden)
+{
+    fileHidden_ = fileHidden;
+}
+
+bool PhotoAlbum::IsFileHidden() const
+{
+    return fileHidden_;
+}
+
 bool PhotoAlbum::IsUserPhotoAlbumByType(const PhotoAlbumType albumType)
 {
     return albumType == PhotoAlbumType::USER;

@@ -19,6 +19,7 @@
 #include "media_column.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {

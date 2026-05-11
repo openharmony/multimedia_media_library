@@ -24,7 +24,6 @@
 #include <unistd.h>
 
 #include "lake_file_operations.h"
-#include "lake_file_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"

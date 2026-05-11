@@ -42,11 +42,15 @@
 #include "album_accurate_refresh_manager.h"
 #include "refresh_business_name.h"
 #include "accurate_common_data.h"
-#include "lake_file_operations.h"
-#include "media_string_utils.h"
 #include "ipc_skeleton.h"
 #include "accesstoken_kit.h"
 #include "parameters.h"
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+#include "lake_file_operations.h"
+#endif
+#include "media_string_utils.h"
+#include "file_manager_asset_operations.h"
+// LCOV_EXCL_START
 
 namespace OHOS::Media {
 using namespace std;
@@ -713,7 +717,7 @@ void MediaLibraryRdbUtils::GetAlbumCountAndCoverPredicates(const UpdateAlbumData
         to_string(static_cast<int32_t>(BurstCoverLevelType::COVER));
 
     bool isUserAlbum = subtype == PhotoAlbumSubType::USER_GENERIC;
-    bool isSourceAlbum = subtype == PhotoAlbumSubType::SOURCE_GENERIC;
+    bool isSourceAlbum = (subtype >= PhotoAlbumSubType::SOURCE_START && subtype <= PhotoAlbumSubType::SOURCE_END);
     bool isAnalysisAlbum = subtype >= PhotoAlbumSubType::ANALYSIS_START && subtype <= PhotoAlbumSubType::ANALYSIS_END;
     bool isSystemAlbum = subtype >= PhotoAlbumSubType::SYSTEM_START && subtype <= PhotoAlbumSubType::SYSTEM_END;
     if (isUpdateAlbum && isAnalysisAlbum &&
@@ -1482,7 +1486,8 @@ static bool IsNeedSetCover(UpdateAlbumData &data, PhotoAlbumSubType subtype, con
         to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)) +
         " AND " + PhotoColumn::PHOTO_SYNC_STATUS + " = 0 AND " + PhotoColumn::PHOTO_CLEAN_FLAG + " = 0";
     predicates.SetWhereClause(checkCoverValid);
-    if (subtype == PhotoAlbumSubType::USER_GENERIC || subtype == PhotoAlbumSubType::SOURCE_GENERIC) {
+    if (subtype == PhotoAlbumSubType::USER_GENERIC ||
+        (subtype >= PhotoAlbumSubType::SOURCE_START && subtype <= PhotoAlbumSubType::SOURCE_END)) {
         vector<string> columns = { PhotoColumn::PHOTO_OWNER_ALBUM_ID };
         auto resultSet = rdbStore->Query(predicates, columns);
         CHECK_AND_RETURN_RET_INFO_LOG(resultSet != nullptr, E_HAS_DB_ERROR,
@@ -2075,9 +2080,7 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
         }
 
         newWhereIdArgs.push_back(albumId);
-        if (fileAssetsUri.empty()) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(!fileAssetsUri.empty());
 
         MediaLibraryPhotoOperations::UpdateSourcePath(fileAssetsIds);
         RdbPredicates predicatesPhotos(PhotoColumn::PHOTOS_TABLE);
@@ -2089,8 +2092,12 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
         CHECK_AND_CONTINUE_ERR_LOG(changedRows >= 0,
             "Update failed on trashed, album id is: %{public}s", albumId.c_str());
         assetRefresh.RefreshAlbum();
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
         int32_t ret = LakeFileOperations::MoveAssetsFromLake(fileAssetsIds);
         CHECK_AND_PRINT_LOG(ret == E_OK, "trash inner anco file error");
+        ret = FileManagerAssetOperations::MoveAssetsFromFileManager(fileAssetsIds);
+        CHECK_AND_PRINT_LOG(ret == E_OK, "trash file manager asset error");
+#endif
         MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
             static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), fileAssetsUri);
         MediaLibraryPhotoOperations::TrashPhotosSendNotify(fileAssetsUri);

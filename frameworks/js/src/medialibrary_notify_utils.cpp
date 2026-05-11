@@ -397,6 +397,7 @@ napi_value MediaLibraryNotifyUtils::BuildPhotoAssetChangeInfo(napi_env env,
     SetValueString(env, "displayName", photoAssetChangeInfo.displayName_, result);
     SetValueInt64(env, "size", photoAssetChangeInfo.size_, result);
     SetValueInt64(env, "livephoto4dStatus", photoAssetChangeInfo.livephoto4dStatus_, result);
+    SetValueInt64(env, "assetSourceType", photoAssetChangeInfo.fileSourceType_, result);
 
     if (uriType == Notification::NotifyUriType::HIDDEN_PHOTO_URI) {
         SetValueInt64(env, "hiddenTime", photoAssetChangeInfo.hiddenTime_, result);

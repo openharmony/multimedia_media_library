@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <timer.h>
 
 #include "media_assets_rdb_operations.h"
 #include "form_info_dto.h"
@@ -87,6 +88,12 @@
 #include "compatible_info_vo.h"
 #include "reserve_photo_uri_permission_vo.h"
 #include "resume_photo_uri_permission_vo.h"
+#include "convert_to_asset_vo.h"
+#include "change_request_move_assets_by_path_dto.h"
+#include "change_request_move_assets_to_dir_dto.h"
+#include "album_change_set_album_name_by_file_dto.h"
+#include "asset_cancel_task_dto.h"
+#include "file_management_utils.h"
 
 namespace OHOS::Media {
 class MediaAssetsService {
@@ -104,6 +111,8 @@ public:
     int32_t DeleteAssetsPermanentlyWithUri(const std::vector<std::string> &fileIds);
     int32_t AssetChangeSetFavorite(const int32_t fileId, const bool favorite);
     int32_t AssetChangeSetHidden(const std::string &uri, const bool hidden);
+    int32_t AssetChangeSetFileHidden(const std::string &uri, const bool fileHidden);
+    int32_t AssetChangeSetDisplayNameByFile(const std::string &uri, const std::string &displayName);
     int32_t AssetChangeSetUserComment(const int32_t fileId, const std::string &userComment);
     int32_t AssetChangeSetLocation(const SetLocationDto &dto);
     int32_t AssetChangeSetTitle(const int32_t fileId, const std::string &title);
@@ -222,10 +231,20 @@ public:
         ResumePhotoUriPermissionRespBody &respBody);
     int32_t SetMovingPhotoVersion(const AssetChangeReqBody &reqBody);
     int32_t GetTranscodeCheckInfo(const std::string bundleName, GetTranscodeCheckInfoRespBody &respBody);
+    int32_t ConvertToAsset(const std::string &path, ConvertToAssetRespBody &respBody);
+    int32_t MoveAssetsToDir(ChangeRequestMoveAssetsToDirDto &dto);
+    int32_t MoveAssetsByPath(ChangeRequestMoveAssetsByPathDto &dto);
+    int32_t CancelTask(const int32_t &requestId);
+    bool EarseTaskCancelFlag(const int32_t &requestId);
+    bool RegisterTaskCancelFlag(int32_t requestId, std::shared_ptr<std::atomic<bool>> cancelFlag);
+    int32_t ScanMoveAssets(const std::vector<std::string> &allAssetPath,
+        std::map<int32_t, FileAssetsInfo> &recordedInfos, ChangeRequestMoveAssetsByPathDto &dto);
+    int32_t CreateFileManagerAsset(CreateAssetDto& dto);
 
 private:
     int32_t SubmitMetadataChanged(const int32_t fileId);
     MediaAssetsRdbOperations rdbOperation_;
+    std::mutex progressMutex_;
 };
 } // namespace OHOS::Media
 #endif // OHOS_MEDIA_ASSETS_SERVICE_H

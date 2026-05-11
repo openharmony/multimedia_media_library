@@ -350,6 +350,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("LIVEPHOTO_4D_STATUS",       PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS),
     std::make_pair("HIDDEN_TIME",               PhotoColumn::PHOTO_HIDDEN_TIME),
     std::make_pair("LOCAL_ASSET_SIZE",          PhotoColumn::LOCAL_ASSET_SIZE),
+    std::make_pair("FILE_HIDDEN",               PhotoColumn::PHOTO_FILE_HIDDEN),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
@@ -364,6 +365,7 @@ const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES 
     std::make_pair("CHANGE_TIME",               PhotoAlbumColumns::CHANGE_TIME),
     std::make_pair("UPLOAD_STATUS",             PhotoAlbumColumns::UPLOAD_STATUS),
     std::make_pair("HIDDEN",                    PhotoAlbumColumns::ALBUM_HIDDEN),
+    std::make_pair("FILE_HIDDEN",               PhotoAlbumColumns::ALBUM_FILE_HIDDEN),
 };
 
 const std::vector<std::pair<std::string, std::string>> DEFAULT_URI_ENUM_PROPERTIES = {

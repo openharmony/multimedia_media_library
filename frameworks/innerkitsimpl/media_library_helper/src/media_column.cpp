@@ -223,6 +223,7 @@ const std::string PhotoColumn::PHOTO_REQUEST_PICTURE_BUFFER = "file://media/Phot
 
 const std::string PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE = "south_device_type";
 const std::string PhotoColumn::CLOUD_TYPE = "cloud_type";
+const std::string PhotoColumn::PHOTO_FILE_HIDDEN = "file_hidden";
 
 const std::string PhotoColumn::UNIQUE_ID = "unique_id";
 
@@ -257,7 +258,8 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_CHANGE_TIME, PhotoColumn::PHOTO_IS_CRITICAL, PhotoColumn::PHOTO_RISK_STATUS,
     PhotoColumn::PHOTO_DATE_ADDED_YEAR, PhotoColumn::PHOTO_DATE_ADDED_MONTH, PhotoColumn::PHOTO_DATE_ADDED_DAY,
     PhotoColumn::UNIQUE_ID, PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_STATUS,
-    PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_LATEST_PAIR, PhotoColumn::PHOTO_HIDDEN_TIME, PhotoColumn::LOCAL_ASSET_SIZE
+    PhotoColumn::MOVING_PHOTO_LIVEPHOTO_4D_LATEST_PAIR, PhotoColumn::PHOTO_HIDDEN_TIME, PhotoColumn::LOCAL_ASSET_SIZE,
+    PhotoColumn::PHOTO_FILE_HIDDEN,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)

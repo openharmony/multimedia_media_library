@@ -52,9 +52,11 @@ gen_js_obj("medialibraryinf_abc") {
 config("napi_config") {
   include_dirs = [
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/accurate_refresh",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/data",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/utils",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/progress_callback_notify",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
@@ -88,6 +90,7 @@ config("napi_config") {
     "${MEDIALIB_IPC_COMMON}/include/config",
     "${MEDIALIB_IPC_COMMON}/include/utils",
     "${MEDIALIB_IPC_COMMON}/include/vo",
+    "${MEDIALIB_IPC_COMMON}/include/callback",
   ]
 
   include_dirs += include_media_ipc_common
@@ -128,6 +131,7 @@ config("napi_config_photoaccesshelpernative") {
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/data",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/utils",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/progress_callback_notify",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
@@ -168,6 +172,7 @@ config("napi_config_photoaccesshelpernative") {
 
 config("public_napi_config") {
   include_dirs = [
+    "${MEDIALIB_IPC_COMMON}/include/callback",
     "${MEDIALIB_COMMON_PATH}/utils/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include/napi",
@@ -213,12 +218,16 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/media_change_request_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_library_comm_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_library_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/clone_to_album_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/clone_to_album_callback_stub.cpp",
+    "${MEDIALIB_JS_PATH}/src/clone_to_album_callback_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/medialibrary_napi_utils.cpp",
     "${MEDIALIB_JS_PATH}/src/medialibrary_notify_asset_manager_observer.cpp",
     "${MEDIALIB_JS_PATH}/src/medialibrary_notify_new_observer.cpp",
     "${MEDIALIB_INNERIMPL_PATH}/notification/src/medialibrary_notify_user_define_observer.cpp",
     "${MEDIALIB_JS_PATH}/src/medialibrary_notify_utils.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/data/user_define_notify_info.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/progress_callback_notify/progress_observer_manager.cpp",
     "${MEDIALIB_JS_PATH}/src/modal_ui_callback.cpp",
     "${MEDIALIB_JS_PATH}/src/moving_photo_call_transcoder.cpp",
     "${MEDIALIB_JS_PATH}/src/moving_photo_napi.cpp",
@@ -230,6 +239,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/request_photo_uris_read_permission_callback.cpp",
     "${MEDIALIB_JS_PATH}/src/short_term_callback.cpp",
     "${MEDIALIB_JS_PATH}/src/smart_album_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/task_signal_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/thumbnail_manager.cpp",
     "${MEDIALIB_JS_PATH}/src/transfer_utils.cpp",
     "${MEDIALIB_JS_PATH}/src/userfile_client.cpp",
@@ -294,8 +304,12 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/release_debug_database_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/heif_transcoding_check_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_fussion_assets_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/convert_to_asset_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/compatible_info_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/preferred_compatible_mode_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/change_request_move_assets_by_path_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/change_request_move_assets_to_dir_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/asset_cancel_task_vo.cpp",
   ]
 
   media_analysis_data_vo_source = [
@@ -327,6 +341,7 @@ ohos_shared_library("medialibrary_nutils") {
   media_album_service_vo_source = [
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/create_album_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/delete_albums_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/clone_to_album_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_set_album_name_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_operate_album_attribute_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_set_cover_uri_vo.cpp",
@@ -339,6 +354,8 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_set_highlight_attribute_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_commit_modify_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_add_assets_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_change_set_hidden_attribute_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_change_set_album_name_by_file_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_remove_assets_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_recover_assets_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_photo_query_vo.cpp",
@@ -869,6 +886,7 @@ ohos_shared_library("sendablephotoaccesshelper") {
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/data",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/utils",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/progress_callback_notify",
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include/sendable",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",

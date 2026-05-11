@@ -110,8 +110,16 @@
 #include "get_compress_asset_size_vo.h"
 #include "query_media_data_status_vo.h"
 #include "check_single_photo_permission_vo.h"
+#include "convert_to_asset_vo.h"
 #include "media_change_info.h"
 #include "ipc_skeleton.h"
+#include "clone_to_album_vo.h"
+#include "change_request_move_assets_to_dir_vo.h"
+#include "change_request_move_assets_to_dir_dto.h"
+#include "change_request_move_assets_by_path_vo.h"
+#include "change_request_move_assets_by_path_dto.h"
+#include "asset_cancel_task_vo.h"
+#include "progress_observer_manager.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -179,6 +187,14 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_HIDDEN),
         &MediaAssetsControllerService::AssetChangeSetHidden
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_HIDDEN_ATTRIBUTE),
+        &MediaAssetsControllerService::AssetChangeSetHiddenAttribute
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_DISPLAY_NAME_BY_FILE),
+        &MediaAssetsControllerService::AssetChangeSetDisplayNameByFile
     },
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_USER_COMMENT),
@@ -660,6 +676,42 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         static_cast<uint32_t>(MediaLibraryBusinessCode::GET_TRANSCODE_CHECK_INFO),
         &MediaAssetsControllerService::GetTranscodeCheckInfo
     },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_TO_ASSET),
+        &MediaAssetsControllerService::ConvertToAsset
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CLONE_TO_ALBUM),
+        &MediaAssetsControllerService::CloneToAlbum
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CLONE_TO_DIR),
+        &MediaAssetsControllerService::CloneToDir
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CLONE_ASSETS_BY_PATH),
+        &MediaAssetsControllerService::CloneAssetByPath
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_CANCEL_CLONE_TASK),
+        &MediaAssetsControllerService::CloneToAlbumCancel
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::MOVE_ASSETS_TO_DIR),
+        &MediaAssetsControllerService::MoveAssetsToDir
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::MOVE_ASSETS_BY_PATH),
+        &MediaAssetsControllerService::MoveAssetsByPath
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_CANCEL_MOVE_TASK),
+        &MediaAssetsControllerService::CancelTask
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CREATE_FILE_MANAGER_ASSET),
+        &MediaAssetsControllerService::CreateFileManagerAsset
+    },
 };
 
 bool MediaAssetsControllerService::Accept(uint32_t code)
@@ -926,6 +978,45 @@ int32_t MediaAssetsControllerService::AssetChangeSetHidden(MessageParcel &data, 
     }
 
     ret = MediaAssetsService::GetInstance().AssetChangeSetHidden(reqBody.uri, reqBody.hidden);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::AssetChangeSetHiddenAttribute(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter AssetChangeSetHiddenAttribute");
+    AssetChangeReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("AssetChangeSetHiddenAttribute Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    if (!ParameterUtils::IsPhotoUri(reqBody.uri)) {
+        MEDIA_ERR_LOG("uri is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_PARAM_CONVERT_FORMAT);
+    }
+    ret = MediaAssetsService::GetInstance().AssetChangeSetFileHidden(reqBody.uri, reqBody.fileHidden);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::AssetChangeSetDisplayNameByFile(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter AssetChangeSetDisplayNameByFile");
+    AssetChangeReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("AssetChangeSetDisplayNameByFile Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    if (!ParameterUtils::IsPhotoUri(reqBody.uri)) {
+        MEDIA_ERR_LOG("uri is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_PARAM_CONVERT_FORMAT);
+    }
+    if (MediaFileUtils::CheckDisplayName(reqBody.displayName, false, true) != E_OK) {
+        MEDIA_ERR_LOG("displayName is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_PARAM_CONVERT_FORMAT);
+    }
+    ret = MediaAssetsService::GetInstance().AssetChangeSetDisplayNameByFile(reqBody.uri, reqBody.displayName);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
@@ -3047,6 +3138,23 @@ int32_t MediaAssetsControllerService::GetAssetCompressVersion(MessageParcel &dat
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
+int32_t MediaAssetsControllerService::ConvertToAsset(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter ConvertToAsset");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_TO_ASSET);
+    ConvertToAssetReqBody reqBody;
+    ConvertToAssetRespBody respBody;
+
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ConvertToAsset Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    ret = MediaAssetsService::GetInstance().ConvertToAsset(reqBody.path, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
 int32_t MediaAssetsControllerService::GetCompressAssetSize(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("MediaAssetsControllerService::GetCompressAssetSize start");
@@ -3255,5 +3363,180 @@ int32_t MediaAssetsControllerService::GetTranscodeCheckInfo(MessageParcel &data,
         return IPC::UserDefineIPC().WriteResponseBody(reply, E_INNER_FAIL);
     }
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAssetsControllerService::CloneToAlbum(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("CloneToAlbum start");
+    CloneToAlbumReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CloneToAlbum Read Request Error: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    ret = this->cloneToAlbumService_.CloneToAlbum(reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CloneToAlbum Error: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::CloneToDir(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("CloneToDir start");
+    CloneToAlbumReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CloneToDir Read Request Error: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    ret = this->cloneToAlbumService_.CloneToDir(reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CloneToDir Error: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::CloneAssetByPath(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("CloneAssetByPath start");
+    CloneToAlbumReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CloneAssetByPath Read Request Error: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    ret = this->cloneToAlbumService_.CloneAssetByPath(reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CloneAssetByPath Error: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::CloneToAlbumCancel(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("CloneToAlbumCancel start");
+    CloneToAlbumReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CloneToAlbum Read Request Error: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    ret = this->cloneToAlbumService_.CloneToAlbumCancel(reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CloneToAlbum Error: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::MoveAssetsToDir(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter moveAssetsToDir");
+    ChangeRequestMoveAssetsToDirReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("moveAssetsToDir Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ChangeRequestMoveAssetsToDirDto dto;
+    dto.FromVo(reqBody);
+    int32_t requestId = dto.requestId;
+    auto cancelFlag = std::make_shared<std::atomic<bool>>(false);
+    MediaAssetsService::GetInstance().RegisterTaskCancelFlag(requestId, cancelFlag);
+    ret = MediaAssetsService::GetInstance().MoveAssetsToDir(dto);
+    Notification::ProgressObserverManager::GetInstance().RemoveObserver(requestId);
+    MediaAssetsService::GetInstance().EarseTaskCancelFlag(requestId);
+    ChangeRequestMoveAssetsToDirRespBody respBody;
+    respBody.resultList = dto.resultList;
+    respBody.errCode = dto.errCode;
+    respBody.processedCount = dto.changeInfo->processedCount;
+    respBody.remainCount = dto.changeInfo->remainCount;
+    respBody.processedSize = dto.changeInfo->processedSize;
+    respBody.remainSize = dto.changeInfo->remainSize;
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAssetsControllerService::MoveAssetsByPath(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter moveAssetsByPath");
+    ChangeRequestMoveAssetsByPathReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("moveAssetsByPath Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ChangeRequestMoveAssetsByPathDto dto;
+    dto.FromVo(reqBody);
+    int32_t requestId = dto.requestId;
+    auto cancelFlag = std::make_shared<std::atomic<bool>>(false);
+    MediaAssetsService::GetInstance().RegisterTaskCancelFlag(requestId, cancelFlag);
+    ret = MediaAssetsService::GetInstance().MoveAssetsByPath(dto);
+    Notification::ProgressObserverManager::GetInstance().RemoveObserver(requestId);
+    MediaAssetsService::GetInstance().EarseTaskCancelFlag(requestId);
+    ChangeRequestMoveAssetsByPathRespBody respBody;
+    respBody.resultList = dto.resultList;
+    respBody.errCode = dto.errCode;
+    respBody.processedCount = dto.changeInfo->processedCount;
+    respBody.remainCount = dto.changeInfo->remainCount;
+    respBody.processedSize = dto.changeInfo->processedSize;
+    respBody.remainSize = dto.changeInfo->remainSize;
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAssetsControllerService::CancelTask(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("Enter CancelTask");
+    CancelTaskReqBody reqBody;
+
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CancelTask Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    if (reqBody.requestId <= 0) {
+        MEDIA_ERR_LOG("CancelTask: invalid requestId");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
+    }
+
+    CancelTaskDto dto = CancelTaskDto::Create(reqBody);
+    ret = MediaAssetsService::GetInstance().CancelTask(dto.requestId);
+    CHECK_AND_PRINT_LOG(ret == E_OK, "CancelTask failed");
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::CreateFileManagerAsset(MessageParcel &data, MessageParcel &reply)
+{
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CREATE_FILE_MANAGER_ASSET);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    CreateFileMgrAssetReqBody reqBody;
+    CreateAssetRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CreateFileManagerAsset Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+    }
+
+    ret = ParameterUtils::CheckCreateFileMgrAsset(reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CreateFileManagerAsset ret:%{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+    }
+
+    CreateAssetDto dto(reqBody);
+    ret = MediaAssetsService::GetInstance().CreateFileManagerAsset(dto);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, dto.GetRespBody(), ret);
 }
 } // namespace OHOS::Media

@@ -68,6 +68,7 @@ public:
     static bool CheckPhotoUri(const std::string &uri);
     static int32_t CheckRestore(const RestoreReqBody &reqBody);
     static int32_t CheckCancelRequest(const CancelRequestReqBody &reqBody);
+    static int32_t CheckCreateFileMgrAsset(const CreateFileMgrAssetReqBody &reqBody);
 };
 }  // namespace Media
 }  // namespace OHOS

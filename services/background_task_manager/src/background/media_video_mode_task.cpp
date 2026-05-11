@@ -28,9 +28,14 @@
 #include "result_set_utils.h"
 #include "metadata.h"
 #include "metadata_extractor.h"
-#include "lake_file_utils.h"
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+#include "file_scan_utils.h"
+#endif
 #include "directory_ex.h"
- 
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+#include "media_file_access_utils.h"
+#endif
+
 using namespace OHOS::NativeRdb;
  
 namespace OHOS::Media::Background {
@@ -109,7 +114,8 @@ void MediaVideoModeTask::UpdateVideoMode(std::shared_ptr<MediaLibraryRdbStore> &
             fileId,
             MediaFileUtils::DesensitizePath(filePath).c_str());
         unique_ptr<Metadata> videoModeData = make_unique<Metadata>();
-        string realPath = LakeFileUtils::GetAssetRealPath(filePath);
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+        string realPath = MediaFileAccessUtils::GetAssetRealPath(filePath);
         string absVideoPath;
         if (!PathToRealPath(realPath, absVideoPath)) {
             MEDIA_ERR_LOG(
@@ -117,6 +123,9 @@ void MediaVideoModeTask::UpdateVideoMode(std::shared_ptr<MediaLibraryRdbStore> &
             continue;
         }
         videoModeData->SetFilePath(realPath);
+#else
+        videoModeData->SetFilePath(filePath);
+#endif
         int32_t err = MetadataExtractor::ExtractAVMetadata(videoModeData);
         if (err != E_OK) {
             MEDIA_ERR_LOG("Failed to extract metadata: %{public}s", DfxUtils::GetSafePath(filePath).c_str());

@@ -26,6 +26,7 @@
 #include "media_file_utils.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_errno.h"
+#include "photo_file_utils.h"
 
 namespace OHOS::Media::Common {
 using namespace OHOS::Media::ORM;
@@ -404,7 +405,11 @@ int32_t MediaAssetsDao::UpdatePositionToBothAndFileSourceTypeToLake(const Photos
     predicates.EqualTo(PhotoColumn::MEDIA_ID, targetPhotoInfo.fileId.value_or(0));
     NativeRdb::ValuesBucket values;
     values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
-    values.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, static_cast<int32_t>(FileSourceType::MEDIA_HO_LAKE));
+    if (PhotoFileUtils::CheckFileManagerRealPath(targetPhotoInfo.storagePath.value_or(""))) {
+        values.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, static_cast<int32_t>(FileSourceType::FILE_MANAGER));
+    } else {
+        values.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, static_cast<int32_t>(FileSourceType::MEDIA_HO_LAKE));
+    }
     this->HandlePackageName(sourcePhotoInfo, targetPhotoInfo, values);
     int32_t changedRows = -1;
     int32_t ret = photoRefresh->Update(changedRows, values, predicates);

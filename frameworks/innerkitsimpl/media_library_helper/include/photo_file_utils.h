@@ -37,7 +37,8 @@ struct DateParts {
 
 class PhotoFileUtils {
 public:
-    EXPORT static bool HasSource(bool hasEditDataCamera, int64_t editTime, int32_t effectMode, int32_t subtype = 0);
+    EXPORT static bool HasSource(bool hasEditDataCamera, int64_t editTime, int32_t effectMode, int32_t subtype = 0,
+        int32_t editDataExist = 0);
 
     EXPORT static int32_t GetMetaPathFromOrignalPath(const std::string &srcPath, std::string &metaPath);
     EXPORT static std::string GetMetaDataRealPath(const std::string &photoPath, int32_t userId = -1);
@@ -51,11 +52,18 @@ public:
     EXPORT static DateParts ConstructDateAddedDateParts(int64_t dateAdded);
     EXPORT static std::string GetLocalLcdPath(const std::string &photoPath);
     EXPORT static std::string GetLocalLcdExPath(const std::string &photoPath);
+    EXPORT static bool CheckFileManagerRealPath(const std::string &path);
+    EXPORT static bool CheckFileManagerLPath(const std::string &lPath);
+    EXPORT static std::string GetFileManagerLPathFromRealPath(const std::string &path);
+    EXPORT static std::string GetFileManagerDirFromLPath(const std::string &lPath);
 
 protected:
     EXPORT static std::string GetThumbDir(const std::string &photoPath, int32_t userId = -1);
     EXPORT static std::string GetLCDPath(const std::string &photoPath, int32_t userId = -1);
     EXPORT static std::string GetTHMPath(const std::string &photoPath, int32_t userId = -1);
+
+private:
+    static bool CheckSubDirForFileManager(const std::string &path, size_t startPos);
 };
 } // namespace OHOS::Media
 

@@ -28,14 +28,11 @@ ohos_fuzztest("MediaLibraryCloudMediaServiceFuzzTest") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/media_cloud_asset_download/cloud_media_sync_mutex.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_media_asset_retain_compare_dao.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_media_common_dao.cpp",
-    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_lake_file_handler.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_photos_service.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/cloud_media_file_utils.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/media_gallery_sync_notify.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/photos_field_iterator.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/src/lake_file_utils.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/src/lake_file_operations.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_lcd_aging/src/lcd_aging_dao.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_lcd_aging/src/lcd_aging_manager.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_lcd_aging/src/lcd_aging_task_priority_manager.cpp",
@@ -46,6 +43,13 @@ ohos_fuzztest("MediaLibraryCloudMediaServiceFuzzTest") {
   ]
 
   cflags = [ "-fno-access-control" ]
+  if (media_library_lake_enable) {
+    sources += [
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/file_scan_utils.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/src/lake_file_operations.cpp",
+      "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_lake_file_handler.cpp",
+    ]
+  }
 
   deps = [
     "${MEDIALIB_CLOUD_SYNC_CLIENT}:media_library_cloud_sync",
