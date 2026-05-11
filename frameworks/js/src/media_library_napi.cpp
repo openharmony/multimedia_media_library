@@ -126,6 +126,7 @@
 #include "media_library_error_code.h"
 #include "media_upgrade.h"
 #include "media_string_utils.h"
+#include "preferred_compatible_mode_check_utils.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -560,6 +561,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("getPreferredCompatibleMode", PhotoAccessHelperGetPreferredCompatibleMode),
             DECLARE_NAPI_FUNCTION("onMedialibraryAvailability", AvailabilityRegisterCallback),
             DECLARE_NAPI_FUNCTION("offMedialibraryAvailability", AvailabilityUnregisterCallback),
+            DECLARE_NAPI_FUNCTION("getAssetCompatibleUris", GetAssetCompatibleUris),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -16039,6 +16041,211 @@ napi_value MediaLibraryNapi::PhotoAccessHelperGetAssetCompatibleConfig(napi_env 
     SetUserIdFromObjectInfo(asyncContext);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetAssetCompatibleConfig",
         JSGetAssetCompatibleConfigExecute, JSGetAssetCompatibleConfigCompleteCallback);
+}
+
+static napi_value ParseArgsGetAssetCompatibleUris(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_TWO;
+    constexpr size_t maxArgs = ARGS_THREE;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_ERR_PARAMETER_INVALID);
+
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO],
+        context->bundleName), JS_ERR_PARAMETER_INVALID);
+    CHECK_COND_WITH_ERR_MESSAGE(env, !context->bundleName.empty(), JS_ERR_PARAMETER_INVALID, "invalid bundleName");
+
+    bool isArray = false;
+    CHECK_ARGS(env, napi_is_array(env, context->argv[ARGS_ONE], &isArray), JS_ERR_PARAMETER_INVALID);
+    CHECK_COND_WITH_ERR_MESSAGE(env, isArray, JS_ERR_PARAMETER_INVALID, "assets must be an array");
+
+    uint32_t len = 0;
+    CHECK_ARGS(env, napi_get_array_length(env, context->argv[ARGS_ONE], &len), JS_ERR_PARAMETER_INVALID);
+
+    for (uint32_t i = 0; i < len; i++) {
+        napi_value item = nullptr;
+        CHECK_ARGS(env, napi_get_element(env, context->argv[ARGS_ONE], i, &item), JS_ERR_PARAMETER_INVALID);
+
+        FileAssetNapi *obj = nullptr;
+        CHECK_ARGS(env, napi_unwrap(env, item, reinterpret_cast<void **>(&obj)), JS_ERR_PARAMETER_INVALID);
+        CHECK_NULLPTR_RET(obj);
+
+        PhotoAssetInfo info;
+        info.width = obj->GetWidth();
+        info.height = obj->GetHeight();
+        info.uri = obj->GetFileUri();
+        info.fileId = obj->GetFileId();
+
+        context->photoAssetInfos.push_back(info);
+    }
+
+    if (context->argc >= ARGS_THREE) {
+        CHECK_ARGS(env, MediaLibraryNapiUtils::GetInt32(env, context->argv[ARGS_THREE],
+            context->compatibleFlags), JS_ERR_PARAMETER_INVALID);
+        constexpr int32_t VALID_FLAGS_MASK = 0x3;
+        CHECK_COND_WITH_ERR_MESSAGE(env, (context->compatibleFlags & ~VALID_FLAGS_MASK) == 0,
+            JS_ERR_PARAMETER_INVALID, "invalid compatibleFlags");
+    }
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void GetAssetCompatibleUrisExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAssetCompatibleUrisExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    GetTranscodeCheckInfoReqBody reqBody;
+    GetTranscodeCheckInfoRespBody respBody;
+    reqBody.bundleName = context->bundleName;
+    int32_t ret = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_TRANSCODE_CHECK_INFO), reqBody, respBody);
+    if (ret != 0) {
+        NAPI_ERR_LOG("UserDefineIPCClient().Call failed, ret: %{public}d", ret);
+        context->SaveError(ret);
+        return;
+    }
+
+    context->supportedHighResolution = respBody.supportedHighResolution;
+    context->supportedMimeTypes = respBody.supportedMimeTypes;
+    context->preferredCompatibleMode = respBody.preferredCompatibleMode;
+    NAPI_ERR_LOG("bundleName %{public}s, supportedHighResolution %{public}d, preferredCompatibleMode %{public}d",
+        respBody.bundleName.c_str(), respBody.supportedHighResolution, respBody.preferredCompatibleMode);
+    context->retVal = E_OK;
+}
+
+static void HandleCheckTranscodeUri(MediaLibraryAsyncContext *context,
+    bool checkHighPixel, bool checkHeif, vector<string> &result)
+{
+    for (auto &item : context->photoAssetInfos) {
+        bool isHighPixel = item.width * item.height >= HIGH_PIXEL_SIZE;
+        size_t atDot = item.uri.find('.');
+        if (atDot == std::string::npos) {
+            continue;
+        }
+        std::string ext = item.uri.substr(atDot + 1);
+        bool isHeifFile = (ext == "heif" || ext == "heic");
+        if (context->compatibleFlags == 0 || context->compatibleFlags == THIRD_ENUM) {
+            CompatibleInfo compatibleinfo;
+            compatibleinfo.bundleName = context->bundleName;
+            compatibleinfo.highResolution = context->supportedHighResolution;
+            compatibleinfo.encodings = context->supportedMimeTypes;
+            compatibleinfo.preferredCompatibleMode =
+                static_cast<PreferredCompatibleMode>(context->preferredCompatibleMode);
+            TranscodeMode res =
+                PreferredCompatibleModeCheckUtils::CheckTranscodeMode(compatibleinfo, isHighPixel, isHeifFile);
+            if (res == TranscodeMode::CURRENT) {
+                continue;
+            } else if (res == TranscodeMode::COMPATIBLE) {
+                result.push_back(item.uri);
+                continue;
+            }
+        }
+        if (isHighPixel && checkHighPixel && !context->supportedHighResolution) {
+            result.push_back(item.uri);
+            continue;
+        }
+        if (isHeifFile && checkHeif &&
+            find(context->supportedMimeTypes.begin(), context->supportedMimeTypes.end(), "image/heic") ==
+            context->supportedMimeTypes.end()) {
+            result.push_back(item.uri);
+            continue;
+        }
+    }
+}
+
+static vector<string> CheckTranscodeUri(MediaLibraryAsyncContext *context)
+{
+    vector<string> result;
+    bool checkHighPixel = (context->compatibleFlags & 0x1) != 0;
+    bool checkHeif = (context->compatibleFlags & 0x2) != 0;
+    if (context->preferredCompatibleMode ==
+        static_cast<int32_t>(TranscodeMode::CURRENT)) {
+        return result;
+    }
+    if (context->preferredCompatibleMode ==
+        static_cast<int32_t>(TranscodeMode::COMPATIBLE)) {
+        for (auto &item : context->photoAssetInfos) {
+            bool isHighPixel = item.width * item.height >= HIGH_PIXEL_SIZE;
+            size_t atDot = item.uri.find('.');
+            if (atDot == std::string::npos) {
+                continue;
+            }
+            std::string ext = item.uri.substr(atDot + 1);
+            bool isHeifFile = (ext == "heif" || ext == "heic");
+            if (!isHighPixel && !isHeifFile) {
+                continue;
+            }
+            result.push_back(item.uri);
+        }
+        return result;
+    }
+    HandleCheckTranscodeUri(context, checkHighPixel, checkHeif, result);
+    return result;
+}
+
+static void GetAssetCompatibleUrisCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAssetCompatibleUrisComplete");
+
+    MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    if (context->error != ERR_DEFAULT) {
+        context->HandleError(env, jsContext->error);
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    } else {
+        napi_value jsArray = nullptr;
+        CHECK_ARGS_RET_VOID(env, napi_create_array(env, &jsArray), JS_INNER_FAIL);
+
+        vector<string> res  = CheckTranscodeUri(context);
+
+        for (size_t i = 0; i < res.size(); i++) {
+            napi_value jsString = nullptr;
+            CHECK_ARGS_RET_VOID(env, napi_create_string_utf8(env, res[i].c_str(),
+                NAPI_AUTO_LENGTH, &jsString), JS_INNER_FAIL);
+            CHECK_ARGS_RET_VOID(env, napi_set_element(env, jsArray, i, jsString), JS_INNER_FAIL);
+        }
+
+        jsContext->data = jsArray;
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+        jsContext->status = true;
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaLibraryNapi::GetAssetCompatibleUris(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAssetCompatibleUris");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    NAPI_ASSERT(env, ParseArgsGetAssetCompatibleUris(env, info, asyncContext), "Failed to parse js args");
+
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetAssetCompatibleUris",
+        GetAssetCompatibleUrisExecute, GetAssetCompatibleUrisCallback);
 }
 } // namespace Media
 } // namespace OHOS

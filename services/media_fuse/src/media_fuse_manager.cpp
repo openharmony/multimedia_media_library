@@ -86,7 +86,6 @@ static constexpr int64_t MILLISECONDS_PER_SECOND = 1000LL;
 static constexpr int32_t HDC_FIRST_ARGS = 0;
 static constexpr int32_t HDC_SECOND_ARGS = 1;
 static constexpr int32_t HDC_THIRD_ARGS = 2;
-const int32_t HIGH_PIXEL_SIZE = 9 * 1024 * 12 * 1024;
 
 static const map<uint32_t, string> MEDIA_OPEN_MODE_MAP = {
     { O_RDONLY, MEDIA_FILEMODE_READONLY },

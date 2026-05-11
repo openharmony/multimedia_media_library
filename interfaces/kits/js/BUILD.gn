@@ -241,6 +241,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_INNERIMPL_PATH}/camera/src/media_asset_manager_adapter.cpp",
     "${MEDIALIB_JS_PATH}/src/report_event.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_rdbstore/src/rdbstore/media_upgrade.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/preferred_compatible_mode_check_utils.cpp",
   ]
 
   media_asset_service_vo_source = [

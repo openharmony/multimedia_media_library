@@ -78,6 +78,7 @@
 #include "media_edit_utils.h"
 #include "media_string_utils.h"
 #include "media_path_utils.h"
+#include "heif_transcoding_check_utils.h"
 
 using namespace OHOS::DataShare;
 using namespace std;
@@ -119,7 +120,6 @@ static const std::string ORIGIN_VIDEO_STR = "1";
 static const std::string CONTAIN_ADD_RESOURCE_FALSE = "0";
 static const std::string CONTAIN_ADD_RESOURCE_TRUE = "1";
 static const std::string IS_CAPTURE = "is_capture";
-static const int32_t HIGH_PIXEL_SIZE = 9 * 1024 * 12 * 1024;
 
 const int32_t PACKOPTION_QUALITY = 90;
 const int32_t PACKOPTION_QUALITY_HEIF = 95;

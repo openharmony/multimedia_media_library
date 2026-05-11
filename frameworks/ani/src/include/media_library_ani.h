@@ -301,6 +301,8 @@ public:
     static ani_object GetAssetCompatibleConfig(ani_env *env, ani_object object, ani_string bundleName);
     static ani_int GetAlbumIdByLpath(ani_env *env, ani_object object, ani_string lpath);
     static ani_object GetAlbumIdByBundleName(ani_env *env, ani_object object, ani_string bundleName);
+    static ani_object GetAssetCompatibleUris(ani_env *env, ani_object object,
+        ani_string bundleName, ani_object assets, ani_int compatibleFlags = 0);
 
 private:
     int32_t GetListenerType(const std::string &str) const;
@@ -336,6 +338,13 @@ struct PickerCallBack {
 };
 
 constexpr int32_t DEFAULT_PRIVATEALBUMTYPE = 3;
+
+struct PhotoAssetInfoAni {
+    int32_t width;
+    int32_t height;
+    std::string uri;
+    int32_t fileId;
+};
 
 struct MediaLibraryAsyncContext : public AniError {
     bool status;
@@ -417,6 +426,8 @@ struct MediaLibraryAsyncContext : public AniError {
     int32_t preferredCompatibleMode = 0;
     std::vector<std::string> supportedMimeTypes;
     std::string bundleName;
+    std::vector<PhotoAssetInfoAni> photoAssetInfos;
+    int32_t compatibleFlags = 0;
 };
 } // namespace Media
 } // namespace OHOS

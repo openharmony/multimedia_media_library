@@ -2662,6 +2662,7 @@ export namespace photoAccessHelper {
     getAssetCompatibleCapability(bundleName: string): Promise<AssetCompatibleCapability>;
     getAlbumIdByLpath(lpath: string): Promise<int>;
     getAlbumIdByBundleName(bundleName: string): Promise<int>;
+    getAssetCompatibleUris(bundleName: string, assets: Array<PhotoAsset>, compatibleFlags?: int): Promise<string[]>;
   }
 
   interface AppInfo {
@@ -4075,6 +4076,31 @@ export namespace photoAccessHelper {
       });
     });
   }
+    getAssetCompatibleUris(bundleName: string, assets: Array<PhotoAsset>, compatibleFlags?: int): Promise<string[]> {
+      return new Promise<string[]>((resolve: (v: string[]) => void, reject: RejectString) => {
+        let cb = (): string[] | MediaLibraryAniError => {
+          let result: string[] | MediaLibraryAniError;
+          try {
+            result = this.getAssetCompatibleUrisInner(bundleName, assets, compatibleFlags);
+          } catch(e) {
+            result = e as MediaLibraryAniError;
+          }
+          return result;
+        };
+        taskpool.execute(cb).then((ret: Any): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code as int, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as string[]);
+            }
+          }
+        });
+      });
+    }
 
     native startThumbnailCreationTask(predicate: dataSharePredicates.DataSharePredicates,
       callback: AsyncCallback<void>): int;
@@ -4146,6 +4172,7 @@ export namespace photoAccessHelper {
     native getAssetCompatibleConfigInner(bundleName: string): AssetCompatibleCapability;
     native getAlbumIdByLpathInner(lpath: string): int;
     native getAlbumIdByBundleNameInner(bundleName: string): int;
+    native getAssetCompatibleUrisInner(bundleName: string, assets: Array<PhotoAsset>, compatibleFlags?: int): string[];
   }
 
   export interface AssetCompatibleCapability {
