@@ -16049,25 +16049,25 @@ static napi_value ParseArgsGetAssetCompatibleUris(napi_env env, napi_callback_in
     constexpr size_t minArgs = ARGS_TWO;
     constexpr size_t maxArgs = ARGS_THREE;
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
-        JS_ERR_PARAMETER_INVALID);
+        JS_E_PARAM_INVALID);
 
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO],
-        context->bundleName), JS_ERR_PARAMETER_INVALID);
-    CHECK_COND_WITH_ERR_MESSAGE(env, !context->bundleName.empty(), JS_ERR_PARAMETER_INVALID, "invalid bundleName");
+        context->bundleName), JS_E_PARAM_INVALID);
+    CHECK_COND_WITH_ERR_MESSAGE(env, !context->bundleName.empty(), JS_E_PARAM_INVALID, "invalid bundleName");
 
     bool isArray = false;
-    CHECK_ARGS(env, napi_is_array(env, context->argv[ARGS_ONE], &isArray), JS_ERR_PARAMETER_INVALID);
-    CHECK_COND_WITH_ERR_MESSAGE(env, isArray, JS_ERR_PARAMETER_INVALID, "assets must be an array");
+    CHECK_ARGS(env, napi_is_array(env, context->argv[ARGS_ONE], &isArray), JS_E_PARAM_INVALID);
+    CHECK_COND_WITH_ERR_MESSAGE(env, isArray, JS_E_PARAM_INVALID, "assets must be an array");
 
     uint32_t len = 0;
-    CHECK_ARGS(env, napi_get_array_length(env, context->argv[ARGS_ONE], &len), JS_ERR_PARAMETER_INVALID);
+    CHECK_ARGS(env, napi_get_array_length(env, context->argv[ARGS_ONE], &len), JS_E_PARAM_INVALID);
 
     for (uint32_t i = 0; i < len; i++) {
         napi_value item = nullptr;
-        CHECK_ARGS(env, napi_get_element(env, context->argv[ARGS_ONE], i, &item), JS_ERR_PARAMETER_INVALID);
+        CHECK_ARGS(env, napi_get_element(env, context->argv[ARGS_ONE], i, &item), JS_E_PARAM_INVALID);
 
         FileAssetNapi *obj = nullptr;
-        CHECK_ARGS(env, napi_unwrap(env, item, reinterpret_cast<void **>(&obj)), JS_ERR_PARAMETER_INVALID);
+        CHECK_ARGS(env, napi_unwrap(env, item, reinterpret_cast<void **>(&obj)), JS_E_PARAM_INVALID);
         CHECK_NULLPTR_RET(obj);
 
         PhotoAssetInfo info;
@@ -16081,14 +16081,14 @@ static napi_value ParseArgsGetAssetCompatibleUris(napi_env env, napi_callback_in
 
     if (context->argc >= ARGS_THREE) {
         CHECK_ARGS(env, MediaLibraryNapiUtils::GetInt32(env, context->argv[ARGS_THREE],
-            context->compatibleFlags), JS_ERR_PARAMETER_INVALID);
+            context->compatibleFlags), JS_E_PARAM_INVALID);
         constexpr int32_t VALID_FLAGS_MASK = 0x3;
         CHECK_COND_WITH_ERR_MESSAGE(env, (context->compatibleFlags & ~VALID_FLAGS_MASK) == 0,
-            JS_ERR_PARAMETER_INVALID, "invalid compatibleFlags");
+            JS_E_PARAM_INVALID, "invalid compatibleFlags");
     }
 
     napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
     return result;
 }
 
@@ -16199,25 +16199,25 @@ static void GetAssetCompatibleUrisCallback(napi_env env, napi_status status, voi
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
     if (context->error != ERR_DEFAULT) {
         context->HandleError(env, jsContext->error);
-        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
     } else {
         napi_value jsArray = nullptr;
-        CHECK_ARGS_RET_VOID(env, napi_create_array(env, &jsArray), JS_INNER_FAIL);
+        CHECK_ARGS_RET_VOID(env, napi_create_array(env, &jsArray), JS_E_INNER_FAIL);
 
         vector<string> res  = CheckTranscodeUri(context);
 
         for (size_t i = 0; i < res.size(); i++) {
             napi_value jsString = nullptr;
             CHECK_ARGS_RET_VOID(env, napi_create_string_utf8(env, res[i].c_str(),
-                NAPI_AUTO_LENGTH, &jsString), JS_INNER_FAIL);
-            CHECK_ARGS_RET_VOID(env, napi_set_element(env, jsArray, i, jsString), JS_INNER_FAIL);
+                NAPI_AUTO_LENGTH, &jsString), JS_E_INNER_FAIL);
+            CHECK_ARGS_RET_VOID(env, napi_set_element(env, jsArray, i, jsString), JS_E_INNER_FAIL);
         }
 
         jsContext->data = jsArray;
-        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
         jsContext->status = true;
     }
 
