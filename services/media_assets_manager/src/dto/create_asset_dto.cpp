@@ -40,6 +40,12 @@ CreateAssetDto::CreateAssetDto(const CreateAssetForAppReqBody &reqBody)
     this->ownerAlbumId = reqBody.ownerAlbumId;
 }
 
+CreateAssetDto::CreateAssetDto(const CreateFileMgrAssetReqBody &reqBody)
+{
+    this->displayName = reqBody.displayName;
+    this->ownerAlbumId = reqBody.ownerAlbumId;
+}
+
 CreateAssetRespBody CreateAssetDto::GetRespBody()
 {
     CreateAssetRespBody respBody;

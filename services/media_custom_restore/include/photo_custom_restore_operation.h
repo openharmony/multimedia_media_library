@@ -67,6 +67,7 @@ struct FileInfo {
     int32_t movingPhotoEffectMode;
     std::string frontCamera;
     std::string shootingMode;
+    int32_t albumId;
 };
 
 struct UniqueNumber {

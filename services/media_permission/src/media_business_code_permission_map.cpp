@@ -97,6 +97,8 @@ std::unordered_set<uint32_t> PermissionCheck::deprecatedWritePermissionSet = {
     static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CLOSE_ASSET),
     static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CUSTOM_RESTORE),
     static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CUSTOM_RESTORE_CANCEL),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CREATE_FILE_MANAGER_ASSET),
+
     // albums start
     static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ALBUM),
     static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_DELETE_PHOTO_ALBUMS),

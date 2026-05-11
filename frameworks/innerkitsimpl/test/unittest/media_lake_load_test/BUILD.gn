@@ -23,46 +23,65 @@ ohos_unittest("media_lake_load_test") {
   module_out_path = "media_library/media_library_asset"
   include_dirs = [
     "./include",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_file_monitor/include",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/include",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_scanner/include",
+    "../medialibrary_unittest_utils/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/common/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/lake/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/file_manager/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/include",
   ]
 
   cflags = [ "-fno-access-control" ]
 
   media_lake_scanner_source = [
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_scanner/src/folder_scanner.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_scanner/src/folder_scanner_utils.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_scanner/src/global_scanner.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_scanner/src/file_scanner.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_scanner/src/folder_scanner_helper.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_scanner/src/media_lake_check_manager.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_scanner/src/media_lake_check.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/src/lake_check_scenario.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/src/lake_file_operations.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/src/lake_file_parser.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/src/lake_file_scanner.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/src/lake_folder_parser.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/src/lake_scan_policy.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/src/media_lake_check.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/src/media_lake_check_manager.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/src/product_info.cpp",
   ]
-
-  media_load_lake_source = [
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/src/file_parser.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/src/lake_file_utils.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/src/folder_parser.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/src/lake_file_operations.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/src/product_info.cpp",
+  media_lake_only_file_monitor_source = [
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/lake/src/media_delete_lake_dir_processor.cpp",
   ]
-
-  media_lake_file_monitor_source = [
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_file_monitor/src/file_monitor_wrapper.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_file_monitor/src/media_delete_dir_processor.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_file_monitor/src/media_delete_file_processor.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_file_monitor/src/media_file_change_manager.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_file_monitor/src/media_file_change_processor.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_file_monitor/src/media_file_notify_processor.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_file_monitor/src/media_lake_clone_event_manager.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_file_monitor/src/media_lake_monitor_rdb_utils.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_file_monitor/src/media_delete_lake_dir_processor.cpp",
-  ]
-
   media_lake_file_handle_source = [
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_lake_file_handler.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/lake_file_handler.cpp"
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/lake_file_handler.cpp",
+  ]
+  media_file_scan_common_source = [
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/check_dfx_collector.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/check_scene_helper.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/check_status_helper.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/consistency_check_data_types.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/consistency_check_manager.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/file_parser.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/file_scanner.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/file_scan_utils.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/folder_parser.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/folder_scanner.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/folder_scanner_helper.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/folder_scanner_utils.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/global_scanner.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/file_manager_scan_rule_config.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/lake_scan_rule_config.cpp",
+  ]
+  media_file_monitor_source = [
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/common/src/file_monitor_wrapper.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/common/src/media_file_change_manager.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/common/src/media_file_change_processor.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/common/src/media_file_notify_processor.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/common/src/media_file_monitor_rdb_utils.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/common/src/media_lake_clone_event_manager.cpp",
+  ]
+  media_file_manager_scan_source = [
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/file_manager/src/file_manager_check_scenario.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/file_manager/src/file_manager_folder_parser.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/file_manager/src/file_manager_parser.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/file_manager/src/file_manager_scanner.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/file_manager/src/file_manager_scan_policy.cpp",
   ]
 
   sources = [
@@ -70,14 +89,17 @@ ohos_unittest("media_lake_load_test") {
     "./src/global_scanner_test.cpp",
     "./src/lake_file_operations_test.cpp",
     "./src/file_parser_test.cpp",
+    "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_anco_manager.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_reporter.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
   ]
   sources += media_lake_scanner_source
-  sources += media_load_lake_source
-  sources += media_lake_file_monitor_source
+  sources += media_lake_only_file_monitor_source
   sources += media_lake_file_handle_source
+  sources += media_file_scan_common_source
+  sources += media_file_monitor_source
+  sources += media_file_manager_scan_source
  
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
@@ -89,6 +111,7 @@ ohos_unittest("media_lake_load_test") {
     "ability_base:base",
     "ability_base:want",
     "ability_base:zuri",
+    "ability_runtime:ability_connect_callback_stub",
     "ability_runtime:ability_manager",
     "ability_runtime:app_context",
     "ability_runtime:app_manager",

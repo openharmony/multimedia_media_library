@@ -559,6 +559,16 @@ void FileAsset::SetHidden(bool isHidden)
     member_[MediaColumn::MEDIA_HIDDEN] = isHidden;
 }
 
+bool FileAsset::IsFileHidden() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_FILE_HIDDEN);
+}
+
+void FileAsset::SetFileHidden(bool isFileHidden)
+{
+    member_[PhotoColumn::PHOTO_FILE_HIDDEN] = isFileHidden;
+}
+
 const std::string &FileAsset::GetAllExif() const
 {
     return GetStrMember(PhotoColumn::PHOTO_ALL_EXIF);

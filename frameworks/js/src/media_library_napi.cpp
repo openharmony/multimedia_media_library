@@ -111,7 +111,7 @@
 #include "stop_active_analysis_vo.h"
 #include "check_db_availability_vo.h"
 #include "userfilemgr_uri.h"
-
+#include "convert_to_asset_vo.h"
 #include "parcel.h"
 #include "medialibrary_notify_utils.h"
 #include "qos.h"
@@ -127,6 +127,15 @@
 #include "media_upgrade.h"
 #include "media_string_utils.h"
 #include "preferred_compatible_mode_check_utils.h"
+#include "photo_file_utils.h"
+#include "change_request_move_assets_to_dir_vo.h"
+#include "change_request_move_assets_by_path_vo.h"
+#include "asset_cancel_task_vo.h"
+#include "progress_observer_manager.h"
+#include "media_progress_change_info.h"
+#include "task_signal_napi.h"
+#include "progress_callback_observer.h"
+#include "medialibrary_errno.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -158,6 +167,19 @@ const size_t MAX_TAB_OLD_PHOTOS_URI_COUNT = 100;
 const size_t MAX_TAB_OLD_ALBUMS_URI_COUNT = 100;
 const int32_t BETA_ISSUE_ID_LENGTH = 10;
 const int32_t MAX_FILE_FD = 1023;
+const std::string TARGET_DIR = "/storage/media/local/files";
+const int32_t MAX_ASSETS_NUMBER = 200;
+const std::string DOCS_DIR = "/Docs/";
+const std::string DOCS_DIR_PRE = "/Docs";
+const std::string FILE_MANAGEMENT_PREFIX = "/storage/media/local/files";
+const std::string MEDIA_PROGRESS_REGISTER_PREFIX = "datashare:///media/custom_progress/";
+const std::unordered_set<std::string> FILE_MANAGER_EXCLUDED_DIR_NAMES = {
+    "HO_DATA_EXT_MISC",
+    ".thumbs",
+    ".Recent",
+    ".backup",
+    ".Trash",
+};
 
 enum class PhotoPermissionState : int32_t {
     URI_FORMAT_ERROR = 0,
@@ -183,9 +205,13 @@ string ChangeListenerNapi::trashAlbumUri_;
 int32_t ChangeListenerNapi::trashAlbumUserId_ = -1;
 std::mutex ChangeListenerNapi::trashMutex_;
 static std::once_flag g_prewarmTrashOnce;
-mutex MediaLibraryNapi::thumbnailMutex_;
+
+// 全局map：requestId -> 进度监听类型
+static std::unordered_map<int32_t, Notification::NotifyForUserDefineType> g_moveAssetsProgressMap;
+static std::mutex g_moveAssetsProgressMutex;
 ReportEvent MediaLibraryNapi::getPhotoAccessHelperEvent_;
 ReportEvent MediaLibraryNapi::registerChangeEvent_;
+mutex MediaLibraryNapi::thumbnailMutex_;
 
 static void PrewarmTrashAlbumUriAsync()
 {
@@ -555,6 +581,10 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("onAnalysisAlbumChange", AnalysisAlbumAccessRegisterCallback),
             DECLARE_NAPI_FUNCTION("offAnalysisAlbumChange", AnalysisAlbumAccessUnregisterCallback),
             DECLARE_NAPI_FUNCTION("isMediaDataReady", QueryMediaDataReady),
+			DECLARE_NAPI_FUNCTION("convertToAsset", JSConvertToAsset),
+            DECLARE_NAPI_FUNCTION("cloneToAlbum", JSCloneToAlbum),
+            DECLARE_NAPI_FUNCTION("cloneToDir", JSCloneToDir),
+            DECLARE_NAPI_FUNCTION("cloneAssetsByPath", JSCloneAssetsByPath),
             DECLARE_NAPI_FUNCTION("setAssetCompatibleCapability", PhotoAccessHelperSetFileCompatibleConfig),
             DECLARE_NAPI_FUNCTION("getAssetCompatibleCapability", PhotoAccessHelperGetAssetCompatibleConfig),
             DECLARE_NAPI_FUNCTION("setPreferredCompatibleMode", PhotoAccessHelperSetPreferredCompatibleMode),
@@ -562,6 +592,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("onMedialibraryAvailability", AvailabilityRegisterCallback),
             DECLARE_NAPI_FUNCTION("offMedialibraryAvailability", AvailabilityUnregisterCallback),
             DECLARE_NAPI_FUNCTION("getAssetCompatibleUris", GetAssetCompatibleUris),
+            DECLARE_NAPI_FUNCTION("moveAssetsToDir", MoveAssetsToDir),
+            DECLARE_NAPI_FUNCTION("moveAssetsByPath", MoveAssetsByPath),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -7567,7 +7599,7 @@ void MediaLibraryNapi::OnThumbnailGenerated(napi_env env, napi_value cb, void *c
     }
 }
 
-static int32_t AssignRequestId()
+int32_t MediaLibraryNapi::AssignRequestId()
 {
     return ++requestIdCounter_;
 }
@@ -16246,6 +16278,710 @@ napi_value MediaLibraryNapi::GetAssetCompatibleUris(napi_env env, napi_callback_
     SetUserIdFromObjectInfo(asyncContext);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetAssetCompatibleUris",
         GetAssetCompatibleUrisExecute, GetAssetCompatibleUrisCallback);
+}
+
+static napi_value ParseConvertToAsset(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_ONE;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_ERR_PARAMETER_INVALID);
+
+    string path;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], path),
+        JS_ERR_PARAMETER_INVALID);
+    context->path = path;
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void ConvertToAssetExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("ConvertToAssetExecute");
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    ConvertToAssetReqBody reqBody;
+    ConvertToAssetRespBody respBody;
+    reqBody.path = context->path;
+    NAPI_INFO_LOG("ConvertToAssetExecute  path: %{public}s", reqBody.path.c_str());
+    int32_t ret = IPC::UserDefineIPCClient().Call(context->businessCode, reqBody, respBody);
+    if (ret < 0 || respBody.resultSet == nullptr) {
+        NAPI_ERR_LOG("UserDefineIPCClient().Call failed, ret: %{public}d", ret);
+        context->SaveError(ret);
+        return;
+    }
+    auto fetchResult = make_unique<FetchResult<FileAsset>>(move(respBody.resultSet));
+    if (fetchResult == nullptr) {
+        context->SaveError(E_FAIL);
+        NAPI_ERR_LOG("fetchResult is null");
+        return;
+    }
+    context->fileAsset = fetchResult->GetFirstObject();
+}
+
+static void JSConvertToAssetCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSConvertToAssetCompleteCallback");
+    NAPI_INFO_LOG("JSConvertToAssetCompleteCallback");
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    if (context->error == ERR_DEFAULT) {
+        NAPI_INFO_LOG("JSConvertToAssetCompleteCallback sucess");
+        if (context->fileAsset == nullptr) {
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+                "Obtain file asset failed");
+            napi_get_undefined(env, &jsContext->data);
+        } else {
+            napi_value jsFileAsset = nullptr;
+            std::unique_ptr<FileAsset> fileAsset = std::move(context->fileAsset);
+            std::string fileAssetUri = MediaFileUtils::GetFileAssetUri(fileAsset->GetPath(), fileAsset->GetDisplayName(),
+                fileAsset->GetId());
+            fileAsset->SetUri(fileAssetUri);
+            CHECK_NULL_PTR_RETURN_VOID(fileAsset, "fileAsset is null.");
+            NAPI_INFO_LOG("JSConvertToAssetCompleteCallback sucess path:%{public}s, id:%{public}d, displayName:%{public}s", fileAsset->GetPath().c_str(), fileAsset->GetId(), fileAsset->GetDisplayName().c_str());
+            fileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+            std::shared_ptr<FileAsset> sharedFileAsset = std::move(fileAsset);
+            jsFileAsset = FileAssetNapi::CreatePhotoAsset(env, sharedFileAsset);
+            if (jsFileAsset == nullptr) {
+                NAPI_ERR_LOG("Failed to clone file napi object");
+                napi_get_undefined(env, &jsContext->data);
+                MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, JS_INNER_FAIL, "System inner fail");
+            } else {
+                NAPI_DEBUG_LOG("JSCreateAssetCompleteCallback jsFileAsset != nullptr");
+                jsContext->data = jsFileAsset;
+                napi_get_undefined(env, &jsContext->error);
+                jsContext->status = true;
+            }
+        }
+    } else {
+        NAPI_INFO_LOG("JSConvertToAssetCompleteCallback error");
+        context->HandleError(env, jsContext->error);
+        NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->data));
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} End convert to asset.",
+        MLOG_TAG, __FUNCTION__, __LINE__);
+    delete context;
+}
+
+napi_value MediaLibraryNapi::JSConvertToAsset(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSConvertToAsset");
+    NAPI_INFO_LOG("JSConvertToAsset");
+    HILOG_COMM_INFO("%{public}s:{%{public}s:%{public}d} enter", MLOG_TAG, __FUNCTION__, __LINE__);
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    asyncContext->assetType = TYPE_PHOTO;
+    NAPI_ASSERT(env, ParseConvertToAsset(env, info, asyncContext), "Failed to parse js args");
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_TO_ASSET);
+    CHECK_COND_WITH_ERR_MESSAGE(env, !asyncContext->path.empty(), JS_E_PARAM_INVALID, "path is empty");
+    //判断目标路径为文管公共目录
+    std::string targetPath = TARGET_DIR + asyncContext->path;
+    CHECK_COND_WITH_ERR_MESSAGE(env, PhotoFileUtils::CheckFileManagerRealPath(targetPath),
+        JS_E_PARAM_INVALID, "DirPath is error");
+    asyncContext->path = targetPath;
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSConvertToAsset",
+        ConvertToAssetExecute, JSConvertToAssetCompleteCallback);
+}
+
+bool CheckFileManagerRealPath(const std::string &path)
+{
+    MEDIA_INFO_LOG("CheckFileManagerRealPath path: %{public}s", MediaFileUtils::DesensitizePath(path).c_str());
+    const std::string specialChar = "//";
+    CHECK_AND_RETURN_RET(MediaStringUtils::StartsWith(path, DOCS_DIR) || path.find(specialChar) != std::string::npos, false);
+    size_t pos = path.find("/", DOCS_DIR.length());
+    std::string subDirName = (pos == std::string::npos) ?
+        path.substr(DOCS_DIR.length()) : path.substr(DOCS_DIR.length(), pos - DOCS_DIR.length());
+    return FILE_MANAGER_EXCLUDED_DIR_NAMES.count(subDirName) == 0;
+}
+
+bool CheckGalleryRealPath(const std::string &uri)
+{
+    MEDIA_DEBUG_LOG("CheckGalleryRealPath uri: %{public}s", MediaFileUtils::DesensitizeUri(uri).c_str());
+    CHECK_AND_RETURN_RET(!uri.empty(), false);
+    CHECK_AND_RETURN_RET(MediaStringUtils::StartsWith(uri, "file://media/"), false);
+    return true;
+}
+
+static void ProgressCallback(napi_env env, napi_value cb, void *context, void *data)
+{
+    auto *progressData = static_cast<ProgressData *>(data);
+    if (progressData == nullptr) {
+        return;
+    }
+
+    napi_value undefined = nullptr;
+    napi_get_undefined(env, &undefined);
+
+    napi_value progressObj;
+    napi_create_object(env, &progressObj);
+
+    napi_value processedValue;
+    napi_create_int64(env, progressData->processed, &processedValue);
+    napi_set_named_property(env, progressObj, "processed", processedValue);
+
+    napi_value remainValue;
+    napi_create_int64(env, progressData->remain, &remainValue);
+    napi_set_named_property(env, progressObj, "remain", remainValue);
+
+    if (cb != nullptr) {
+        napi_call_function(env, undefined, cb, 1, &progressObj, nullptr);
+    }
+
+    delete progressData;
+}
+
+static void GenerateStringArrayValue(napi_env &env, const std::vector<std::string> &result, const size_t len,
+    napi_value &value)
+{
+    if (len == 0) {
+        return;
+    }
+    
+    NapiScopeHandler scopeHandler(env);
+    CHECK_IF_EQUAL(scopeHandler.IsValid(), "scopeHandler is nullptr");
+    
+    CHECK_ARGS_RET_VOID(env, napi_create_array_with_length(env, len, &value), JS_INNER_FAIL); // set array length
+
+    for (size_t i = 0; i < len; ++i) {
+        // create string value and set it as array element
+        napi_value element = nullptr;
+        CHECK_ARGS_RET_VOID(env, napi_create_string_utf8(env, result[i].c_str(), NAPI_AUTO_LENGTH, &element),
+            JS_INNER_FAIL);
+
+        if ((element == nullptr) || (napi_set_element(env, value, i, element) != napi_ok)) {
+            NAPI_ERR_LOG("Failed to set element %{public}s to array.", result[i].c_str());
+            break;
+        }
+    }
+}
+
+static void ResultCallback(napi_env env, napi_value cb, void *context, void *data)
+{
+    auto *resultData = static_cast<ResultInfo *>(data);
+    if (resultData == nullptr) {
+        return;
+    }
+
+    napi_value undefined = nullptr;
+    napi_get_undefined(env, &undefined);
+
+    napi_value resultObj;
+    napi_create_object(env, &resultObj);
+
+    napi_value codeValue;
+    napi_create_int32(env, resultData->code, &codeValue);
+    napi_set_named_property(env, resultObj, "code", codeValue);
+
+    size_t len = resultData->result.size();
+    if (len > 0) {
+        napi_value resultValue = nullptr;
+        GenerateStringArrayValue(env, resultData->result, len, resultValue);
+ 
+        CHECK_ARGS_RET_VOID(env,
+                            napi_set_named_property(env, resultObj, "result", resultValue),
+                            JS_INNER_FAIL);
+    } else {
+        NAPI_ERR_LOG("authorizedUris size is zero.");
+    }
+
+    if (cb != nullptr) {
+        napi_call_function(env, undefined, cb, 1, &resultObj, nullptr);
+    }
+
+    delete resultData;
+}
+
+static napi_value ParseAssetsArray(napi_env env, napi_value arg, std::vector<std::string> &assetArray)
+{
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetStringArray(env, arg, assetArray), JS_E_PARAM_INVALID);
+    constexpr size_t sizeOfArray = 0;
+    if (assetArray.size() > MAX_ASSETS_NUMBER || assetArray.size() == sizeOfArray) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "size of assets is 0 or over 20.");
+        return nullptr;
+    }
+
+    for (const auto &asset : assetArray) {
+        CHECK_COND_WITH_ERR_MESSAGE(env, !asset.empty(), JS_E_PARAM_INVALID, "asset is empty");
+        CHECK_COND_WITH_ERR_MESSAGE(env, CheckGalleryRealPath(asset),
+            JS_E_PARAM_INVALID, "asset is error");
+    }
+    RETURN_NAPI_TRUE(env);
+}
+
+static napi_value ParseTargetDir(napi_env env, napi_value arg, std::string &targetDir)
+{
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, arg, targetDir), JS_E_PARAM_INVALID);
+    CHECK_COND_WITH_ERR_MESSAGE(env, !targetDir.empty(), JS_E_PARAM_INVALID, "targetDir is empty");
+    CHECK_COND_WITH_ERR_MESSAGE(env, CheckFileManagerRealPath(targetDir),
+        JS_E_PARAM_INVALID, "targetDir is error");
+    targetDir = FILE_MANAGEMENT_PREFIX + targetDir;
+    RETURN_NAPI_TRUE(env);
+}
+
+static napi_status ParseBatchOperationOptions(napi_env env, napi_value option, napi_threadsafe_function &onSizeProgress,
+    napi_threadsafe_function &onCountProgress, napi_threadsafe_function &onResultProcess)
+{
+    napi_value sizeProgressHandler = nullptr;
+    napi_valuetype valueType;
+    napi_status status = napi_get_named_property(env, option, "sizeProgressListener", &sizeProgressHandler);
+    if (status == napi_ok && sizeProgressHandler != nullptr) {
+        status = napi_typeof(env, sizeProgressHandler, &valueType);
+        if (status == napi_ok && valueType == napi_function) {
+            napi_value resource;
+            napi_create_string_utf8(env, "MoveAssetsToDirSizeProgress", NAPI_AUTO_LENGTH, &resource);
+            status = napi_create_threadsafe_function(env, sizeProgressHandler, nullptr,
+                resource, 0, 1, nullptr, nullptr, nullptr, ProgressCallback, &onSizeProgress);
+            CHECK_AND_RETURN_RET_LOG(status == napi_ok, status, "Failed to create onSizeProgress threadsafe function");
+        }
+    }
+
+    napi_value countProgressHandler = nullptr;
+    status = napi_get_named_property(env, option, "countProgressListener", &countProgressHandler);
+    if (status == napi_ok && countProgressHandler != nullptr) {
+        status = napi_typeof(env, countProgressHandler, &valueType);
+        if (status == napi_ok && valueType == napi_function) {
+            napi_value resource;
+            napi_create_string_utf8(env, "MoveAssetsToDirCountProgress", NAPI_AUTO_LENGTH, &resource);
+            status = napi_create_threadsafe_function(env, countProgressHandler, nullptr,
+                resource, 0, 1, nullptr, nullptr, nullptr, ProgressCallback, &onCountProgress);
+            CHECK_AND_RETURN_RET_LOG(status == napi_ok, status, "Failed to create onCountProgress threadsafe function");
+        }
+    }
+
+    napi_value onResultHandler = nullptr;
+    status = napi_get_named_property(env, option, "resultListener", &onResultHandler);
+    if (status == napi_ok && onResultHandler != nullptr) {
+        status = napi_typeof(env, onResultHandler, &valueType);
+        if (status == napi_ok && valueType == napi_function) {
+            napi_value resource;
+            napi_create_string_utf8(env, "MoveAssetsToDirResultProcess", NAPI_AUTO_LENGTH, &resource);
+            status = napi_create_threadsafe_function(env, onResultHandler, nullptr,
+                resource, 0, 1, nullptr, nullptr, nullptr, ResultCallback, &onResultProcess);
+            CHECK_AND_RETURN_RET_LOG(status == napi_ok, status, "Failed to create onResult threadsafe function");
+        }
+    }
+    return napi_ok;
+}
+
+template<typename RespBodyType>
+static void OnMoveTaskFinished(napi_env env, void *data, RespBodyType respBody)
+{
+    std::unordered_map<int32_t, int32_t> errorCodeMap = { {E_PATH_NOT_SUPPORT, 1},
+                                                          {E_FILE_NOT_EXIST, 2},
+                                                          {E_RENAME, 3},
+                                                          {E_MEDIA_TYPE, 4},
+                                                          {E_CANCEL_TASK, 5}};
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    if (context->onResultProcess != nullptr) {
+        int32_t code = (errorCodeMap.count(respBody.errCode) > 0) ? errorCodeMap[respBody.errCode] : 0;
+        auto *resultData = new ResultInfo{code, respBody.resultList};
+        napi_call_threadsafe_function(context->onResultProcess, resultData, napi_tsfn_nonblocking);
+    }
+    if (context->onSizeProgress != nullptr) {
+        auto *sizeProgressData = new ProgressData{respBody.processedSize, respBody.remainSize};
+        napi_call_threadsafe_function(context->onSizeProgress, sizeProgressData, napi_tsfn_nonblocking);
+    }
+    if (context->onCountProgress != nullptr) {
+        auto *countProgressData = new ProgressData{respBody.processedCount, respBody.remainCount};
+        napi_call_threadsafe_function(context->onCountProgress, countProgressData, napi_tsfn_nonblocking);
+    }
+    {
+        std::lock_guard<std::mutex> lock(g_moveAssetsProgressMutex);
+        g_moveAssetsProgressMap.erase(context->requestId);
+    }
+    TaskSignalNapi::UnregisterTaskCancelFlag(context->requestId);
+}
+
+static napi_value ParseArgsMoveAssetsToDir(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    constexpr size_t minArgs = ARGS_TWO;
+    constexpr size_t maxArgs = ARGS_THREE;
+    napi_status status = MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs);
+    CHECK_ARGS(env, status, JS_E_PARAM_INVALID);
+
+    std::vector<std::string> assetArray;
+    CHECK_NULLPTR_RET(ParseAssetsArray(env, context->argv[ARGS_ZERO], assetArray));
+    context->uriArray = assetArray;
+
+    std::string targetDir;
+    CHECK_NULLPTR_RET(ParseTargetDir(env, context->argv[ARGS_ONE], targetDir));
+    context->targetDir = targetDir;
+    if (context->argc == ARGS_THREE) {
+        napi_value option = context->argv[ARGS_TWO];
+        napi_valuetype valueType;
+        status = napi_typeof(env, option, &valueType);
+        CHECK_COND(env, status == napi_ok && valueType == napi_object, JS_E_PARAM_INVALID);
+        status = ParseBatchOperationOptions(env, option, context->onSizeProgress, context->onCountProgress,
+            context->onResultProcess);
+        CHECK_ARGS(env, status, JS_E_PARAM_INVALID);
+
+        TaskSignalNapi *taskSignalNative = nullptr;
+        napi_value taskSignal = nullptr;
+        status = napi_get_named_property(env, option, "taskSignal", &taskSignal);
+        if (status == napi_ok && taskSignal != nullptr) {
+            napi_valuetype valueType;
+            status = napi_typeof(env, taskSignal, &valueType);
+            if (status == napi_ok && valueType == napi_object) {
+                status = napi_unwrap(env, taskSignal, reinterpret_cast<void **>(&taskSignalNative));
+                CHECK_AND_RETURN_RET_LOG(status == napi_ok && taskSignalNative != nullptr, nullptr,
+                    "Failed to unwrap TaskSignalNapi");
+                status = napi_create_reference(env, taskSignal, 1, &context->taskSignalRef);
+                CHECK_AND_RETURN_RET_LOG(status == napi_ok, nullptr, "Failed to create taskSignal reference");
+            }
+        }
+        napi_value modeValue = nullptr;
+        if (napi_get_named_property(env, option, "mode", &modeValue) == napi_ok) {
+            CHECK_AND_RETURN_RET_LOG(MediaLibraryNapiUtils::GetInt32(env, modeValue, context->mode) == napi_ok,
+                nullptr, "fail to parse mode");
+        }
+        context->requestId = MediaLibraryNapi::AssignRequestId();
+        if (taskSignalNative != nullptr) {
+            taskSignalNative->SetRequestId(context->requestId);
+        }
+        auto cancelFlag = std::make_shared<std::atomic<bool>>(false);
+        TaskSignalNapi::RegisterTaskCancelFlag(context->requestId, cancelFlag);
+    }
+    return result;
+}
+
+static void MoveAssetsToDirExecute(napi_env env, void *data)
+{
+    NAPI_DEBUG_LOG("enter MoveAssetsToDirExecute");
+    MediaLibraryTracer tracer;
+    tracer.Start("MoveAssetsToDirExecute");
+    const std::string PROGRESS_TYPE = "MoveAssetsToDir";
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+
+    if (context->onSizeProgress != nullptr || context->onCountProgress != nullptr ||
+        context->onResultProcess != nullptr) {
+        auto observer = make_shared<ProgressCallbackObserver>(context->requestId,
+            context->onSizeProgress, context->onCountProgress);
+        std::string uriStr = MEDIA_PROGRESS_REGISTER_PREFIX + PROGRESS_TYPE + "/" + std::to_string(context->requestId);
+        Uri uri(uriStr);
+        int32_t ret = UserFileClient::RegisterObserverExtProvider(uri,
+            static_cast<shared_ptr<DataShare::DataShareObserver>>(observer), false);
+        if (ret != 0) {
+            context->SaveError(E_INNER_FAIL);
+            MEDIA_ERR_LOG("Failed to register observer, err: %{public}d", ret);
+        }
+        {
+            std::lock_guard<std::mutex> lock(g_moveAssetsProgressMutex);
+            g_moveAssetsProgressMap[context->requestId] = 
+                Notification::NotifyForUserDefineType::MOVE_ASSETS_TO_DIR_PROGRESS;
+        }
+    }
+
+    ChangeRequestMoveAssetsToDirReqBody reqBody;
+    ChangeRequestMoveAssetsToDirRespBody respBody;
+    reqBody.assets = context->uriArray;
+    reqBody.targetDir = context->targetDir;
+    reqBody.requestId = context->requestId;
+    int32_t ret = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::MOVE_ASSETS_TO_DIR),
+        reqBody, respBody);
+    context->uriArray = respBody.resultList;
+    OnMoveTaskFinished(env, data, respBody);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("Failed to move assets to dir, err: %{public}d", ret);
+        context->SaveMoveError(ret);
+        return;
+    }
+    NAPI_INFO_LOG("Move %{public}d assets to dir successfully", static_cast<int>(reqBody.assets.size()));
+    tracer.Finish();
+}
+
+static void MoveAssetsToDirCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MoveAssetsToDirCompleteCallback");
+
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+    if (status != napi_ok || context->error != ERR_DEFAULT) {
+        NAPI_ERR_LOG("MoveAssetsToDir failed, status: %{public}d, error: %{public}d", status, context->error);
+        context->HandleError(env, jsContext->error);
+    } else {
+        jsContext->status = true;
+        JSCreateUriArrayInCallback(env, context, jsContext);
+    }
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    if (context->onSizeProgress != nullptr) {
+        napi_release_threadsafe_function(context->onSizeProgress, napi_tsfn_release);
+    }
+    if (context->onCountProgress != nullptr) {
+        napi_release_threadsafe_function(context->onCountProgress, napi_tsfn_release);
+    }
+    if (context->onResultProcess != nullptr) {
+        napi_release_threadsafe_function(context->onResultProcess, napi_tsfn_release);
+    }
+    if (context->taskSignalRef != nullptr) {
+        napi_delete_reference(env, context->taskSignalRef);
+    }
+
+    NAPI_DEBUG_LOG("MediaLibraryNapi::MoveAssetsToDirCompleteCallback end");
+    delete context;
+}
+
+napi_value MediaLibraryNapi::MoveAssetsToDir(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MoveAssetsToDir");
+
+    NAPI_INFO_LOG("MoveAssetsToDir in");
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    CHECK_NULLPTR_RET(ParseArgsMoveAssetsToDir(env, info, asyncContext));
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::MOVE_ASSETS_TO_DIR);
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "MoveAssetsToDir",
+        MoveAssetsToDirExecute, MoveAssetsToDirCompleteCallback);
+}
+
+bool CheckFileManagementPath(const std::string &path)
+{
+    CHECK_AND_RETURN_RET_LOG(path.size() >= DOCS_DIR.size(), false, "invaild args");
+    return path.find(DOCS_DIR) != std::string::npos && path.substr(0, DOCS_DIR.length()) == DOCS_DIR;
+}
+
+static napi_value ParseAssetsDirArray(napi_env env, napi_value arg, std::vector<std::string> &assetPathArray)
+{
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetStringArray(env, arg, assetPathArray), JS_E_PARAM_INVALID);
+    constexpr size_t sizeOfArray = 0;
+    if (assetPathArray.size() > MAX_ASSETS_NUMBER || assetPathArray.size() == sizeOfArray) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "size of assets is 0 or over 20.");
+        return nullptr;
+    }
+
+    for (auto &asset : assetPathArray) {
+        CHECK_COND_WITH_ERR_MESSAGE(env, !asset.empty(), JS_E_PARAM_INVALID, "asset is empty");
+        CHECK_COND_WITH_ERR_MESSAGE(env, CheckFileManagementPath(asset),
+            JS_E_PARAM_INVALID, "asset is error");
+        asset = FILE_MANAGEMENT_PREFIX + asset;
+    }
+    RETURN_NAPI_TRUE(env);
+}
+
+static napi_value ParsePhotoAlbum(napi_env env, napi_value arg, shared_ptr<PhotoAlbum>& photoAlbum)
+{
+    napi_valuetype valueType;
+    PhotoAlbumNapi* photoAlbumNapi;
+    CHECK_ARGS(env, napi_typeof(env, arg, &valueType), JS_INNER_FAIL);
+    CHECK_COND_WITH_MESSAGE(env, valueType == napi_object, "Invalid argument type");
+    CHECK_ARGS(env, napi_unwrap(env, arg, reinterpret_cast<void**>(&photoAlbumNapi)), JS_INNER_FAIL);
+    CHECK_COND_WITH_MESSAGE(env, photoAlbumNapi != nullptr, "Failed to get PhotoAlbumNapi object");
+
+    auto photoAlbumPtr = photoAlbumNapi->GetPhotoAlbumInstance();
+    CHECK_COND_WITH_MESSAGE(env, photoAlbumPtr != nullptr, "photoAlbum is null");
+    CHECK_COND_WITH_MESSAGE(env,
+        photoAlbumPtr->GetResultNapiType() == ResultNapiType::TYPE_PHOTOACCESS_HELPER &&
+        PhotoAlbum::CheckPhotoAlbumType(photoAlbumPtr->GetPhotoAlbumType()) &&
+        PhotoAlbum::CheckPhotoAlbumSubType(photoAlbumPtr->GetPhotoAlbumSubType()),
+        "Unsupported type of photoAlbum");
+    photoAlbum = photoAlbumPtr;
+    RETURN_NAPI_TRUE(env);
+}
+
+static napi_value ParseArgsMoveAssetsByPath(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    napi_status status = MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, ARGS_TWO, ARGS_THREE);
+    CHECK_ARGS(env, status, JS_E_PARAM_INVALID);
+
+    std::vector<std::string> assetArray;
+    CHECK_NULLPTR_RET(ParseAssetsDirArray(env, context->argv[ARGS_ZERO], assetArray));
+    context->uriArray.swap(assetArray);
+
+    shared_ptr<PhotoAlbum> targetAlbum = nullptr;
+    CHECK_COND_WITH_MESSAGE(
+        env, ParsePhotoAlbum(env, context->argv[PARAM1], targetAlbum), "Failed to parse targetAlbum");
+    context->albumIds.push_back(std::to_string(targetAlbum->GetAlbumId()));
+    if (context->argc == ARGS_THREE) {
+        napi_value option = context->argv[ARGS_TWO];
+        napi_valuetype valueType;
+        status = napi_typeof(env, option, &valueType);
+        CHECK_COND(env, status == napi_ok && valueType == napi_object, JS_E_PARAM_INVALID);
+        status = ParseBatchOperationOptions(env, option, context->onSizeProgress, context->onCountProgress,
+            context->onResultProcess);
+        CHECK_ARGS(env, status, JS_E_PARAM_INVALID);
+
+        TaskSignalNapi *taskSignalNative = nullptr;
+        napi_value taskSignal = nullptr;
+        status = napi_get_named_property(env, option, "taskSignal", &taskSignal);
+        if (status == napi_ok && taskSignal != nullptr) {
+            napi_valuetype valueType;
+            status = napi_typeof(env, taskSignal, &valueType);
+            if (status == napi_ok && valueType == napi_object) {
+                status = napi_unwrap(env, taskSignal, reinterpret_cast<void **>(&taskSignalNative));
+                CHECK_AND_RETURN_RET_LOG(status == napi_ok && taskSignalNative != nullptr, nullptr,
+                    "Failed to unwrap TaskSignalNapi");
+                status = napi_create_reference(env, taskSignal, 1, &context->taskSignalRef);
+                CHECK_AND_RETURN_RET_LOG(status == napi_ok, nullptr, "Failed to create taskSignal reference");
+            }
+        }
+        napi_value modeValue = nullptr;
+        if (napi_get_named_property(env, option, "mode", &modeValue) == napi_ok) {
+            CHECK_AND_RETURN_RET_LOG(MediaLibraryNapiUtils::GetInt32(env, modeValue, context->mode) == napi_ok,
+                nullptr, "fail to parse mode");
+        }
+        context->requestId = MediaLibraryNapi::AssignRequestId();
+        if (taskSignalNative != nullptr) {
+            taskSignalNative->SetRequestId(context->requestId);
+        }
+        auto cancelFlag = std::make_shared<std::atomic<bool>>(false);
+        TaskSignalNapi::RegisterTaskCancelFlag(context->requestId, cancelFlag);
+    }
+    return result;
+}
+
+static void MoveAssetsByPathExecute(napi_env env, void *data)
+{
+    NAPI_DEBUG_LOG("enter MoveAssetsByPathExecute");
+    MediaLibraryTracer tracer;
+    tracer.Start("MoveAssetsByPathExecute");
+    const std::string PROGRESS_TYPE = "MoveAssetsByPath";
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+
+    if (context->onSizeProgress != nullptr || context->onCountProgress != nullptr ||
+        context->onResultProcess != nullptr) {
+        auto observer = make_shared<ProgressCallbackObserver>(context->requestId,
+            context->onSizeProgress, context->onCountProgress);
+
+        std::string uriStr = MEDIA_PROGRESS_REGISTER_PREFIX + PROGRESS_TYPE + "/" + std::to_string(context->requestId);
+        Uri uri(uriStr);
+        int32_t ret = UserFileClient::RegisterObserverExtProvider(uri,
+            static_cast<shared_ptr<DataShare::DataShareObserver>>(observer), false);
+        if (ret != 0) {
+            context->SaveError(E_INNER_FAIL);
+            MEDIA_ERR_LOG("Failed to register observer, err: %{public}d", ret);
+        }
+        {
+            std::lock_guard<std::mutex> lock(g_moveAssetsProgressMutex);
+            g_moveAssetsProgressMap[context->requestId] = 
+                Notification::NotifyForUserDefineType::MOVE_ASSETS_TO_DIR_PROGRESS;
+        }
+    }
+
+    ChangeRequestMoveAssetsByPathReqBody reqBody;
+    ChangeRequestMoveAssetsByPathRespBody respBody;
+    reqBody.assetPaths = context->uriArray;
+    reqBody.mode = context->mode;
+    CHECK_AND_RETURN_RET_LOG(context->albumIds.size() != 0, ," albumIds is invaild");
+    reqBody.targetAlbumId = context->albumIds[0];
+    reqBody.requestId = context->requestId;
+    int32_t ret = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::MOVE_ASSETS_BY_PATH), reqBody, respBody);
+    context->uriArray = respBody.resultList;
+    OnMoveTaskFinished(env, data, respBody);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("Failed to move assets by path, err: %{public}d", ret);
+        context->SaveMoveError(ret);
+        return;
+    }
+    NAPI_INFO_LOG("Move %{public}d assets to dir successfully", static_cast<int>(reqBody.assetPaths.size()));
+    tracer.Finish();
+}
+
+static void MoveAssetsByPathCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MoveAssetsByPathCompleteCallback");
+
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+    if (status != napi_ok || context->error != ERR_DEFAULT) {
+        NAPI_ERR_LOG("MoveAssetsByPath failed, status: %{public}d, error: %{public}d", status, context->error);
+        context->HandleError(env, jsContext->error);
+    } else {
+        JSCreateUriArrayInCallback(env, context, jsContext);
+        jsContext->status = true;
+    }
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    if (context->onSizeProgress != nullptr) {
+        napi_release_threadsafe_function(context->onSizeProgress, napi_tsfn_release);
+    }
+    if (context->onCountProgress != nullptr) {
+        napi_release_threadsafe_function(context->onCountProgress, napi_tsfn_release);
+    }
+    if (context->onResultProcess != nullptr) {
+        napi_release_threadsafe_function(context->onResultProcess, napi_tsfn_release);
+    }
+    if (context->taskSignalRef != nullptr) {
+        napi_delete_reference(env, context->taskSignalRef);
+    }
+
+    NAPI_DEBUG_LOG("MediaLibraryNapi::MoveAssetsByPathCompleteCallback end");
+    delete context;
+}
+
+napi_value MediaLibraryNapi::MoveAssetsByPath(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("MoveAssetsByPath in");
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    MediaLibraryTracer tracer;
+    tracer.Start("MoveAssetsByPath");
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    CHECK_NULLPTR_RET(ParseArgsMoveAssetsByPath(env, info, asyncContext));
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::MOVE_ASSETS_BY_PATH);
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "MoveAssetsByPath",
+        MoveAssetsByPathExecute, MoveAssetsByPathCompleteCallback);
 }
 } // namespace Media
 } // namespace OHOS

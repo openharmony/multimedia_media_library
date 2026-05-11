@@ -46,6 +46,31 @@ class MediaLibraryAniError extends BusinessError {
 }
 
 export namespace photoAccessHelper {
+  export interface Progress {
+    readonly processed: number;
+    readonly remain: number;
+  }
+
+  export interface ResultInfo {  
+    readonly code: int;
+    readonly result: Array<string|null>;
+  }
+
+  export type ProgressListener = (progress: Progress) => void;
+  export type ResultListener = (result: ResultInfo) => void;
+
+  export class TaskSignal {
+    native cancel(): void;
+  }
+
+  export interface BatchOperationOptions {
+    sizeProgressListener?: ProgressListener;
+    countProgressListener?: ProgressListener;
+    taskSignal?: TaskSignal;
+    resultListener?: ResultListener;
+    mode?: int;
+  }
+
   loadLibraryWithPermissionCheck("photo_access_helper_ani", "@ohos.file.photoAccessHelper");
   native function getPhotoAccessHelperInner(context: Context): PhotoAccessHelper | null;
   native function getPhotoAccessHelperWithUserIdInner(context: Context, userId: int): PhotoAccessHelper | null;
@@ -1605,6 +1630,7 @@ export namespace photoAccessHelper {
     DATE_ADDED_MONTH = 'date_added_month',
     DATE_ADDED_DAY = 'date_added_day',
     HIDDEN_TIME = "hidden_time",
+    FILE_HIDDEN = 'file_hidden',
   }
 
   export enum AlbumKeys {
@@ -1615,6 +1641,7 @@ export namespace photoAccessHelper {
     DATE_MODIFIED = 'date_modified',
     CHANGE_TIME = 'change_time',
     COVER_URI_SOURCE = 'cover_uri_source',
+    FILE_HIDDEN = 'file_hidden',
   }
 
   export enum HiddenPhotosDisplayMode {
@@ -2663,6 +2690,8 @@ export namespace photoAccessHelper {
     getAlbumIdByLpath(lpath: string): Promise<int>;
     getAlbumIdByBundleName(bundleName: string): Promise<int>;
     getAssetCompatibleUris(bundleName: string, assets: Array<PhotoAsset>, compatibleFlags?: int): Promise<string[]>;
+    moveAssetsToDir(assets: string[], target: string, option?: BatchOperationOptions): Promise<string[]>;
+    moveAssetsByPath(assets: string[], target: Album, options?: BatchOperationOptions): Promise<string[]>;
   }
 
   interface AppInfo {
@@ -4102,6 +4131,86 @@ export namespace photoAccessHelper {
       });
     }
 
+    convertToAsset(path: string): Promise<PhotoAsset> {
+      return new Promise<PhotoAsset>((resolve: (v: PhotoAsset) => void, reject: RejectString) => {
+        let cb = (): PhotoAsset | MediaLibraryAniError => {
+          let result: PhotoAsset | MediaLibraryAniError;
+          try {
+            result = this.convertToAssetInner(path);
+          } catch(e) {
+            result = e as MediaLibraryAniError;
+          }
+          return result;
+        };
+        taskpool.execute(cb).then((ret: Any): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code as int, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as PhotoAsset);
+            }
+          }
+        });
+      });
+    }
+
+    moveAssetsToDir(assets: string[], target: string, option?: BatchOperationOptions): Promise<string[]> {
+      return new Promise<string[]>((resolve: (v: string[]) => void, reject: RejectString) => {
+        let cb = (): string[] | MediaLibraryAniError => {
+          let result: string[] | MediaLibraryAniError;
+          try {
+            result = this.moveAssetsToDirInner(assets, target, option);
+          } catch (e) {
+            result = e as MediaLibraryAniError;
+          }
+          return result;
+        };
+
+        taskpool.execute(cb).then((ret: Any): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code as int, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as string[]);
+            }
+          }
+        });
+      });
+    }
+
+    moveAssetsByPath(assets: string[], target: Album, options?: BatchOperationOptions): Promise<string[]> {
+      return new Promise<string[]>((resolve: (v: string[]) => void, reject: RejectString) => {
+        let cb = (): string[] | MediaLibraryAniError => {
+          let result: string[] | MediaLibraryAniError;
+          try {
+            result = this.moveAssetsByPathInner(assets, target, options);
+          } catch (e) {
+            result = e as MediaLibraryAniError;
+          }
+          return result;
+        };
+
+        taskpool.execute(cb).then((ret: Any): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code as int, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as string[]);
+            }
+          }
+        });
+      });
+    }
+  
     native startThumbnailCreationTask(predicate: dataSharePredicates.DataSharePredicates,
       callback: AsyncCallback<void>): int;
     native startCreateThumbnailTask(predicate: dataSharePredicates.DataSharePredicates): int;
@@ -4173,6 +4282,9 @@ export namespace photoAccessHelper {
     native getAlbumIdByLpathInner(lpath: string): int;
     native getAlbumIdByBundleNameInner(bundleName: string): int;
     native getAssetCompatibleUrisInner(bundleName: string, assets: Array<PhotoAsset>, compatibleFlags?: int): string[];
+    native convertToAssetInner(path: string): PhotoAsset;
+    native moveAssetsToDirInner(assets: string[], targetDir: string, options?: BatchOperationOptions): string[];
+    native moveAssetsByPathInner(assets: string[], target: Album, option?: BatchOperationOptions): string[];
   }
 
   export interface AssetCompatibleCapability {
@@ -4452,6 +4564,8 @@ export namespace photoAccessHelper {
     native setUserComment(userComment: string): void;
     native setLocation(longitude: double, latitude: double): void;
     native setTitle(title: string): void;
+    native setHiddenAttribute(hiddenState: boolean): void;
+    native setDisplayNameByFile(name: string): void;
 
     native setEditData(editData: MediaAssetEditData): void;
 
@@ -4678,6 +4792,10 @@ export namespace photoAccessHelper {
     native removeAssets(assets: Array<PhotoAsset>): void;
 
     native operateAttribute(operation: AlbumOperation): void;
+
+    native setHiddenAttribute(hiddenState: boolean, inherited: boolean): void;
+
+    native setAlbumNameByFile(name: string): void;
 
     private create(context: long): void {
       if (this.nativeHandle == 0) {

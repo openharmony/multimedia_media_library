@@ -23,6 +23,7 @@
 #include "photos_po.h"
 #include "cloud_media_define.h"
 #include "dfx_transcode.h"
+#include "medialibrary_album_fusion_utils.h"
 
 namespace OHOS::Media {
 using namespace OHOS::Media::ORM;
@@ -37,6 +38,9 @@ private:
         std::string videoFilePath;
         std::string editDataFolder;
         std::string thumbnailFolder;
+        std::function<void(uint64_t)> progressCallback = nullptr;
+        std::string requestId = "";
+        bool isLivePhoto{false};
     };
 
 public:
@@ -45,7 +49,8 @@ public:
         std::string filePath{""};
     };
 public:
-    int32_t CopyPhoto(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &targetPath);
+    int32_t CopyPhoto(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        const std::string &targetPath, MediaLibraryAlbumFusionUtils::TargetAssetInfo &targetAssetInfo);
     int32_t MovePhoto(const PhotosPo &sourcePhotosPo, const PhotosPo &targetPhotosPo);
     int32_t CopyPhoto(const PhotosPo &sourcePhotosPo, const PhotosPo &targetPhotosPo);
     int32_t CopyThumbnail(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &targetPath,
@@ -78,7 +83,9 @@ private:
     int32_t CopyPhotoRelatedData(const PhotoAssetInfo &sourcePhotoInfo, const PhotoAssetInfo &targetPhotoInfo,
         const std::string &srcFolder, const std::string &targetFolder);
     int32_t CopyPhoto(const PhotoAssetInfo &sourcePhotoInfo, const PhotoAssetInfo &targetPhotoInfo);
-    int32_t CopyFile(const std::string &srcPath, std::string &targetPath);
+    int32_t CopyFile(const std::string &srcPath, std::string &targetPath,
+        std::function<void(uint64_t)> progressCallback = nullptr, const std::string &requestId = "");
+    int32_t ConvertAndCopyLivePhoto(const PhotoAssetInfo &sourcePhotoInfo, const PhotoAssetInfo &targetPhotoInfo);
     std::string ToString(const PhotoAssetInfo &photoInfo);
     int32_t HandleThumbnailAstcData(const std::string &dateTaken, const std::string &oldAssetId,
         const std::string &newAssetId);

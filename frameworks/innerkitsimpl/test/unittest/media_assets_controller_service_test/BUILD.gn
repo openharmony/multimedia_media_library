@@ -61,6 +61,8 @@ ohos_unittest("media_assets_controller_service_test") {
   include_dirs += include_media_ipc_common
   include_dirs += include_media_ipc
 
+  cflags = [ "-fno-access-control" ]
+
   sources = [
     "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/get_asset_analysis_data_vo.cpp",
     "${MEDIALIB_INNERKITS_PATH}/analysis_data_kits/vo/get_index_construct_progress_vo.cpp",
@@ -125,6 +127,9 @@ ohos_unittest("media_assets_controller_service_test") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/form_info_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_cloud_permission_check.cpp",
     "${MEDIALIB_UTILS_PATH}/src/parameter_utils.cpp",
+    "../medialibrary_unittest_utils/src/test_data_builder.cpp",
+    "./src/asset_change_set_hidden_attribute_test.cpp",
+    "./src/asset_change_set_display_name_by_file_test.cpp",
     "../../../media_library_manager/src/media_library_tab_old_photos_client.cpp",
     "../get_self_permissions/src/get_self_permissions.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",

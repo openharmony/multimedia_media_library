@@ -44,8 +44,16 @@ bool UserDefineNotifyInfo::ReadHeadFromParcel(Parcel &parcel)
         MEDIA_ERR_LOG("notifyUserDefineType is invalid.");
         return false;
     }
-    MEDIA_INFO_LOG("ReadHeadFromParcel, notifyUri: %{public}d, NotifyUserDefineType: %{public}d.",
-        static_cast<int32_t>(this->notifyUri_), static_cast<int32_t>(this->notifyUserDefineType_));
+
+    this->requestId = parcel.ReadString();
+    this->currentSize = parcel.ReadInt64();
+    this->totalSize = parcel.ReadInt64();
+    this->currentCount = parcel.ReadInt32();
+    this->totalCount = parcel.ReadInt32();
+    MEDIA_DEBUG_LOG("notifyUri: %{public}d, NotifyUserDefineType: %{public}d, requestId: %{public}s",
+        static_cast<int32_t>(this->notifyUri_),
+        static_cast<int32_t>(this->notifyUserDefineType_),
+        this->requestId.c_str());
     return true;
 }
 
@@ -59,12 +67,25 @@ bool UserDefineNotifyInfo::WriteHeadFromParcel(std::shared_ptr<Parcel> &parcel) 
     }
     parcel->WriteUint16(static_cast<uint16_t>(this->notifyUri_));
     parcel->WriteUint16(static_cast<uint16_t>(this->notifyUserDefineType_));
+    
+    // 写入进度通知相关字段
+    parcel->WriteString(this->requestId);
+    parcel->WriteInt64(this->currentSize);
+    parcel->WriteInt64(this->totalSize);
+    parcel->WriteInt32(this->currentCount);
+    parcel->WriteInt32(this->totalCount);
+    
     return true;
 }
 
 bool UserDefineNotifyInfo::ReadBodyFromParcel(Parcel &parcel)
 {
-    MEDIA_INFO_LOG("ReadBodyFromParcel begin");
+    MEDIA_DEBUG_LOG("ReadBodyFromParcel begin");
+    // 对于进度通知类型，不需要读取 notifyBody
+    if (this->notifyUserDefineType_ == NotifyForUserDefineType::MOVE_ASSETS_TO_DIR_PROGRESS) {
+        return true;
+    }
+    
     auto notifyBodyIter = USER_DEFINE_NOTIFY_BODY_MAP.find(this->notifyUserDefineType_);
     if (notifyBodyIter == USER_DEFINE_NOTIFY_BODY_MAP.end()) {
         MEDIA_ERR_LOG("NotifyForUserDefineType is invalid.");
@@ -84,6 +105,11 @@ bool UserDefineNotifyInfo::ReadBodyFromParcel(Parcel &parcel)
 
 bool UserDefineNotifyInfo::WriteBodyFromParcel(std::shared_ptr<Parcel> &parcel) const
 {
+    // 对于进度通知类型，不需要写入 notifyBody
+    if (this->notifyUserDefineType_ == NotifyForUserDefineType::MOVE_ASSETS_TO_DIR_PROGRESS) {
+        return true;
+    }
+    
     CHECK_AND_RETURN_RET_LOG(notifyBody_ != nullptr && parcel != nullptr, false, "notifyBody or parcel is nullptr.");
     parcel->WriteBool(this->readOnly_);
     return this->notifyBody_->WriteToParcel(parcel);
@@ -117,11 +143,16 @@ std::string UserDefineNotifyInfo::ToString() const
 {
     std::stringstream ss;
     ss << "{"
-        << "\"notifyUri\": \"" << std::to_string(static_cast<int32_t>(this->notifyUri_)) << "\","
-        << "\"NotifyForUserDefineType\": \""
-        << std::to_string(static_cast<int32_t>(this->notifyUserDefineType_)) << "\","
-        << "\"readOnly\": \"" << std::to_string(static_cast<int32_t>(this->readOnly_)) << "\","
-        << "\"notifyBody\": \"" << (notifyBody_ ? notifyBody_->ToString().c_str() : "nullptr")
+        << "\"notifyUri\": \"" << std::to_string(static_cast<int32_t>(this->notifyUri_)) << "\""
+        << ",\"NotifyForUserDefineType\": \""
+        << std::to_string(static_cast<int32_t>(this->notifyUserDefineType_)) << "\""
+        << ",\"readOnly\": \"" << std::to_string(static_cast<int32_t>(this->readOnly_)) << "\""
+        << ",\"notifyBody\": \"" << (notifyBody_ ? notifyBody_->ToString().c_str() : "nullptr") << "\""
+        << ",\"requestId\": \"" << requestId << "\""
+        << ",\"currentSize\": \"" << currentSize << "\""
+        << ",\"totalSize\": \"" << totalSize << "\""
+        << ",\"currentCount\": \"" << currentCount << "\""
+        << ",\"totalCount\": \"" << totalCount << "\""
         << "}";
     return ss.str();
 }

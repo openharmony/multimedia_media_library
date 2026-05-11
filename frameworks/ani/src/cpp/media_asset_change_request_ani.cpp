@@ -104,7 +104,10 @@ const std::array mediaAssetChangeMethods = {
         reinterpret_cast<void *>(MediaAssetChangeRequestAni::SetVideoEnhancementAttr)},
     ani_native_function {"getWriteCacheHandlerInner", nullptr,
         reinterpret_cast<void *>(MediaAssetChangeRequestAni::GetWriteCacheHandler)},
-
+    ani_native_function {"setHiddenAttribute", nullptr,
+        reinterpret_cast<void *>(MediaAssetChangeRequestAni::SetHiddenAttribute)},
+    ani_native_function {"setDisplayNameByFile", nullptr,
+        reinterpret_cast<void *>(MediaAssetChangeRequestAni::SetDisplayNameByFile)},
 };
 
 std::array staticMethods = {
@@ -2136,6 +2139,62 @@ static bool SetHiddenExecute(MediaAssetChangeRequestAniContext& context)
     return true;
 }
 
+static bool SetHiddenAttributeExecute(MediaAssetChangeRequestAniContext& context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetHiddenAttributeExecute");
+
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
+
+    AssetChangeReqBody reqBody;
+    reqBody.uri = fileAsset->GetUri();
+    reqBody.fileHidden = fileAsset->IsFileHidden();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_HIDDEN_ATTRIBUTE);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, std::to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}
+    };
+    int32_t changedRows =
+        IPC::UserDefineIPCClient().SetUserId(fileAsset->GetUserId()).SetHeader(headerMap).Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        int32_t errCode = MediaLibraryAniUtils::TransErrorCode("SetHiddenAttributeExecute", changedRows);
+        context.SaveError(errCode);
+        ANI_ERR_LOG("SetHiddenAttributeExecute failed, err: %{public}d", errCode);
+        return false;
+    }
+    return true;
+}
+
+static bool SetDisplayNameByFileExecute(MediaAssetChangeRequestAniContext &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetDisplayNameByFileExecute");
+
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
+
+    AssetChangeReqBody reqBody;
+    reqBody.uri = fileAsset->GetUri();
+    reqBody.displayName = fileAsset->GetDisplayName();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_DISPLAY_NAME_BY_FILE);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, std::to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}
+    };
+    int32_t changedRows =
+        IPC::UserDefineIPCClient().SetUserId(fileAsset->GetUserId()).SetHeader(headerMap).Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        int32_t errCode = MediaLibraryAniUtils::TransErrorCode("SetDisplayNameByFileExecute", changedRows);
+        context.SaveError(errCode);
+        ANI_ERR_LOG("SetDisplayNameByFileExecute failed, err: %{public}d", errCode);
+        return false;
+    }
+    return true;
+}
+
 static bool SetUserCommentExecute(MediaAssetChangeRequestAniContext& context)
 {
     MediaLibraryTracer tracer;
@@ -2459,6 +2518,8 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_LOCATION, SetLocationExecute },
     { AssetChangeOperation::SET_TITLE, SetTitleExecute },
     { AssetChangeOperation::ADD_FILTERS, AddFiltersExecute },
+    { AssetChangeOperation::SET_HIDDEN_ATTRIBUTE, SetHiddenAttributeExecute },
+    { AssetChangeOperation::SET_DISPLAY_NAME_BY_FILE, SetDisplayNameByFileExecute },
 };
 
 static void ApplyAssetChangeRequestExecute(std::unique_ptr<MediaAssetChangeRequestAniContext> &context)
@@ -2945,6 +3006,48 @@ ani_object MediaAssetChangeRequestAni::SetHidden(ani_env *env, ani_object object
     CHECK_COND(env, changeRequest->GetFileAssetInstance() != nullptr, JS_INNER_FAIL);
     changeRequest->GetFileAssetInstance()->SetHidden(isHidden);
     changeRequest->RecordChangeOperation(AssetChangeOperation::SET_HIDDEN);
+    return ReturnAniUndefined(env);
+}
+
+ani_object MediaAssetChangeRequestAni::SetHiddenAttribute(ani_env *env, ani_object object, ani_boolean fileHiddenState)
+{
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    auto context = std::make_unique<MediaAssetChangeRequestAniContext>();
+    CHECK_COND_WITH_MESSAGE(env, context != nullptr, "Failed to create asyncContext");
+    bool isFileHidden = static_cast<bool>(fileHiddenState);
+    context->objectInfo = MediaAssetChangeRequestAni::Unwrap(env, object);
+    auto changeRequest = context->objectInfo;
+    CHECK_COND_WITH_MESSAGE(env, changeRequest != nullptr, "changeRequest is nullptr");
+    CHECK_COND(env, changeRequest->GetFileAssetInstance() != nullptr, JS_INNER_FAIL);
+    changeRequest->GetFileAssetInstance()->SetFileHidden(isFileHidden);
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_HIDDEN_ATTRIBUTE);
+    return ReturnAniUndefined(env);
+}
+
+ani_object MediaAssetChangeRequestAni::SetDisplayNameByFile(ani_env *env, ani_object object, ani_string name)
+{
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    std::string displayName;
+    ani_status status = MediaLibraryAniUtils::GetParamStringPathMax(env, name, displayName);
+    CHECK_COND_RET(status == ANI_OK, nullptr, "Failed to parse args");
+    CHECK_COND_RET(MediaFileUtils::CheckDisplayName(displayName, false, true) == E_OK,
+        nullptr, "Invalid display name.");
+
+    auto context = std::make_unique<MediaAssetChangeRequestAniContext>();
+    CHECK_COND_WITH_MESSAGE(env, context != nullptr, "Failed to create asyncContext");
+    context->objectInfo = MediaAssetChangeRequestAni::Unwrap(env, object);
+    auto changeRequest = context->objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, nullptr, "changeRequest is nullptr");
+    CHECK_COND_RET(changeRequest->GetFileAssetInstance() != nullptr, nullptr, "fileAsset is nullptr");
+
+    changeRequest->GetFileAssetInstance()->SetDisplayName(displayName);
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_DISPLAY_NAME_BY_FILE);
     return ReturnAniUndefined(env);
 }
 

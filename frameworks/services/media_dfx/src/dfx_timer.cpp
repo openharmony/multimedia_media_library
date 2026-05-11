@@ -102,7 +102,11 @@ const std::map<uint32_t, int64_t> DfxTimer::operationCodeTimeoutMap = {
     {static_cast<uint32_t>(MediaLibraryBusinessCode::MEDIA_BUSINESS_CODE_END), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::NOTIFY_FOR_RECHECK), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CLONE_ASSET), 200},
-	{static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_FORMAT), 200},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::CLONE_TO_ALBUM), 200},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::CLONE_TO_DIR), 200},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::CLONE_ASSETS_BY_PATH), 200},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_CANCEL_CLONE_TASK), 200},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_FORMAT), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::REVERT_TO_ORIGINAL), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::COMMIT_EDITED_ASSET), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_PUBLIC_CREATE_ASSET), 200},
@@ -227,6 +231,11 @@ const std::map<uint32_t, int64_t> DfxTimer::operationCodeTimeoutMap = {
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SMART_MOVE_ASSETS), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_COMPRESS_ASSET_SIZE), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CREATE_ANALYSIS_ALBUM), 200},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_HIDDEN_ATTRIBUTE), 200},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_CHANGE_SET_HIDDEN_ATTRIBUTE), 200},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_DISPLAY_NAME_BY_FILE), 200},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_CHANGE_SET_ALBUM_NAME_BY_FILE), 200},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CREATE_FILE_MANAGER_ASSET), 200},
 };
 
 int64_t DfxTimer::GetOperationCodeTimeout(uint32_t operationCode)

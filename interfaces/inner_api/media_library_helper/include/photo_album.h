@@ -103,6 +103,8 @@ public:
 
     EXPORT void SetChangeTime(const int64_t changeTime);
     EXPORT int64_t GetChangeTime() const;
+    EXPORT void SetFileHidden(bool fileHidden);
+    EXPORT bool IsFileHidden() const;
 
     EXPORT static bool IsUserPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsTrashAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
@@ -162,6 +164,7 @@ private:
     int32_t coverUriSource_ = static_cast<int32_t>(CoverUriSource::DEFAULT_COVER);
     int32_t uploadStatus_ = 1;
     int32_t hidden_ = 0;
+    bool fileHidden_ = false;
     int64_t changeTime_ {0};
 };
 } // namespace Media

@@ -27,6 +27,9 @@
 #include "medialibrary_errno.h"
 
 namespace OHOS::Media {
+
+inline const std::string ANALYSIS_ALBUM_NAME_REGEX = R"([\.\\/:*?"'`<>|{}\[\]])";
+
 inline bool IsValidAnalysisAlbumAttribute(const std::string &attr)
 {
     return FindAnalysisAlbumAttributeSpec(attr) != nullptr;
@@ -41,7 +44,7 @@ inline bool IsValidAnalysisAlbumValue(const std::string &value, const AnalysisAl
 {
     CHECK_AND_RETURN_RET(value.size() <= ANALYSIS_ALBUM_MAX_VALUE_LENGTH, false);
     CHECK_AND_RETURN_RET(!value.empty() || spec.allowEmptyValue, true);
-    CHECK_AND_RETURN_RET(MediaFileUtils::CheckAlbumNameCharacter(value) == E_OK
+    CHECK_AND_RETURN_RET(MediaFileUtils::CheckAlbumNameCharacter(value, ANALYSIS_ALBUM_NAME_REGEX) == E_OK
         || spec.supportSpecialSymbols, false);
     return true;
 }

@@ -52,6 +52,7 @@ const string PhotoAlbumColumns::COVER_CLOUD_ID = "cover_cloud_id";
 const string PhotoAlbumColumns::UPLOAD_STATUS = "upload_status";
 const string PhotoAlbumColumns::ALBUM_HIDDEN = "hidden";
 const string PhotoAlbumColumns::UNIQUE_ID = "unique_id";
+const string PhotoAlbumColumns::ALBUM_FILE_HIDDEN = "file_hidden";
 
 // For api9 compatibility
 const string PhotoAlbumColumns::ALBUM_RELATIVE_PATH = "relative_path";
@@ -203,7 +204,8 @@ const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
     UPLOAD_STATUS + " INT NOT NULL DEFAULT 0, " +
     ALBUM_HIDDEN + " INT NOT NULL DEFAULT 0, " +
     CHANGE_TIME + " BIGINT NOT NULL DEFAULT 0, " +
-    UNIQUE_ID + " TEXT DEFAULT NULL" +
+    UNIQUE_ID + " TEXT DEFAULT NULL, " +
+    ALBUM_FILE_HIDDEN + " INT NOT NULL DEFAULT 0" +
     ")";
 
 // Create indexes

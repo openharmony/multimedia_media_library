@@ -101,6 +101,16 @@ std::string MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(const std::strin
         endIndex - startIndex - PhotoColumn::PHOTO_URI_PREFIX.length());
 }
 
+vector<string> MediaLibraryDataManagerUtils::GetFileIdsFromUriString(const vector<string> &uris)
+{
+    vector<string> res;
+    for (auto &uri : uris) {
+        string fileId = GetFileIdFromPhotoUri(uri);
+        res.push_back(fileId);
+    }
+    return res;
+}
+
 int32_t MediaLibraryDataManagerUtils::GetFileIdNumFromPhotoUri(const std::string &uri)
 {
     auto strFileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(uri);

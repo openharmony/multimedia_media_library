@@ -28,8 +28,16 @@
 #include "moving_photo_file_utils.h"
 #include "media_column.h"
 #include "result_set_utils.h"
-#include "lake_file_utils.h"
 #include "thumbnail_service.h"
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+#include "file_scan_utils.h"
+#else
+#include "dfx_utils.h"
+#endif
+#include "medialibrary_album_fusion_utils.h"
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+#include "media_file_access_utils.h"
+#endif
 
 namespace OHOS::Media {
 // LCOV_EXCL_START
@@ -46,8 +54,8 @@ std::string PhotoFileOperation::ToString(const PhotoAssetInfo &photoInfo)
 /**
  * @brief Copy Photo File, include photo file, video file and edit data folder.
  */
-int32_t PhotoFileOperation::CopyPhoto(
-    const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &targetPath)
+int32_t PhotoFileOperation::CopyPhoto(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    const std::string &targetPath, MediaLibraryAlbumFusionUtils::TargetAssetInfo &targetAssetInfo)
 {
     bool cond = (resultSet == nullptr || targetPath.empty());
     CHECK_AND_RETURN_RET_LOG(!cond, E_FAIL,
@@ -65,6 +73,11 @@ int32_t PhotoFileOperation::CopyPhoto(
     sourcePhotoInfo.dateModified = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
     sourcePhotoInfo.videoFilePath = this->FindVideoFilePath(sourcePhotoInfo);
     sourcePhotoInfo.editDataFolder = this->FindEditDataFolder(sourcePhotoInfo);
+    int fileSourceType = GetInt32Val(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, resultSet);
+    if (fileSourceType == static_cast<int32_t>(FileSourceType::FILE_MANAGER)) {
+        sourcePhotoInfo.filePath = GetStringVal(PhotoColumn::PHOTO_STORAGE_PATH, resultSet);
+    }
+    sourcePhotoInfo.isLivePhoto = MovingPhotoFileUtils::IsLivePhotoAsset(sourcePhotoInfo.filePath);
     // Build the Target Photo Asset Info
     PhotoFileOperation::PhotoAssetInfo targetPhotoInfo;
     targetPhotoInfo.displayName = sourcePhotoInfo.displayName;
@@ -78,6 +91,18 @@ int32_t PhotoFileOperation::CopyPhoto(
     // No need to copy edit data folder if the Original Photo is not edited.
     if (!sourcePhotoInfo.editDataFolder.empty()) {
         targetPhotoInfo.editDataFolder = this->BuildEditDataFolder(targetPhotoInfo);
+    }
+    if (!targetAssetInfo.targetRealPath.empty()) {
+        targetPhotoInfo.filePath = targetAssetInfo.targetRealPath;
+        if (sourcePhotoInfo.isMovingPhoto) {
+            targetPhotoInfo.isLivePhoto = true;
+        }
+    }
+    if (targetAssetInfo.progressCallback) {
+        targetPhotoInfo.progressCallback = targetAssetInfo.progressCallback;
+    }
+    if (!targetAssetInfo.requestId.empty()) {
+        targetPhotoInfo.requestId = targetAssetInfo.requestId;
     }
     MEDIA_INFO_LOG("Media_Operation: sourcePhotoInfo: %{public}s, targetPhotoInfo: %{public}s",
         this->ToString(sourcePhotoInfo).c_str(),
@@ -178,13 +203,91 @@ int32_t PhotoFileOperation::HandleThumbnailAstcData(const std::string &dateTaken
 int32_t PhotoFileOperation::CopyPhoto(const PhotoFileOperation::PhotoAssetInfo &sourcePhotoInfo,
     const PhotoFileOperation::PhotoAssetInfo &targetPhotoInfo)
 {
-    int32_t opRet = this->CopyPhotoFile(sourcePhotoInfo, targetPhotoInfo);
-    CHECK_AND_RETURN_RET(opRet == E_OK, opRet);
-
+    int32_t opRet = E_ERR;
+    if (sourcePhotoInfo.isLivePhoto == targetPhotoInfo.isLivePhoto) {
+        opRet = this->CopyPhotoFile(sourcePhotoInfo, targetPhotoInfo);
+        CHECK_AND_RETURN_RET(opRet == E_OK, opRet);
+    }
     opRet = this->CopyPhotoRelatedVideoFile(sourcePhotoInfo, targetPhotoInfo);
     CHECK_AND_RETURN_RET(opRet == E_OK, opRet);
+    opRet = this->CopyPhotoRelatedExtraData(sourcePhotoInfo, targetPhotoInfo);
+    CHECK_AND_RETURN_RET(opRet == E_OK, opRet);
+    if (sourcePhotoInfo.isLivePhoto != targetPhotoInfo.isLivePhoto) {
+        opRet = this->ConvertAndCopyLivePhoto(sourcePhotoInfo, targetPhotoInfo);
+        CHECK_AND_RETURN_RET(opRet == E_OK, opRet);
+    }
+    return opRet;
+}
 
-    return this->CopyPhotoRelatedExtraData(sourcePhotoInfo, targetPhotoInfo);
+static int32_t ProcessLivePhotoToMovingPhoto(const std::string &srcPath, const std::string &destPath)
+{
+    std::string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(destPath);
+    std::string extraDataPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(destPath);
+    std::string extraPathDir = MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(destPath);
+    if (!MediaFileUtils::IsFileExists(extraPathDir) && !MediaFileUtils::CreateDirectory(extraPathDir)) {
+        MEDIA_WARN_LOG("Failed to create local extra data dir");
+        return E_HAS_FS_ERROR;
+    }
+    int32_t ret = MovingPhotoFileUtils::ConvertToMovingPhoto(srcPath, destPath, videoPath, extraDataPath);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Failed to convert live photo, ret:%{public}d", ret);
+        (void)MediaFileUtils::DeleteFile(destPath);
+        (void)MediaFileUtils::DeleteFile(videoPath);
+        (void)MediaFileUtils::DeleteDir(extraPathDir);
+        return ret;
+    }
+    return E_OK;
+}
+
+/**
+ * @brief Copy Photo File, include photo file, video file and edit data folder.
+ */
+int32_t PhotoFileOperation::ConvertAndCopyLivePhoto(const PhotoFileOperation::PhotoAssetInfo &sourcePhotoInfo,
+    const PhotoFileOperation::PhotoAssetInfo &targetPhotoInfo)
+{
+    if (sourcePhotoInfo.isLivePhoto) {
+        return ProcessLivePhotoToMovingPhoto(sourcePhotoInfo.filePath, targetPhotoInfo.filePath);
+    } else { // targetPhotoInfo.isLivePhoto
+        std::string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(sourcePhotoInfo.filePath);
+        std::string extraDataPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(sourcePhotoInfo.filePath);
+        int64_t coverPosition = 0;
+        int32_t ret = MovingPhotoFileUtils::GetLivePhotoCoverPosition(videoPath, extraDataPath, coverPosition);
+        if (ret != E_OK) {
+            MEDIA_WARN_LOG("Failed to get cover position, use default 0, ret:%{public}d", ret);
+            coverPosition = 0;
+        }
+        
+        string livePhotoPath;
+        ret = MovingPhotoFileUtils::ConvertToLivePhoto(sourcePhotoInfo.filePath, videoPath, extraDataPath,
+            coverPosition, livePhotoPath);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_HAS_FS_ERROR, "Failed to convert to livePhoto");
+
+        int64_t dateModified = targetPhotoInfo.dateModified;
+        // If File Path is empty, return E_INVALID_PATH.
+        if (livePhotoPath.empty() || targetPhotoInfo.filePath.empty()) {
+            MEDIA_ERR_LOG("Media_Operation: CopyPhotoFile failed, srcPath or targetPath is empty. "
+                        "Source Object: %{public}s, Target Object: %{public}s",
+                this->ToString(sourcePhotoInfo).c_str(),
+                this->ToString(targetPhotoInfo).c_str());
+            return E_INVALID_PATH;
+        }
+        std::string targetPath = targetPhotoInfo.filePath;
+        int32_t opRet = this->CopyFile(livePhotoPath, targetPath, targetPhotoInfo.progressCallback,
+            targetPhotoInfo.requestId);
+        if (opRet != E_OK) {
+            MEDIA_ERR_LOG("Media_Operation: CopyPhoto failed, srcPath: %{public}s, targetPath: %{public}s",
+                livePhotoPath.c_str(),
+                targetPath.c_str());
+            return opRet;
+        } else {
+            (void)MediaFileUtils::DeleteFile(livePhotoPath);
+        }
+        MediaFileUtils::ModifyFile(targetPath, dateModified / MSEC_TO_SEC);
+        MEDIA_INFO_LOG("Media_Operation: CopyLivePhotoFile success, srcPath: %{public}s, targetPath: %{public}s",
+            MediaFileUtils::DesensitizePath(livePhotoPath).c_str(),
+            MediaFileUtils::DesensitizePath(targetPath).c_str());
+    }
+    return E_OK;
 }
 
 /**
@@ -386,7 +489,7 @@ int32_t PhotoFileOperation::CopyPhotoFile(const PhotoFileOperation::PhotoAssetIn
             this->ToString(targetPhotoInfo).c_str());
         return E_INVALID_PATH;
     }
-    int32_t opRet = this->CopyFile(srcPath, targetPath);
+    int32_t opRet = this->CopyFile(srcPath, targetPath, targetPhotoInfo.progressCallback, targetPhotoInfo.requestId);
     if (opRet != E_OK) {
         MEDIA_ERR_LOG("Media_Operation: CopyPhoto failed, srcPath: %{public}s, targetPath: %{public}s",
             srcPath.c_str(),
@@ -410,7 +513,9 @@ int32_t PhotoFileOperation::CopyPhotoRelatedVideoFile(const PhotoFileOperation::
     const PhotoFileOperation::PhotoAssetInfo &targetPhotoInfo)
 {
     // If photoSubtype is MOVING_PHOTO, copy video file.
-    CHECK_AND_RETURN_RET(sourcePhotoInfo.isMovingPhoto, E_OK);
+    // If source or target MOVING_PHOTO is LIVE_PHOTO, no need to copy video file.
+    CHECK_AND_RETURN_RET(sourcePhotoInfo.isMovingPhoto && !sourcePhotoInfo.isLivePhoto &&
+        !targetPhotoInfo.isLivePhoto, E_OK);
     std::string srcVideoPath = sourcePhotoInfo.videoFilePath;
     std::string targetVideoPath = targetPhotoInfo.videoFilePath;
     int64_t dateModified = targetPhotoInfo.dateModified;
@@ -500,9 +605,28 @@ int32_t PhotoFileOperation::CopyPhotoRelatedThumbnail(const PhotoFileOperation::
  *         E_INVALID_PATH if the source file or target file is invalid,
  *         E_FILE_OPER_FAIL if the copy operation failed.
  */
-int32_t PhotoFileOperation::CopyFile(const std::string &srcPath, std::string &targetPath)
+int32_t PhotoFileOperation::CopyFile(const std::string &srcPath, std::string &targetPath,
+    std::function<void(uint64_t)> progressCallback, const std::string &requestId)
 {
-    bool opRet = LakeFileUtils::CopyFile(srcPath, targetPath);
+    bool opRet = false;
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+    int32_t ret = MediaFileAccessUtils::CopyFile(srcPath, targetPath, progressCallback, requestId);
+    if (ret == E_OK) {
+        opRet = true;
+    } else if (ret == E_SCENE_HAS_CANCEL) {
+        MEDIA_INFO_LOG("is cancel");
+        return ret;
+    }
+#else
+    CHECK_AND_RETURN_RET_LOG(
+        !srcPath.empty() && MediaFileUtils::IsFileExists((srcPath)) && MediaFileUtils::IsFileValid(srcPath),
+        E_INVALID_PATH, "Media_Operation: source file invalid! srcPath: %{public}s",
+        DfxUtils::GetSafePath(srcPath).c_str());
+    CHECK_AND_RETURN_RET_LOG(!targetPath.empty(),
+        E_INVALID_PATH, "Media_Operation: target file invalid! targetPath: %{public}s",
+        DfxUtils::GetSafePath(targetPath).c_str());
+    opRet = MediaFileUtils::CopyFileUtil(srcPath, targetPath);
+#endif
     opRet = opRet && MediaFileUtils::IsFileExists(targetPath);
     this->AuditLog(srcPath, TAG_COPY_SOURCE, opRet ? E_OK : E_ERR);
     this->AuditLog(targetPath, TAG_COPY_TARGET, opRet ? E_OK : E_ERR);
@@ -591,7 +715,10 @@ int32_t PhotoFileOperation::ConvertFormatFile(const std::string &srcFilePath, co
     const int64_t dateModified, const std::string &extension)
 {
     // If File Path is empty, return E_INVALID_PATH.
-    std::string tmpPath = LakeFileUtils::GetAssetRealPath(srcFilePath);
+    std::string tmpPath = srcFilePath;
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+    tmpPath = MediaFileAccessUtils::GetAssetRealPath(srcFilePath);
+#endif
     if (tmpPath.empty() || dstFilePath.empty() || !MediaFileUtils::IsFileExists(tmpPath) ||
         !MediaFileUtils::IsFileValid(tmpPath)) {
         MEDIA_ERR_LOG("Media_Operation: check srcPath or targetPath failed");
@@ -982,6 +1109,9 @@ int32_t PhotoFileOperation::DeletePhotoFile(const PhotoFileOperation::PhotoAsset
         E_INVALID_PATH,
         "Media_Operation: DeletePhotoFile failed, srcPath is empty. Source Object: %{public}s",
         this->ToString(sourcePhotoInfo).c_str());
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+    srcPath = MediaFileAccessUtils::GetAssetRealPath(srcPath);
+#endif
     bool opRet = MediaFileUtils::DeleteFile(srcPath);
     this->AuditLog(srcPath, TAG_DELETE, opRet ? E_OK : E_ERR);
     MEDIA_INFO_LOG(
