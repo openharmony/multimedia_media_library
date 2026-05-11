@@ -23,6 +23,7 @@
 #include "notify_register_permission.h"
 #include "observer_callback_recipient.h"
 #include "observer_info.h"
+#include "progress_observer_manager.h"
 
 namespace OHOS {
 namespace DataShare {
@@ -44,10 +45,36 @@ std::unordered_map<std::string, Notification::NotifyUriType> NOTIFY_URI_MAP = {
 };
 
 const std::string URI_SEPARATOR = "file:media";
+const std::string MEDIA_PROGRESS_REGISTER_PREFIX = "datashare:///media/custom_progress/";
+
+enum class ProgressNotifyUriType {
+    MOVE_ASSETS_TO_DIR = 0,
+    MOVE_ASSETS_BY_PATH = 1,
+};
+
+const std::unordered_map<std::string, ProgressNotifyUriType> PROGRESS_NOTIFY_URI_MAP = {
+    {"MoveAssetsToDir", ProgressNotifyUriType::MOVE_ASSETS_TO_DIR},
+    {"MoveAssetsByPath", ProgressNotifyUriType::MOVE_ASSETS_BY_PATH},
+};
 
 std::shared_ptr<MediaDataShareExtAbility> MediaDataShareStubImpl::GetOwner()
 {
     return extension_;
+}
+
+static int32_t RegisterProgressCallbackObserver(const int32_t &requestId,
+    const sptr<AAFwk::IDataAbilityObserver> &progressObserver, bool isReconnect)
+{
+    MEDIA_DEBUG_LOG("RegisterProgressCallbackObserver, requestId:%{public}s", std::to_string(requestId).c_str());
+    auto &progressManager = Notification::ProgressObserverManager::GetInstance();
+    if (progressObserver == nullptr) {
+        MEDIA_ERR_LOG("Failed to cast to IMediaProgressObserver");
+        return E_ERR;
+    }
+    int32_t ret = progressManager.AddObserver(requestId, progressObserver);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "fail to add progress observer");
+    MEDIA_DEBUG_LOG("Register CallbackObserver success, requestId:%{public}s", std::to_string(requestId).c_str());
+    return E_SUCCESS;
 }
 
 std::vector<std::string> MediaDataShareStubImpl::GetFileTypes(const Uri &uri, const std::string &mimeTypeFilter)
@@ -182,6 +209,20 @@ bool MediaDataShareStubImpl::UnregisterObserver(const Uri &uri, const sptr<AAFwk
     return ret;
 }
 
+int ParseProgressUri(const std::string &uri, std::string &registerType, int32_t &requestId)
+{
+    CHECK_AND_RETURN_RET_LOG(uri.find(MEDIA_PROGRESS_REGISTER_PREFIX) != std::string::npos, E_ERR, "Invaild uri");
+    std::string remaining = uri.substr(MEDIA_PROGRESS_REGISTER_PREFIX.length());
+    size_t pos = remaining.find('/');
+    CHECK_AND_RETURN_RET_LOG(pos != std::string::npos, E_ERR, "Invaild uri");
+    registerType = remaining.substr(0, pos);
+    std::string requestIdStr = remaining.substr(pos + 1);
+    CHECK_AND_RETURN_RET_LOG(all_of(requestIdStr.begin(), requestIdStr.end(), ::isdigit)
+        && atoi(requestIdStr.c_str()) >= 0, E_ERR, "Invaild uri");
+    requestId = stoi(requestIdStr);
+    return E_OK;
+}
+
 int MediaDataShareStubImpl::RegisterObserverExtProvider(const Uri &uri,
     const sptr<AAFwk::IDataAbilityObserver> &dataObserver, bool isDescendants, RegisterOption option)
 {
@@ -189,6 +230,22 @@ int MediaDataShareStubImpl::RegisterObserverExtProvider(const Uri &uri,
     auto observerManager = Media::Notification::MediaObserverManager::GetObserverManager();
     CHECK_AND_RETURN_RET_LOG(observerManager != nullptr, E_OBSERVER_MANAGER_IS_NULL, "observerManager is nullptr");
     std::string uriType = uri.ToString();
+    
+    // 检查是否是进度回调URI
+    size_t prefixPos = uriType.find(MEDIA_PROGRESS_REGISTER_PREFIX);
+    if (prefixPos != std::string::npos) {
+        std::string registerType = "";
+        int32_t requestId = 0;
+        int ret = ParseProgressUri(uriType, registerType, requestId);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_URI_IS_INVALID, "progress register uri is invaild");
+        if (PROGRESS_NOTIFY_URI_MAP.find(registerType) != PROGRESS_NOTIFY_URI_MAP.end()) {
+            int32_t ret = RegisterProgressCallbackObserver(requestId, dataObserver, option.isReconnect);
+            CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret,
+                "failed to register progress callback observer, error is %{public}d", ret);
+            return E_SUCCESS;
+        }
+    }
+    
     size_t separatorPos = uriType.find(URI_SEPARATOR);
     if (separatorPos == std::string::npos) {
         if (NOTIFY_URI_MAP.find(uriType) == NOTIFY_URI_MAP.end()) {

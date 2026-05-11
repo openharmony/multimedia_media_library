@@ -31,6 +31,9 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "thumbnail_const.h"
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+#include "media_file_access_utils.h"
+#endif
 
 using namespace std;
 
@@ -286,10 +289,14 @@ bool ThumbnailFileUtils::RemoveDirectoryAndFile(const std::string &path)
     CHECK_AND_RETURN_RET(access(path.c_str(), F_OK) == 0, true);
 
     std::error_code errCode;
-    std::uintmax_t num = std::filesystem::remove_all(path, errCode);
+    std::string realPath = path;
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+    realPath = MediaFileAccessUtils::GetAssetRealPath(path);
+#endif
+    std::uintmax_t num = std::filesystem::remove_all(realPath, errCode);
     CHECK_AND_RETURN_RET_LOG(errCode.value() == E_OK, false,
         "Remove path failed, errno:%{public}d, path:%{public}s, errCode:%{public}d",
-        errno, DfxUtils::GetSafePath(path).c_str(), errCode.value());
+        errno, DfxUtils::GetSafePath(realPath).c_str(), errCode.value());
     return true;
 }
 

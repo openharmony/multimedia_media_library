@@ -53,8 +53,16 @@ public:
         std::string &livePhotoPath, int32_t userId = -1);
     EXPORT static int32_t ConvertToSourceLivePhoto(const std::string &movingPhotoImagepath,
         std::string &sourceLivePhotoPath, int32_t userId = -1);
+    EXPORT static int32_t ConvertToLivePhoto(const std::string &movingPhotoImagePath,
+        const std::string &movingPhotoVideoPath, const std::string &movingPhotoExtraDataPath,
+        int64_t coverPosition, std::string &livePhotoPath, int32_t userId = -1);
     EXPORT static int32_t GetCoverPosition(const std::string &videoPath, const uint32_t frameIndex,
         uint64_t &coverPosition, int32_t scene = 0);
+    EXPORT static int32_t GetLivePhotoCoverPosition(const std::string &videoPath,
+        const std::string &livePhotoPath, int64_t &coverPosition);
+    EXPORT static int32_t GetLivePhotoCoverPosition(const std::string livePhotoPath, int64_t &coverPosition);
+    EXPORT static int32_t GetCoverPositionFromExtraData(const std::string &videoPath,
+        const std::string &extraDataPath, int64_t &coverPosition);
     EXPORT static int32_t GetVersionAndFrameNum(const std::string &tag,
         uint32_t &version, uint32_t &frameIndex, bool &hasCinemagraphInfo);
     EXPORT static int32_t GetVersionAndFrameNum(int32_t fd, uint32_t &version, uint32_t &frameIndex,
@@ -72,7 +80,9 @@ public:
     EXPORT static bool IsMovingPhoto(int32_t subtype, int32_t effectMode, int32_t originalSubtype);
     EXPORT static bool IsGraffiti(int32_t subtype, int32_t originalSubtype);
     EXPORT static bool IsLivePhoto(const std::string &path);
-    EXPORT static int32_t GetLivePhotoSize(int32_t fd, int64_t &liveSize);
+    EXPORT static bool IsLivePhoto(const int32_t fd);
+    EXPORT static int32_t GetLivePhotoSize(const int32_t fd, int64_t &liveSize);
+    EXPORT static bool IsLivePhotoAsset(const std::string &realPath);
     EXPORT static int32_t GetExtraDataLen(const std::string &imagePath, const std::string &videoPath,
         uint32_t frameIndex, int64_t coverPosition, off_t &fileSize, bool isCameraShotMovingPhoto = false);
     EXPORT static uint32_t GetFrameIndex(int64_t time, const int32_t fd);
@@ -89,6 +99,9 @@ public:
     EXPORT static bool CheckMovingPhotoVideoDuration(int32_t duration);
     EXPORT static void GetLocalAssetSize(const int32_t movingPhotoEffectMode, const std::string& filePath,
         const int64_t size, int64_t& localAssetSize);
+    EXPORT static bool CheckMovingPhotoDetailedSize(const int32_t fd);
+    // EXPORT static int32_t ParseLivePhotoCoverPosition(const UniqueFd &uniqueFd, int64_t &coverPosition,
+    //     std::shared_ptr<AVMetadataHelper> &helper);
 };
 } // namespace OHOS::Media
 

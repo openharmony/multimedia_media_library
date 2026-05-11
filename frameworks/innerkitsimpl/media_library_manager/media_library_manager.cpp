@@ -65,6 +65,7 @@
 #include "image_source.h"
 #include "js_interface_helper.h"
 #include "get_assets_vo.h"
+#include "moving_photo_file_utils.h"
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
 #include "purgeable_pixelmap_builder.h"
@@ -964,7 +965,24 @@ int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri, const strin
     string videoUri = uri;
     MediaFileUtils::UriAppendKeyValue(videoUri, CONST_MEDIA_MOVING_PHOTO_OPRN_KEYWORD, option);
     Uri openVideoUri(videoUri);
-    return dataShareHelper->OpenFile(openVideoUri, MEDIA_FILEMODE_READONLY);
+    int32_t fd = dataShareHelper->OpenFile(openVideoUri, MEDIA_FILEMODE_READONLY);
+
+    int64_t liveSize = 0;
+    
+    struct stat st;
+    if (MovingPhotoFileUtils::IsLivePhoto(fd)) {
+        if (MovingPhotoFileUtils::GetLivePhotoSize(fd, liveSize) != E_OK) {
+            return E_ERR;
+        }
+        if (fstat(fd, &st) != E_OK) {
+            MEDIA_ERR_LOG("fstat failed, errno: %{public}d", errno);
+            close(fd);
+            return E_ERR;
+        }
+        off_t videoOffset = st.st_size - liveSize - PLAY_INFO_LEN - LIVE_TAG_LEN;
+        lseek(fd, videoOffset, SEEK_SET);
+    }
+    return fd;
 }
 
 int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)

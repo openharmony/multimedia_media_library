@@ -17,6 +17,7 @@
 
 #include "media_assets_delete_service.h"
 
+#include <uuid/uuid.h>
 #include "media_log.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_db_const.h"
@@ -28,11 +29,14 @@
 #include "medialibrary_asset_operations.h"
 #include "lake_file_operations.h"
 #include "dfx_utils.h"
-#include "lake_file_utils.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_photo_operations.h"
 #include "thumbnail_service.h"
 #include "medialibrary_transcode_data_aging_operation.h"
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+#include "lake_file_operations.h"
+#include "file_scan_utils.h"
+#endif
 
 namespace OHOS::Media::Common {
 int32_t MediaAssetsDeleteService::DeleteLocalAssets(const std::vector<std::string> &fileIds)
@@ -289,12 +293,19 @@ int32_t MediaAssetsDeleteService::BatchCopyAndMoveCloudAssetToTrash(
 int32_t MediaAssetsDeleteService::BuildTargetFilePath(const PhotosPo &photoInfo, std::string &targetPath)
 {
     std::string storagePath = photoInfo.storagePath.value_or("");
+    int32_t fileSourceType = photoInfo.fileSourceType.value_or(0);
     int32_t ret = E_OK;
     if (!storagePath.empty()) {
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+        if (fileSourceType == static_cast<int32_t>(FileSourceType::FILE_MANAGER)) {
+            ret = this->BuildMediaFilePath(photoInfo, targetPath);
+            return ret;
+        }
         ret = this->BuildLakeFilePath(photoInfo, targetPath);
-    } else {
-        ret = this->BuildMediaFilePath(photoInfo, targetPath);
+        return ret;
+#endif
     }
+    ret = this->BuildMediaFilePath(photoInfo, targetPath);
     return ret;
 }
 
@@ -648,14 +659,16 @@ int32_t MediaAssetsDeleteService::BuildMediaFilePath(const PhotosPo &photoInfo, 
     return E_OK;
 }
 
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
 int32_t MediaAssetsDeleteService::BuildLakeFilePath(const PhotosPo &photoInfo, std::string &targetPath)
 {
     // check arguements
     std::string displayName = photoInfo.displayName.value_or("");
     int32_t mediaType = photoInfo.mediaType.value_or(0);
     CHECK_AND_RETURN_RET_LOG(!displayName.empty(), E_FILE_NAME_INVALID, "displayName is empty");
-    return LakeFileUtils::BuildLakeFilePath(displayName, mediaType, targetPath);
+    return FileScanUtils::BuildLakeFilePath(displayName, mediaType, targetPath);
 }
+#endif
 
 int32_t MediaAssetsDeleteService::GetValuesBucket(const PhotosPo &photoInfo, NativeRdb::ValuesBucket &valuesBucket)
 {
@@ -733,7 +746,7 @@ int32_t MediaAssetsDeleteService::FindBurstAssetsAndResetBurstKey(
     bool isValid = ret == E_OK && !burstAssets.empty();
     CHECK_AND_RETURN_RET(isValid, E_INVALID_VALUES);
     // Generate new burst_key.
-    const std::string newBurstKey = LakeFileUtils::GenerateUuid();
+    const std::string newBurstKey = GenerateUuid();
     std::for_each(burstAssets.begin(), burstAssets.end(), [&](auto &element) { element.burstKey = newBurstKey; });
     auto it = std::find_if(burstAssets.begin(), burstAssets.end(), [](const PhotosPo &element) {
         return element.burstCoverLevel.value_or(static_cast<int32_t>(BurstCoverLevelType::COVER)) ==
@@ -969,6 +982,17 @@ int32_t MediaAssetsDeleteService::ResetSouthDeviceType(PhotosPo &photoInfo)
 {
     photoInfo.southDeviceType.reset();
     return E_OK;
+}
+
+std::string MediaAssetsDeleteService::GenerateUuid()
+{
+    const int32_t UUID_STR_LENGTH = 37;
+
+    uuid_t uuid;
+    uuid_generate(uuid);
+    char str[UUID_STR_LENGTH] = {};
+    uuid_unparse(uuid, str);
+    return str;
 }
 
 int32_t MediaAssetsDeleteService::GetDentryFileInfo(

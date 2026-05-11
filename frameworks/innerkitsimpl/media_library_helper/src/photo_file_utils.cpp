@@ -20,6 +20,7 @@
 #include <ctime>
 #include <iomanip>
 #include <sstream>
+#include <unordered_set>
 
 #include "media_column.h"
 #include "media_file_utils.h"
@@ -32,12 +33,25 @@
 using namespace std;
 
 namespace OHOS::Media {
-bool PhotoFileUtils::HasSource(bool hasEditDataCamera, int64_t editTime, int32_t effectMode, int32_t subtype)
+constexpr int32_t EDIT_DATA_EXIST = 1;
+const std::string DOCS_DIR = "/storage/media/local/files/" + DOCS_PATH;
+const std::string DOCS_LPATH_PREFIX = "/FromDocs/";
+const std::unordered_set<std::string> FILE_MANAGER_EXCLUDED_DIR_NAMES = {
+    "HO_DATA_EXT_MISC",
+    ".thumbs",
+    ".Recent",
+    ".backup",
+    ".Trash",
+};
+
+bool PhotoFileUtils::HasSource(bool hasEditDataCamera,
+    int64_t editTime, int32_t effectMode, int32_t subtype, int32_t editDataExist)
 {
     return hasEditDataCamera || editTime > 0 ||
             (subtype == static_cast<int32_t>(PhotoSubType::CINEMATIC_VIDEO)) ||
+            (subtype == static_cast<int32_t>(PhotoSubType::SLOW_MOTION_VIDEO) && editDataExist == EDIT_DATA_EXIST) ||
             (effectMode > static_cast<int32_t>(MovingPhotoEffectMode::DEFAULT) &&
-                effectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY));
+             effectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY));
 }
 
 int32_t PhotoFileUtils::GetMetaPathFromOrignalPath(const std::string &srcPath, std::string &metaPath)
@@ -263,5 +277,56 @@ std::string PhotoFileUtils::GetLocalLcdExPath(const std::string &photoPath)
         return "";
     }
     return "/storage/media/local/files/.thumbs/" + photoPath.substr(ROOT_MEDIA_DIR.length()) + "/THM_EX/LCD.jpg";
+}
+
+bool PhotoFileUtils::CheckSubDirForFileManager(const std::string &path, size_t startPos)
+{
+    size_t pos = path.find('/', startPos);
+    std::string subDirName = (pos == std::string::npos) ? path.substr(startPos)
+        : path.substr(startPos, pos - startPos);
+    CHECK_AND_RETURN_RET(!subDirName.empty(), true);
+    return FILE_MANAGER_EXCLUDED_DIR_NAMES.count(subDirName) == 0;
+}
+
+bool PhotoFileUtils::CheckFileManagerRealPath(const std::string &path)
+{
+    MEDIA_DEBUG_LOG("CheckFileManagerRealPath path: %{public}s", MediaFileUtils::DesensitizePath(path).c_str());
+    CHECK_AND_RETURN_RET(MediaStringUtils::StartsWith(path, DOCS_DIR), false);
+    size_t startPos = DOCS_DIR.length();
+    return CheckSubDirForFileManager(path, startPos);
+}
+
+bool PhotoFileUtils::CheckFileManagerLPath(const std::string &lPath)
+{
+    MEDIA_DEBUG_LOG("CheckFileManagerLPath path: %{public}s", MediaFileUtils::DesensitizePath(lPath).c_str());
+    CHECK_AND_RETURN_RET_LOG(MediaStringUtils::StartsWith(lPath, DOCS_LPATH_PREFIX), false, "invalid prefix");
+    size_t startPos = DOCS_LPATH_PREFIX.size();
+    return CheckSubDirForFileManager(lPath, startPos);
+}
+
+std::string PhotoFileUtils::GetFileManagerLPathFromRealPath(const std::string &path)
+{
+    CHECK_AND_RETURN_RET(CheckFileManagerRealPath(path), "");
+    std::string lPath = DOCS_LPATH_PREFIX + path.substr(DOCS_DIR.length());
+    size_t lastSlashPos = lPath.find_last_of('/');
+    CHECK_AND_RETURN_RET(lastSlashPos != std::string::npos, "");
+    if (MediaFileUtils::IsDirectory(path)) {
+        lPath = lastSlashPos == lPath.length() - 1 ? lPath.substr(0, lastSlashPos) : lPath;
+    } else {
+        lPath = lPath.substr(0, lastSlashPos);
+    }
+    CHECK_AND_EXECUTE(lPath.size() >= DOCS_LPATH_PREFIX.size(), lPath = DOCS_LPATH_PREFIX);
+    MEDIA_DEBUG_LOG("GetFileManagerLPathFromRealPath lPath: %{public}s",
+        MediaFileUtils::DesensitizePath(lPath).c_str());
+    return lPath;
+}
+
+std::string PhotoFileUtils::GetFileManagerDirFromLPath(const std::string &lPath)
+{
+    CHECK_AND_RETURN_RET(CheckFileManagerLPath(lPath), "");
+    CHECK_AND_RETURN_RET(lPath != DOCS_LPATH_PREFIX, DOCS_DIR);
+    std::string dir = DOCS_DIR + lPath.substr(DOCS_LPATH_PREFIX.size()) + SLASH_STR;
+    MEDIA_DEBUG_LOG("GetFileManagerDirFromLPath dir: %{public}s", MediaFileUtils::DesensitizePath(dir).c_str());
+    return dir;
 }
 } // namespace OHOS::Media

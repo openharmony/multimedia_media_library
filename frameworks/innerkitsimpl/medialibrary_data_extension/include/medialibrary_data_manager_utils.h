@@ -37,6 +37,7 @@ public:
         const std::vector<std::string> &whereArgs);
     EXPORT static std::string GetTypeUriByUri(std::string &uri);
     EXPORT static int32_t GetFileIdNumFromPhotoUri(const std::string &uri);
+    EXPORT static std::vector<std::string> GetFileIdsFromUriString(const std::vector<std::string> &uris);
 };
 } // namespace Media
 } // namespace OHOS

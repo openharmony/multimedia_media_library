@@ -31,7 +31,14 @@
 #include "thumbnail_file_utils.h"
 #include "thumbnail_utils.h"
 #include "thumbnail_const.h"
-#include "lake_file_utils.h"
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+#include "file_scan_utils.h"
+#endif
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+#include "media_file_access_utils.h"
+#endif
+#include "thumbnail_generate_helper.h"
+#include "media_file_access_utils.h"
 
 using namespace std;
 
@@ -687,7 +694,10 @@ bool LocalLcdSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 
 std::string LocalOriginSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
-    std::string tmpPath = LakeFileUtils::GetAssetRealPath(data.path);
+    std::string tmpPath = data.path;
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+    tmpPath = MediaFileAccessUtils::GetAssetRealPath(data.path);
+#endif
     if (tmpPath.find(ROOT_MEDIA_DIR) != std::string::npos) {
         tmpPath = GetLocalThumbnailPath(tmpPath, "");
     }

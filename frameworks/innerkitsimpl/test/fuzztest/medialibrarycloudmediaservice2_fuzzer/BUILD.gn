@@ -38,7 +38,6 @@ ohos_fuzztest("MediaLibraryCloudMediaService2FuzzTest") {
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_media_common_dao.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_media_download_dao.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_media_photos_dao.cpp",
-    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_lake_file_handler.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_album_service.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_download_service.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_photos_service.cpp",
@@ -49,8 +48,6 @@ ohos_fuzztest("MediaLibraryCloudMediaService2FuzzTest") {
     "${MEDIALIB_UTILS_PATH}/src/cover_position_parser.cpp",
     "${MEDIALIB_UTILS_PATH}/src/duration_parser.cpp",
     "${MEDIALIB_UTILS_PATH}/src/parser_task_queue_base.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/src/lake_file_utils.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/src/lake_file_operations.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/hi_audit.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_owner_album_id_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/zip_util.cpp",
@@ -75,6 +72,14 @@ ohos_fuzztest("MediaLibraryCloudMediaService2FuzzTest") {
     "${MEDIALIB_COMMON_PATH}:media_library_common",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
   ]
+
+  if (media_library_lake_enable) {
+    sources += [
+      "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_lake_file_handler.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/file_scan_utils.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/src/lake_file_operations.cpp",
+    ]
+  }
 
   external_deps = [
     "ability_base:configuration",

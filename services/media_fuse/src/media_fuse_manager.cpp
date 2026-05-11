@@ -30,6 +30,7 @@
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_type_const.h"
+#include "medialibrary_db_const.h"
 #include "os_account_manager.h"
 #include "storage_manager_proxy.h"
 #include "safe_map.h"
@@ -57,7 +58,9 @@
 #include "medialibrary_photo_operations.h"
 #include "result_set_utils.h"
 #include "medialibrary_transcode_data_aging_operation.h"
-#include "lake_const.h"
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+#include "file_const.h"
+#endif
 #include "medialibrary_bundle_manager.h"
 #include "transcode_compatible_info_operations.h"
 #include "tokenid_kit.h"
@@ -86,6 +89,36 @@ static constexpr int64_t MILLISECONDS_PER_SECOND = 1000LL;
 static constexpr int32_t HDC_FIRST_ARGS = 0;
 static constexpr int32_t HDC_SECOND_ARGS = 1;
 static constexpr int32_t HDC_THIRD_ARGS = 2;
+
+struct CloudAssetTimeQueryParams {
+    string fileId;
+    int32_t position;
+    int64_t accesstime;
+    int64_t changeTime;
+    explicit CloudAssetTimeQueryParams(
+        const string& fileId,
+        int32_t position = 0,
+        int64_t accesstime = 0,
+        int64_t changeTime = 0
+    ) : fileId(fileId), position(position), accesstime(accesstime), changeTime(changeTime) {}
+};
+
+struct PathValidationParams {
+    string fileId;
+    string storageName;
+    string displayName;
+    int32_t fileSourceType;
+    int32_t ownerAlbumId;
+
+    explicit PathValidationParams(
+        const string& fileId,
+        string storageName = "",
+        string displayName = "",
+        int32_t fileSourceType = FileSourceType::MEDIA,
+        int32_t ownerAlbumId = 0
+    ) : fileId(fileId), storageName(storageName), displayName(displayName), fileSourceType(fileSourceType),
+        ownerAlbumId(ownerAlbumId) {}
+};
 
 static const map<uint32_t, string> MEDIA_OPEN_MODE_MAP = {
     { O_RDONLY, MEDIA_FILEMODE_READONLY },
@@ -212,6 +245,42 @@ static int32_t countSubString(const string &uri, const string &substr)
     return count;
 }
 
+static string GetStorageNameFromUri(const string &uri)
+{
+    if (uri.empty()) {
+        return uri;
+    }
+    string tmpPath;
+    auto index = uri.rfind("/");
+    if (index != string::npos) {
+        string uriWithoutDisplayname = uri.substr(0, index);
+        tmpPath = MediaFileUtils::SplitByChar(uriWithoutDisplayname, '/');
+    }
+    return tmpPath;
+}
+
+static string GetStorageNameFromFilePath(const string &filePath)
+{
+    string realDisplayName = MediaFileUtils::GetFileName(filePath);
+    if (realDisplayName.empty()) {
+        return realDisplayName;
+    }
+    return MediaFileUtils::GetTitleFromDisplayName(realDisplayName);
+}
+
+static string GetStorageDirectoryFromStoragePath(const string &storagePath)
+{
+    if (storagePath.empty()) {
+        return storagePath;
+    }
+    string storageDirectory = "";
+    auto index = storagePath.rfind("/");
+    if (index != string::npos) {
+        storageDirectory = storagePath.substr(0, index);
+    }
+    return storageDirectory;
+}
+
 static int32_t GetFileIdFromUri(string &fileId, const string &uri)
 {
     int32_t splitCount = countSubString(uri, "/");
@@ -234,7 +303,8 @@ static int32_t GetFileIdFromUri(string &fileId, const string &uri)
     return E_SUCCESS;
 }
 
-static int32_t GetFileIdFromUriForGetAttr(string &fileId, const string &uri)
+static int32_t GetMessageFromUriForGetAttr(string &fileId, string &storageName, string &displayName,
+    const string &uri)
 {
     string tmpPath;
     if (uri.find("/") == 0) {
@@ -247,6 +317,11 @@ static int32_t GetFileIdFromUriForGetAttr(string &fileId, const string &uri)
         CHECK_AND_RETURN_RET(all_of(tmpPath.begin(), tmpPath.end(), ::isdigit), E_ERR);
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsValidInteger(tmpPath), E_ERR, "virtual id invalid");
         fileId = tmpPath;
+        displayName = MediaFileUtils::GetFileName(uri);
+        CHECK_AND_RETURN_RET_LOG(!MediaFileUtils::GetExtensionFromPath(displayName).empty(), E_ERR,
+            "virtual displayName invalid");
+        storageName = GetStorageNameFromUri(uri);
+        CHECK_AND_RETURN_RET_LOG(!storageName.empty(), E_ERR, "virtual storageName invalid");
         int32_t splitCount = countSubString(uri, "/");
         if (splitCount == URI_SLASH_NUM_API9) {
             int32_t virtualId = stoi(tmpPath);
@@ -286,16 +361,20 @@ static int32_t GetPathFromFileId(string &filePath, const string &fileId)
         return E_ERR;
     }
     if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
         int32_t sourceType = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_FILE_SOURCE_TYPE);
-        filePath = (sourceType == FileSourceType::MEDIA_HO_LAKE) ?
+        filePath = (sourceType == FileSourceType::MEDIA_HO_LAKE || sourceType == FileSourceType::FILE_MANAGER) ?
             MediaLibraryRdbStore::GetString(resultSet, PhotoColumn::PHOTO_STORAGE_PATH) :
             MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_FILE_PATH);
+#else
+        filePath = MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_FILE_PATH);
+#endif
     }
     return E_SUCCESS;
 }
 
-static int32_t GetPathFromFileId(string &filePath, const string &fileId,
-    int32_t &position, int64_t &accesstime, int64_t &changeTime)
+static int32_t GetPathFromFileIdForGetAttr(string &filePath, const string &fileId,
+    CloudAssetTimeQueryParams &cloudAssetTimeQueryParams, PathValidationParams &pathValidationParams)
 {
     NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
     rdbPredicate.EqualTo(MediaColumn::MEDIA_ID, fileId);
@@ -311,27 +390,62 @@ static int32_t GetPathFromFileId(string &filePath, const string &fileId,
     columns.push_back(PhotoColumn::PHOTO_POSITION);
     columns.push_back(PhotoColumn::PHOTO_LAST_VISIT_TIME);
     columns.push_back(MediaColumn::MEDIA_DATE_MODIFIED);
+    columns.push_back(PhotoColumn::PHOTO_OWNER_ALBUM_ID);
+    columns.push_back(MediaColumn::MEDIA_NAME);
     auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
     int32_t numRows = 0;
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to get rslt");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "Failed to get rslt");
     int32_t ret = resultSet->GetRowCount(numRows);
-    if ((ret != NativeRdb::E_OK) || (numRows <= 0)) {
-        MEDIA_ERR_LOG("Failed to get filePath");
-        return E_ERR;
-    }
+    bool cond = ((ret != NativeRdb::E_OK) || (numRows <= 0));
+    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Failed to get filePath");
+
     if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
         int32_t sourceType = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_FILE_SOURCE_TYPE);
-        filePath = (sourceType == FileSourceType::MEDIA_HO_LAKE) ?
+        filePath = (sourceType == FileSourceType::MEDIA_HO_LAKE || sourceType == FileSourceType::FILE_MANAGER) ?
             MediaLibraryRdbStore::GetString(resultSet, PhotoColumn::PHOTO_STORAGE_PATH) :
             MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_FILE_PATH);
-        position = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_POSITION);
-        accesstime = GetInt64Val(PhotoColumn::PHOTO_LAST_VISIT_TIME, resultSet);
-        changeTime = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
+        cloudAssetTimeQueryParams.position = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_POSITION);
+        cloudAssetTimeQueryParams.accesstime = GetInt64Val(PhotoColumn::PHOTO_LAST_VISIT_TIME, resultSet);
+        cloudAssetTimeQueryParams.changeTime = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
+        pathValidationParams.storageName =
+            GetStorageNameFromFilePath(MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_FILE_PATH));
+        pathValidationParams.displayName = MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_NAME);
+        pathValidationParams.fileSourceType = sourceType;
+        pathValidationParams.ownerAlbumId = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_OWNER_ALBUM_ID);
     }
     resultSet->Close();
+    return E_SUCCESS;
+}
+
+static int32_t CheckMediaLibraryPathValidity(string &filePath, string &fileId, string storageName,
+    PathValidationParams &params, const string &displayName)
+{
+    if (params.fileSourceType != static_cast<int32_t>(FileSourceType::FILE_MANAGER)) {
+        return E_SUCCESS;
+    }
+
+    string targetStorageName = params.storageName;
+    string targetDisplayName = params.displayName;
+    CHECK_AND_RETURN_RET_LOG(!targetStorageName.empty() && storageName == targetStorageName, E_ERR,
+        "check filemanager asset storageName fail");
+    CHECK_AND_RETURN_RET_LOG(!targetDisplayName.empty() && displayName == targetDisplayName, E_ERR,
+        "check filemanager asset displayName fail");
+
+    CHECK_AND_RETURN_RET_LOG(params.ownerAlbumId > 0 && !displayName.empty(), E_ERR, "invalid filemanager asset");
+    
+    vector<string> fileNames;
+    string storageDirectory = GetStorageDirectoryFromStoragePath(filePath);
+    MediaFileUtils::GetAllFileNameListUnderPath(storageDirectory, fileNames);
+
+    int32_t sameNameCount = 0;
+    for (const auto &name : fileNames) {
+        if (name == displayName) {
+            sameNameCount++;
+        }
+    }
+    CHECK_AND_RETURN_RET_LOG(sameNameCount == 1, E_ERR,
+        "file manager directoryhas duplicate names, count: %{public}d", sameNameCount);
+
     return E_SUCCESS;
 }
 
@@ -501,47 +615,46 @@ static int32_t GetTranscodeUri(string &filePath, const string &fileId, const str
 int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
 {
     string fileId;
+    string storageName;
+    string displayName;
     string target = path;
     bool cond = (path == nullptr || strlen(path) == 0);
 
-    fuse_context *ctx = fuse_get_context();
-#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
-    if (ctx != nullptr) {
-        int32_t criticalCheck = CheckCriticalPhotoPermission(fileId, ctx->uid);
-        if (criticalCheck != E_SUCCESS) {
-            return E_PERMISSION_DENIED;
-        }
-    }
-#endif
     CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Invalid path, %{public}s", path == nullptr ? "null" : path);
     int32_t ret;
     int32_t splitCount = countSubString(path, "/");
     if (splitCount != URI_SLASH_NUM_API10) {
         ret = lstat(FUSE_ROOT_MEDIA_DIR.c_str(), stbuf);
     } else {
-        ret = GetFileIdFromUriForGetAttr(fileId, path);
-        CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "get attr fileid fail");
-        int32_t position = 0;
-        int64_t accesstime = 0;
-        int64_t changeTime = 0;
-        ret = GetPathFromFileId(target, fileId, position, accesstime, changeTime);
+        fuse_context *ctx = fuse_get_context();
+#ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
+        if (ctx != nullptr) {
+            int32_t criticalCheck = PermissionCheck::CheckCriticalPhotoPermission(fileId, ctx->uid);
+            if (criticalCheck != E_SUCCESS) {
+                return E_PERMISSION_DENIED;
+            }
+        }
+#endif
+        ret = GetMessageFromUriForGetAttr(fileId, storageName, displayName, path);
+        CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "get attr message fail");
+        MEDIA_INFO_LOG("check fileId = %{public}s", fileId.c_str());
+        CloudAssetTimeQueryParams cloudAssetTimeQueryParams(fileId, 0, 0, 0);
+        PathValidationParams pathValidationParams(fileId, "", "", FileSourceType::MEDIA, 0);
+        ret = GetPathFromFileIdForGetAttr(target, fileId, cloudAssetTimeQueryParams, pathValidationParams);
         CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, FILE_FAIL, "get attr path fail");
         CHECK_AND_RETURN_RET_LOG(ctx != nullptr, E_INNER_FAIL, "fuse_get_context returned nullptr");
+        ret = CheckMediaLibraryPathValidity(target, fileId, storageName, pathValidationParams, displayName);
+        CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, FILE_FAIL, "check attr path validity fail");
         int32_t permGranted = DoMedialibraryReadPermission(fileId, target, ctx->uid);
-        CHECK_AND_RETURN_RET_LOG(permGranted > 0, E_ERR, "permission denied");
+        CHECK_AND_RETURN_RET_LOG(permGranted > 0, E_PERMISSION_DENIED, "permission denied");
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(target), FILE_FAIL, "file is not exist.");
         TranscodeType type;
         GetTranscodeUri(target, fileId, MEDIA_FILEMODE_READONLY, ctx->uid, type);
         ret = lstat(target.c_str(), stbuf);
-        if (ret == E_SUCCESS && position == PHOTO_POSITION_TYPE_CLOUD) {
-            if (accesstime > MILLISECONDS_THRESHOLD) {
-                accesstime /= MILLISECONDS_PER_SECOND;
-            }
-            if (changeTime > MILLISECONDS_THRESHOLD) {
-                changeTime /= MILLISECONDS_PER_SECOND;
-            }
-            stbuf->st_atime = accesstime;
-            stbuf->st_ctime = changeTime;
+        if (ret == E_SUCCESS && cloudAssetTimeQueryParams.position == PHOTO_POSITION_TYPE_CLOUD) {
+            stbuf->st_atim.tv_sec = cloudAssetTimeQueryParams.accesstime;
+            stbuf->st_ctim.tv_sec = cloudAssetTimeQueryParams.changeTime;
+            stbuf->st_mtim.tv_sec = cloudAssetTimeQueryParams.changeTime;
         }
     }
     stbuf->st_mode = stbuf->st_mode | 0x6;

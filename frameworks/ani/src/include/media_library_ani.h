@@ -303,6 +303,11 @@ public:
     static ani_object GetAlbumIdByBundleName(ani_env *env, ani_object object, ani_string bundleName);
     static ani_object GetAssetCompatibleUris(ani_env *env, ani_object object,
         ani_string bundleName, ani_object assets, ani_int compatibleFlags = 0);
+    static ani_object ConvertToAsset(ani_env *env, ani_object object, ani_string path);
+    static ani_object MoveAssetsToDir(ani_env *env, ani_object object, ani_object assets,
+        ani_string targetDir, ani_object option);
+    static ani_object MoveAssetsByPath(ani_env *env, ani_object object, ani_object assets,
+        ani_object target, ani_object option);
 
 private:
     int32_t GetListenerType(const std::string &str) const;
@@ -428,6 +433,12 @@ struct MediaLibraryAsyncContext : public AniError {
     std::string bundleName;
     std::vector<PhotoAssetInfoAni> photoAssetInfos;
     int32_t compatibleFlags = 0;
+    std::string path;
+    std::string targetDir;
+    std::string requestId;
+    int32_t mode;
+    std::atomic<bool> isCancelled{false};
+    ani_ref taskSignalRef;
 };
 } // namespace Media
 } // namespace OHOS

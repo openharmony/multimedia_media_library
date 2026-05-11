@@ -53,6 +53,8 @@
 #include "change_request_merge_album_vo.h"
 #include "change_request_place_before_vo.h"
 #include "change_request_set_order_position_vo.h"
+#include "album_change_set_hidden_attribute_vo.h"
+#include "album_change_set_album_name_by_file_vo.h"
 
 namespace OHOS::Media {
 static const int32_t VALUE_IS_ME = 1;
@@ -117,6 +119,8 @@ ani_status MediaAlbumChangeRequestAni::Init(ani_env *env)
         ani_native_function {"dismiss", nullptr, reinterpret_cast<void *>(Dismiss)},
         ani_native_function {"resetCoverUri", nullptr, reinterpret_cast<void *>(ResetCoverUri)},
         ani_native_function {"operateAttribute", nullptr, reinterpret_cast<void *>(OperateAttribute)},
+        ani_native_function {"setHiddenAttribute", nullptr, reinterpret_cast<void *>(SetHiddenAttribute)},
+        ani_native_function {"setAlbumNameByFile", nullptr, reinterpret_cast<void *>(SetAlbumNameByFile)},
     };
     status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
     if (status != ANI_OK) {
@@ -914,6 +918,60 @@ ani_status MediaAlbumChangeRequestAni::ResetCoverUri(ani_env *env, ani_object ob
     return ANI_OK;
 }
 
+ani_status MediaAlbumChangeRequestAni::SetHiddenAttribute(ani_env *env, ani_object object,
+    ani_boolean fileHiddenState, ani_boolean inherited)
+{
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return ANI_ERROR;
+    }
+    auto context = std::make_unique<MediaAlbumChangeRequestContext>();
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is null");
+
+    bool isFileHidden = static_cast<bool>(fileHiddenState);
+    bool isInherited = static_cast<bool>(inherited);
+
+    context->objectInfo = MediaAlbumChangeRequestAni::Unwrap(env, object);
+    auto changeRequest = context->objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, ANI_INVALID_ARGS, "changeRequest is nullptr");
+    CHECK_COND_RET(changeRequest->GetPhotoAlbumInstance() != nullptr, ANI_INVALID_ARGS, "photoAlbum is nullptr");
+
+    changeRequest->GetPhotoAlbumInstance()->SetFileHidden(isFileHidden);
+    changeRequest->hiddenInherited_ = isInherited;
+    changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::SET_HIDDEN_ATTRIBUTE);
+    return ANI_OK;
+}
+
+ani_status MediaAlbumChangeRequestAni::SetAlbumNameByFile(ani_env *env, ani_object object, ani_string name)
+{
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return ANI_ERROR;
+    }
+
+    std::string albumName;
+    ani_status status = MediaLibraryAniUtils::GetParamStringPathMax(env, name, albumName);
+    if (status != ANI_OK) {
+        AniError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to get album name");
+        return ANI_INVALID_ARGS;
+    }
+    if (MediaFileUtils::CheckAlbumName(albumName, true) != E_OK) {
+        AniError::ThrowError(env, JS_E_PARAM_INVALID, "Invalid album name");
+        return ANI_INVALID_ARGS;
+    }
+
+    auto context = std::make_unique<MediaAlbumChangeRequestContext>();
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is null");
+    context->objectInfo = MediaAlbumChangeRequestAni::Unwrap(env, object);
+    auto changeRequest = context->objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, ANI_INVALID_ARGS, "changeRequest is nullptr");
+    CHECK_COND_RET(changeRequest->GetPhotoAlbumInstance() != nullptr, ANI_INVALID_ARGS, "photoAlbum is nullptr");
+
+    changeRequest->GetPhotoAlbumInstance()->SetAlbumName(albumName);
+    changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::SET_ALBUM_NAME_BY_FILE);
+    return ANI_OK;
+}
+
 ani_status MediaAlbumChangeRequestAni::DeleteAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset)
 {
     CHECK_COND_RET(env != nullptr, ANI_INVALID_ARGS, "env is null");
@@ -1605,6 +1663,57 @@ static bool SetOrderPositionExecute(MediaAlbumChangeRequestContext &context)
     return true;
 }
 
+
+static bool SetHiddenAttributeExecute(MediaAlbumChangeRequestContext& context)
+{
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
+
+    AlbumChangeSetHiddenAttributeReqBody reqBody;
+    reqBody.albumId = photoAlbum->GetAlbumId();
+    reqBody.fileHidden = photoAlbum->IsFileHidden();
+    reqBody.inherited = changeRequest->hiddenInherited_;
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_CHANGE_SET_HIDDEN_ATTRIBUTE);
+    int32_t changedRows = IPC::UserDefineIPCClient().SetUserId(photoAlbum->GetUserId()).Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        int32_t errCode = MediaLibraryAniUtils::TransErrorCode("SetHiddenAttributeExecute", changedRows);
+        context.SaveError(errCode);
+        ANI_ERR_LOG("SetHiddenAttributeExecute failed, err: %{public}d", errCode);
+        return false;
+    }
+
+    return true;
+}
+
+static bool SetAlbumNameByFileExecute(MediaAlbumChangeRequestContext& context)
+{
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
+
+    AlbumChangeSetAlbumNameByFileReqBody reqBody;
+    reqBody.albumId = photoAlbum->GetAlbumId();
+    reqBody.albumName = photoAlbum->GetAlbumName();
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_CHANGE_SET_ALBUM_NAME_BY_FILE);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        int32_t errCode = MediaLibraryAniUtils::TransErrorCode("SetAlbumNameByFileExecute", changedRows);
+        context.SaveError(errCode);
+        ANI_ERR_LOG("SetAlbumNameByFileExecute failed, err: %{public}d", errCode);
+        return false;
+    }
+    return true;
+}
+
 static const unordered_map<AlbumChangeOperation, bool (*)(MediaAlbumChangeRequestContext&)> EXECUTE_MAP = {
     { AlbumChangeOperation::CREATE_ALBUM, CreateAlbumExecute },
     { AlbumChangeOperation::ADD_ASSETS, AddAssetsExecute },
@@ -1620,6 +1729,8 @@ static const unordered_map<AlbumChangeOperation, bool (*)(MediaAlbumChangeReques
     { AlbumChangeOperation::MERGE_ALBUM, MergeAlbumExecute },
     { AlbumChangeOperation::DISMISS_ASSET, DismissAssetExecute },
     { AlbumChangeOperation::SET_ORDER_POSITION, SetOrderPositionExecute },
+    { AlbumChangeOperation::SET_HIDDEN_ATTRIBUTE, SetHiddenAttributeExecute },
+    { AlbumChangeOperation::SET_ALBUM_NAME_BY_FILE, SetAlbumNameByFileExecute },
 };
 
 static bool SetAlbumNameExecute(MediaAlbumChangeRequestContext& context)

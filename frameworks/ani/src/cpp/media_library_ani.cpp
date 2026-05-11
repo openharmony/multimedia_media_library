@@ -88,6 +88,10 @@
 #include "check_photo_uris_read_permission_vo.h"
 #include "get_albumid_by_lpath_vo.h"
 #include "preferred_compatible_mode_check_utils.h"
+#include "convert_to_asset_vo.h"
+#include "photo_album_ani.h"
+#include "change_request_move_assets_to_dir_vo.h"
+#include "change_request_move_assets_by_path_vo.h"
 
 namespace OHOS {
 namespace Media {
@@ -301,6 +305,12 @@ const std::array photoAccessHelperMethos = {
         reinterpret_cast<void *>(MediaLibraryAni::GetAlbumIdByBundleName)},
     ani_native_function {"getAssetCompatibleUrisInner", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::GetAssetCompatibleUris)},
+    ani_native_function {"convertToAssetInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::ConvertToAsset)},
+    ani_native_function {"moveAssetsToDirInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::MoveAssetsToDir)},
+    ani_native_function {"moveAssetsByPathInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::MoveAssetsByPath)},
 };
 } // namespace
 
@@ -6640,8 +6650,63 @@ ani_object MediaLibraryAni::GetAssetCompatibleConfig(ani_env *env, ani_object ob
     return GetAssetCompatibleConfigComplete(env, context);
 }
 
-static std::string ParseLpath(ani_env *env, ani_string lpath,
-    unique_ptr<MediaLibraryAsyncContext> &context)
+static void ConvertToAssetExecute(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("ConvertToAssetExecute");
+
+    ConvertToAssetReqBody reqBody;
+    ConvertToAssetRespBody respBody;
+    reqBody.path = context->path;
+    int32_t ret = IPC::UserDefineIPCClient().Call(context->businessCode, reqBody, respBody);
+    if (ret != 0) {
+        ANI_ERR_LOG("UserDefineIPCClient().Call failed, ret: %{public}d", ret);
+        context->SaveError(ret);
+        return;
+    }
+    auto fetchFileResult = make_unique<FetchResult<FileAsset>>(move(respBody.resultSet));
+    CHECK_NULL_PTR_RETURN_VOID(fetchFileResult, "fetchFileResult is nullptr.");
+    context->fetchFileResult = std::move(fetchFileResult);
+}
+
+static ani_object ConvertToAssetComplete(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("ConvertToAssetComplete");
+
+    if (context->error != ERR_DEFAULT) {
+        return nullptr;
+    }
+    std::unique_ptr<FetchResult<FileAsset>> fileAsset = std::move(context->fetchFileResult);
+    CHECK_COND_RET(fileAsset != nullptr, nullptr, "ConvertToAssetComplete failed");
+    ani_object result = nullptr;
+    if (ANI_OK != MediaLibraryAniUtils::ToFileAssetAniPtr(env, std::move(fileAsset), result)) {
+        ANI_ERR_LOG("MediaLibraryAni::ConvertToAssetComplete failed");
+    }
+    ANI_DEBUG_LOG("ConvertToAssetComplete end");
+    return result;
+}
+
+ani_object MediaLibraryAni::ConvertToAsset(ani_env *env, ani_object object, ani_string path)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("ConvertToAsset");
+    ANI_DEBUG_LOG("ConvertToAsset start");
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
+    CHECK_COND_RET(object != nullptr, nullptr, "object is nullptr");
+    CHECK_COND_RET(path != nullptr, nullptr, "path is nullptr");
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_COND_RET(asyncContext != nullptr, nullptr, "asyncContext is nullptr");
+    asyncContext->objectInfo = Unwrap(env, object);
+
+    CHECK_COND_RET(MediaLibraryAniUtils::GetString(env, path, asyncContext->path), nullptr, "Failed to get path");
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_TO_ASSET);
+    SetUserIdFromObjectInfo(asyncContext);
+    ConvertToAssetExecute(env, asyncContext);
+    return ConvertToAssetComplete(env, asyncContext);
+}
+
+static std::string ParseLpath(ani_env *env, ani_string lpath, unique_ptr<MediaLibraryAsyncContext> &context)
 {
     string lpathStr = "";
     if (!MediaLibraryAniUtils::IsSystemApp()) {
@@ -7025,6 +7090,215 @@ ani_object MediaLibraryAni::GetAssetCompatibleUris(ani_env *env, ani_object obje
     SetUserIdFromObjectInfo(asyncContext);
     GetAssetCompatibleUrisExecute(env, asyncContext);
     return GetAssetCompatibleUrisComplete(env, asyncContext);
+}
+
+static ani_status ParseArgsMoveAssetsToDir(ani_env *env, ani_object assets, ani_string targetDir,
+    ani_object option, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
+ 
+    std::vector<std::string> assetArray;
+    CHECK_STATUS_RET(MediaLibraryAniUtils::GetStringArray(env, assets, assetArray), "Failed to get assets array");
+    constexpr size_t maxAssetsNumber = 20;
+    constexpr size_t sizeOfArray = 0;
+    if (assetArray.size() > maxAssetsNumber || assetArray.size() == sizeOfArray) {
+        AniError::ThrowError(env, JS_E_PARAM_INVALID, "size of assets is 0 or over 20.");
+        return ANI_ERROR;
+    }
+ 
+    for (const auto &asset : assetArray) {
+        CHECK_COND_RET(!asset.empty(), ANI_ERROR, "asset is empty");
+    }
+    context->uriArray = assetArray;
+ 
+    std::string targetDirStr;
+    CHECK_STATUS_RET(MediaLibraryAniUtils::GetString(env, targetDir, targetDirStr), "Failed to get targetDir");
+    CHECK_COND_RET(!targetDirStr.empty(), ANI_ERROR, "targetDir is empty");
+    context->targetDir = targetDirStr;
+ 
+    if (option != nullptr) {
+        if (MediaLibraryAniUtils::IsUndefined(env, option) == ANI_FALSE) {
+            ani_object modeValue = nullptr;
+            ani_status ret = MediaLibraryAniUtils::GetProperty(env, option, "mode", modeValue);
+            if (ret == ANI_OK && modeValue != nullptr) {
+                ret = MediaLibraryAniUtils::GetInt32(env, modeValue, context->mode);
+                CHECK_STATUS_RET(ret, "Failed to get mode");
+            }
+        }
+    }
+    context->requestId = std::to_string(AssignRequestId());
+    return ANI_OK;
+}
+ 
+static void MoveAssetsToDirExecute(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MoveAssetsToDirExecute");
+ 
+    ChangeRequestMoveAssetsToDirReqBody reqBody;
+    ChangeRequestMoveAssetsToDirRespBody respBody;
+    reqBody.assets = context->uriArray;
+    reqBody.targetDir = context->targetDir;
+    reqBody.requestId = std::stoi(context->requestId);
+    reqBody.mode = context->mode;
+    int32_t ret = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::MOVE_ASSETS_TO_DIR),
+        reqBody, respBody);
+    if (ret < 0) {
+        ANI_ERR_LOG("Failed to move assets to dir, err: %{public}d", ret);
+        context->SaveError(ret);
+        return;
+    }
+    context->uriArray = respBody.resultList;
+    ANI_INFO_LOG("Move %{public}d assets to dir successfully", static_cast<int>(reqBody.assets.size()));
+    tracer.Finish();
+}
+ 
+static ani_object MoveAssetsToDirComplete(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MoveAssetsToDirComplete");
+ 
+    if (context->error != ERR_DEFAULT) {
+        return nullptr;
+    }
+ 
+    ani_object result = nullptr;
+    ani_status ret = MediaLibraryAniUtils::ToAniStringArray(env, context->uriArray, result);
+    if (ret != ANI_OK) {
+        ANI_ERR_LOG("Failed to create string array");
+        return nullptr;
+    }
+    return result;
+}
+ 
+ani_object MediaLibraryAni::MoveAssetsToDir(ani_env *env, ani_object object, ani_object assets,
+    ani_string targetDir, ani_object option)
+{
+    ANI_DEBUG_LOG("MoveAssetsToDir start");
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
+    CHECK_COND_RET(object != nullptr, nullptr, "object is nullptr");
+ 
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_COND_RET(asyncContext != nullptr, nullptr, "asyncContext is nullptr");
+ 
+    asyncContext->objectInfo = Unwrap(env, object);
+    CHECK_COND_RET(asyncContext->objectInfo != nullptr, nullptr, "objectInfo is nullptr");
+ 
+    if (ANI_OK != ParseArgsMoveAssetsToDir(env, assets, targetDir, option, asyncContext)) {
+        AniError::ThrowError(env, JS_INNER_FAIL);
+        return nullptr;
+    }
+ 
+    SetUserIdFromObjectInfo(asyncContext);
+    MoveAssetsToDirExecute(env, asyncContext);
+    return MoveAssetsToDirComplete(env, asyncContext);
+}
+ 
+static ani_status ParseArgsMoveAssetsByPath(ani_env *env, ani_object assets, ani_object target,
+    ani_object option, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
+ 
+    std::vector<std::string> assetPathArray;
+    CHECK_STATUS_RET(MediaLibraryAniUtils::GetStringArray(env, assets, assetPathArray), "Failed to get assets array");
+    constexpr size_t maxAssetsNumber = 20;
+    constexpr size_t sizeOfArray = 0;
+    if (assetPathArray.size() > maxAssetsNumber || assetPathArray.size() == sizeOfArray) {
+        AniError::ThrowError(env, JS_E_PARAM_INVALID, "size of assets is 0 or over 20.");
+        return ANI_ERROR;
+    }
+ 
+    for (auto &asset : assetPathArray) {
+        CHECK_COND_RET(!asset.empty(), ANI_ERROR, "asset is empty");
+    }
+    context->uriArray.swap(assetPathArray);
+ 
+    PhotoAlbumAni *photoAlbumAni = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, target);
+    CHECK_COND_RET(photoAlbumAni != nullptr, ANI_ERROR, "photoAlbumAni is nullptr");
+    auto photoAlbum = photoAlbumAni->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, ANI_ERROR, "photoAlbum is nullptr");
+    context->albumIds.push_back(std::to_string(photoAlbum->GetAlbumId()));
+ 
+    if (option != nullptr) {
+        if (MediaLibraryAniUtils::IsUndefined(env, option) == ANI_FALSE) {
+            ani_object modeValue = nullptr;
+            ani_status ret = MediaLibraryAniUtils::GetProperty(env, option, "mode", modeValue);
+            if (ret == ANI_OK && modeValue != nullptr) {
+                ret = MediaLibraryAniUtils::GetInt32(env, modeValue, context->mode);
+                CHECK_STATUS_RET(ret, "Failed to get mode");
+            }
+        }
+    }
+    context->requestId = std::to_string(AssignRequestId());
+    return ANI_OK;
+}
+ 
+static void MoveAssetsByPathExecute(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MoveAssetsByPathExecute");
+ 
+    ChangeRequestMoveAssetsByPathReqBody reqBody;
+    ChangeRequestMoveAssetsByPathRespBody respBody;
+    reqBody.assetPaths = context->uriArray;
+    reqBody.targetAlbumId = context->albumIds.empty() ? "" : context->albumIds[0];
+    reqBody.requestId = std::stoi(context->requestId);
+    reqBody.mode = context->mode;
+    int32_t ret = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::MOVE_ASSETS_BY_PATH),
+        reqBody, respBody);
+    if (ret < 0) {
+        ANI_ERR_LOG("Failed to move assets by path, err: %{public}d", ret);
+        context->SaveError(ret);
+        return;
+    }
+    context->uriArray = respBody.resultList;
+    ANI_INFO_LOG("Move %{public}d assets by path successfully", static_cast<int>(reqBody.assetPaths.size()));
+    tracer.Finish();
+}
+ 
+static ani_object MoveAssetsByPathComplete(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MoveAssetsByPathComplete");
+ 
+    if (context->error != ERR_DEFAULT) {
+        return nullptr;
+    }
+ 
+    ani_object result = nullptr;
+    ani_status ret = MediaLibraryAniUtils::ToAniStringArray(env, context->uriArray, result);
+    if (ret != ANI_OK) {
+        ANI_ERR_LOG("Failed to create string array");
+        return nullptr;
+    }
+    return result;
+}
+ 
+ani_object MediaLibraryAni::MoveAssetsByPath(ani_env *env, ani_object object, ani_object assets,
+    ani_object target, ani_object option)
+{
+    ANI_DEBUG_LOG("MoveAssetsByPath start");
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
+    CHECK_COND_RET(object != nullptr, nullptr, "object is nullptr");
+ 
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_COND_RET(asyncContext != nullptr, nullptr, "asyncContext is nullptr");
+ 
+    asyncContext->objectInfo = Unwrap(env, object);
+    CHECK_COND_RET(asyncContext->objectInfo != nullptr, nullptr, "objectInfo is nullptr");
+ 
+    if (ANI_OK != ParseArgsMoveAssetsByPath(env, assets, target, option, asyncContext)) {
+        AniError::ThrowError(env, JS_INNER_FAIL);
+        return nullptr;
+    }
+ 
+    SetUserIdFromObjectInfo(asyncContext);
+    MoveAssetsByPathExecute(env, asyncContext);
+    return MoveAssetsByPathComplete(env, asyncContext);
 }
 } // namespace Media
 } // namespace OHOS

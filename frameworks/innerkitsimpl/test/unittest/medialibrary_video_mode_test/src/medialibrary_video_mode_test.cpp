@@ -24,7 +24,11 @@
 #include "medialibrary_unittest_utils.h"
 #include "metadata_extractor.h"
 #include "result_set_utils.h"
-#include "media_upgrade.h"
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+#include "file_scan_utils.h"
+#endif
+#include "directory_ex.h"
+ #include "media_upgrade.h"
  
 using namespace testing::ext;
  

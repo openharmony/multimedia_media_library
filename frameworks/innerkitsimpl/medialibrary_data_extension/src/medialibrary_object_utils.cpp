@@ -44,6 +44,9 @@
 #include "medialibrary_transcode_data_aging_operation.h"
 #include "media_audio_column.h"
 #include "heif_transcoding_check_utils.h"
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+#include "media_file_access_utils.h"
+#endif
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -543,6 +546,9 @@ int32_t MediaLibraryObjectUtils::DeleteFileObj(const shared_ptr<FileAsset> &file
 {
     // delete file in filesystem
     string filePath = fileAsset->GetPath();
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+    filePath = MediaFileAccessUtils::GetAssetRealPath(filePath);
+#endif
     if (!MediaFileUtils::DeleteFile(filePath)) {
         MEDIA_ERR_LOG("Delete file asset failed, errno: %{public}d", errno);
         return E_HAS_FS_ERROR;
@@ -608,6 +614,9 @@ int32_t MediaLibraryObjectUtils::DeleteDirObj(const shared_ptr<FileAsset> &dirAs
 {
     // delete dir in filesystem
     string dirPath = dirAsset->GetPath();
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+    dirPath = MediaFileAccessUtils::GetAssetRealPath(dirPath);
+#endif
     if (!MediaFileUtils::DeleteDir(dirPath)) {
         MEDIA_ERR_LOG("Delete album asset failed, errno: %{public}d", errno);
         return E_HAS_FS_ERROR;
