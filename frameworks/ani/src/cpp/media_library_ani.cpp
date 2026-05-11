@@ -6984,6 +6984,7 @@ static ani_object GetAssetCompatibleUrisComplete(ani_env *env, unique_ptr<MediaL
     tracer.Start("GetAssetCompatibleUrisComplete");
 
     if (context->error != ERR_DEFAULT) {
+        AniError::ThrowError(env, JS_E_INNER_FAIL, "medialibrary inner fail");
         return nullptr;
     }
 
@@ -6992,6 +6993,7 @@ static ani_object GetAssetCompatibleUrisComplete(ani_env *env, unique_ptr<MediaL
     ani_status ret = MediaLibraryAniUtils::ToAniStringArray(env, res, result);
     if (ret != ANI_OK) {
         ANI_ERR_LOG("Failed to create string array");
+        AniError::ThrowError(env, JS_E_INNER_FAIL, "medialibrary inner fail");
         return nullptr;
     }
     return result;
