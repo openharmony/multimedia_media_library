@@ -86,8 +86,6 @@ bool OnFetchPhotosVo::MarshallingAttributesInfo(Parcel &parcel) const
     CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->isRectificationCover), false, "isRectificationCover");
     CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->exifRotate), false, "exifRotate");
     CHECK_AND_RETURN_RET_LOG(parcel.WriteBool(this->isDelete), false, "isDelete");
-    CHECK_AND_RETURN_RET_LOG(parcel.WriteInt32(this->fileSourceType), false, "fileSourceType");
-    CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->storagePath), false, "storagePath");
     CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->uniqueId), false, "uniqueId");
     CHECK_AND_RETURN_RET_LOG(parcel.WriteString(this->packageName), false, "packageName");
     // Safe Album: risk status for children's watch
@@ -158,8 +156,6 @@ bool OnFetchPhotosVo::ReadAttributesInfo(Parcel &parcel)
     CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->isRectificationCover), false, "isRectificationCover");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->exifRotate), false, "exifRotate");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadBool(this->isDelete), false, "isDelete");
-    CHECK_AND_RETURN_RET_LOG(parcel.ReadInt32(this->fileSourceType), false, "fileSourceType");
-    CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->storagePath), false, "storagePath");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->uniqueId), false, "uniqueId");
     CHECK_AND_RETURN_RET_LOG(parcel.ReadString(this->packageName), false, "packageName");
     // Safe Album: risk status for children's watch
@@ -255,8 +251,6 @@ void OnFetchPhotosVo::GetAttributesInfo(std::stringstream &ss) const
        << "\"description\": \"" << description << "\","
        << "\"DeviceName\": \"" << source << "\","
        << "\"videoMode\": \"" << videoMode << "\","
-       << "\"fileSourceType\": \"" << fileSourceType << "\","
-       << "\"storagePath\": \"" << storagePath << "\","
        << "\"uniqueId\": \"" << uniqueId << "\","
        << "\"packageName\": \"" << packageName << "\","
        << "\"photoRiskStatus\": \"" << photoRiskStatus << "\","

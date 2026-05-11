@@ -56,6 +56,7 @@
 #include "get_albumid_by_lpath_dto.h"
 #include "get_albumid_by_lpath_vo.h"
 #include "create_analysis_album_dto.h"
+#include "analysis_album_get_attribute_dto.h"
 
 namespace OHOS::Media {
 class MediaAlbumsService {
@@ -92,6 +93,8 @@ public:
     std::shared_ptr<DataShare::DataShareResultSet> GetClonedAlbumUris(GetClonedAlbumUrisDto &dto);
     int32_t GetAlbumIdByLpathOrBundleName(GetAlbumIdByLpathDto &dto, GetAlbumIdByLpathRespBody &respBody);
     int32_t SmartMoveAssets(ChangeRequestMoveAssetsDto &moveAssetsDto);
+    int32_t GetAnalysisAlbumAttribute(const AnalysisAlbumGetAttributeDto &dto,
+        std::vector<std::unordered_map<std::string, std::string>> &queryResults);
     void ReportFirstDbStatus();
     void ReportCloneDbStatus();
 

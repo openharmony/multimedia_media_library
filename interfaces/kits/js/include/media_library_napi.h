@@ -393,6 +393,7 @@ private:
     EXPORT static napi_value PhotoAccessHelperGetPreferredCompatibleMode(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperSetFileCompatibleConfig(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperGetAssetCompatibleConfig(napi_env env, napi_callback_info info);
+    EXPORT static napi_value GetAssetCompatibleUris(napi_env env, napi_callback_info info);
     
     EXPORT static napi_value SetHidden(napi_env env, napi_callback_info info);
     EXPORT static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);
@@ -577,6 +578,13 @@ struct PickerCallBack {
     int32_t fileSize;
 };
 
+struct PhotoAssetInfo {
+    int32_t width;
+    int32_t height;
+    std::string uri;
+    int32_t fileId;
+};
+
 constexpr int32_t DEFAULT_PRIVATEALBUMTYPE = 3;
 struct MediaLibraryAsyncContext : public NapiError {
     napi_async_work work;
@@ -683,6 +691,8 @@ struct MediaLibraryAsyncContext : public NapiError {
     mutable std::mutex uriPermissionStateMapMutex;
     std::unordered_map<std::string, int32_t> uriPermissionStateMap;
     ChangeListenerNapi* availabilityListObj = nullptr;
+    std::vector<PhotoAssetInfo> photoAssetInfos;
+    int32_t compatibleFlags = 0;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

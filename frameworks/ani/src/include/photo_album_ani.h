@@ -85,6 +85,7 @@ private:
     EXPORT static ani_long GetChangeTime(ani_env *env, ani_object object);
     EXPORT static ani_ref TransferToDynamicAlbum(ani_env *env, [[maybe_unused]] ani_class, ani_object input);
     EXPORT static ani_object TransferToStaticAlbum(ani_env *env, [[maybe_unused]] ani_class, ani_object input);
+    EXPORT static ani_object GetAttribute(ani_env *env, ani_object object, ani_object attrsArray);
     ani_env *env_;
     std::shared_ptr<PhotoAlbum> photoAlbumPtr;
     static thread_local PhotoAlbum *pAlbumData_;
@@ -110,6 +111,8 @@ struct PhotoAlbumAniContext : public AniError {
     std::vector<std::string> assetsArray;
     bool isSystemApi{false};
     std::vector<std::string> uris;
+    std::vector<std::string> attributeArray;
+    std::vector<std::unordered_map<std::string, std::string>> attributeQueryResults;
 };
 
 } // namespace Media

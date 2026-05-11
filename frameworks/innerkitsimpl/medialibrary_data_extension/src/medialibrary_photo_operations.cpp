@@ -78,6 +78,7 @@
 #include "media_edit_utils.h"
 #include "media_string_utils.h"
 #include "media_path_utils.h"
+#include "heif_transcoding_check_utils.h"
 
 using namespace OHOS::DataShare;
 using namespace std;
@@ -119,7 +120,6 @@ static const std::string ORIGIN_VIDEO_STR = "1";
 static const std::string CONTAIN_ADD_RESOURCE_FALSE = "0";
 static const std::string CONTAIN_ADD_RESOURCE_TRUE = "1";
 static const std::string IS_CAPTURE = "is_capture";
-static const int32_t HIGH_PIXEL_SIZE = 9 * 1024 * 12 * 1024;
 
 const int32_t PACKOPTION_QUALITY = 90;
 const int32_t PACKOPTION_QUALITY_HEIF = 95;
@@ -6286,6 +6286,20 @@ void MediaLibraryPhotoOperations::StoreThumbnailInfoAsync(const std::vector<Down
     auto thumbFilesTask = make_shared<MediaLibraryAsyncTask>(HandleThumbFiles, taskData);
     CHECK_AND_RETURN_LOG(thumbFilesTask != nullptr, "Failed to create async task");
     asyncWorker->AddTask(thumbFilesTask, true);
+}
+
+std::string MediaLibraryPhotoOperations::GetLivePhotoCachePathById(const std::string &fileId)
+{
+    MEDIA_DEBUG_LOG("GetLivePhotoCachePathById start, fileId: %{public}s", fileId.c_str());
+    vector<string> columns = { PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_SUBTYPE,
+        PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, PhotoColumn::MOVING_PHOTO_EFFECT_MODE };
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, fileId,
+        OperationObject::FILESYSTEM_PHOTO, columns);
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, "", "Failed to get FileAsset from db");
+    bool isMovingPhoto = MovingPhotoFileUtils::IsMovingPhoto(fileAsset->GetPhotoSubType(),
+        fileAsset->GetMovingPhotoEffectMode(), fileAsset->GetOriginalSubType());
+    CHECK_AND_RETURN_RET_LOG(isMovingPhoto, "", "not moving photo");
+    return MovingPhotoFileUtils::GetLivePhotoCachePath(fileAsset->GetPath());
 }
 } // namespace Media
 } // namespace OHOS

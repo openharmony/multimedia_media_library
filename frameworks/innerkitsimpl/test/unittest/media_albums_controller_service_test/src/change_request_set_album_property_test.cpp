@@ -821,4 +821,121 @@ HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_D
     EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), JS_INNER_FAIL);
     MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_DbPermissionDenied_001");
 }
+
+HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_UnsupportedType_ExtraInfo_001,
+    TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start ChangeRequestOperateAlbumAttribute_UnsupportedType_ExtraInfo_001");
+    int32_t albumId = CreatePortraitAlbum("portrait_album_unsupported_type");
+    ASSERT_GT(albumId, 0);
+
+    ChangeRequestOperateAlbumAttributeReqBody reqBody;
+    reqBody.albumId = to_string(albumId);
+    reqBody.attr = ANALYSIS_ALBUM_ATTR_EXTRA_INFO;
+    reqBody.type = ANALYSIS_ALBUM_OP_ADD;
+    reqBody.values = { R"({"contact_key":"123456789"})" };
+    reqBody.albumType = static_cast<int32_t>(PhotoAlbumType::SMART);
+    reqBody.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT);
+
+    EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), E_OPERATION_NOT_SUPPORT);
+    MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_UnsupportedType_ExtraInfo_001");
+}
+
+HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_EmptyExtraInfo_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start ChangeRequestOperateAlbumAttribute_EmptyExtraInfo_001");
+    int32_t albumId = CreatePortraitAlbum("portrait_album_empty_extra_info");
+    ASSERT_GT(albumId, 0);
+
+    ChangeRequestOperateAlbumAttributeReqBody reqBody;
+    reqBody.albumId = to_string(albumId);
+    reqBody.attr = ANALYSIS_ALBUM_ATTR_EXTRA_INFO;
+    reqBody.type = ANALYSIS_ALBUM_OP_UPDATE;
+    reqBody.values = { "" };
+    reqBody.albumType = static_cast<int32_t>(PhotoAlbumType::SMART);
+    reqBody.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT);
+
+    EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), E_OK);
+    MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_EmptyExtraInfo_001");
+}
+
+HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_EmptyValues_ExtraInfo_001,
+    TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start ChangeRequestOperateAlbumAttribute_EmptyValues_001");
+    int32_t albumId = CreatePortraitAlbum("portrait_album_empty_values");
+    ASSERT_GT(albumId, 0);
+
+    ChangeRequestOperateAlbumAttributeReqBody reqBody;
+    reqBody.albumId = to_string(albumId);
+    reqBody.attr = ANALYSIS_ALBUM_ATTR_EXTRA_INFO;
+    reqBody.type = ANALYSIS_ALBUM_OP_UPDATE;
+    reqBody.values = {};
+    reqBody.albumType = static_cast<int32_t>(PhotoAlbumType::SMART);
+    reqBody.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT);
+
+    EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), E_INVALID_VALUES);
+    MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_EmptyValues_001");
+}
+
+HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_ExtraInfo_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start ChangeRequestOperateAlbumAttribute_ExtraInfo_001");
+    int32_t albumId = CreatePortraitAlbum("portrait_album_extra_info");
+    ASSERT_GT(albumId, 0);
+
+    ChangeRequestOperateAlbumAttributeReqBody reqBody;
+    reqBody.albumId = to_string(albumId);
+    reqBody.attr = ANALYSIS_ALBUM_ATTR_EXTRA_INFO;
+    reqBody.type = ANALYSIS_ALBUM_OP_UPDATE;
+    reqBody.values = { R"({"contact_key":"123456789"})", R"({"contact_key":"987654321"})" };
+    reqBody.albumType = static_cast<int32_t>(PhotoAlbumType::SMART);
+    reqBody.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT);
+
+    EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), E_INVALID_VALUES);
+    MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_ExtraInfo_001");
+}
+
+HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_ExtraInfoTooLong_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start ChangeRequestOperateAlbumAttribute_ExtraInfoTooLong_001");
+    int32_t albumId = CreatePortraitAlbum("portrait_album_extra_info_too_long");
+    ASSERT_GT(albumId, 0);
+
+    ChangeRequestOperateAlbumAttributeReqBody reqBody;
+    reqBody.albumId = to_string(albumId);
+    reqBody.attr = ANALYSIS_ALBUM_ATTR_EXTRA_INFO;
+    reqBody.type = ANALYSIS_ALBUM_OP_UPDATE;
+    reqBody.values = { string(ANALYSIS_ALBUM_MAX_VALUE_LENGTH + 1, 'n') };
+    reqBody.albumType = static_cast<int32_t>(PhotoAlbumType::SMART);
+    reqBody.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT);
+
+    EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), E_INVALID_VALUES);
+    MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_ExtraInfoTooLong_001");
+}
+
+HWTEST_F(ChangeRequestSetAlbumPropertyTest, ChangeRequestOperateAlbumAttribute_DbPermissionDenied_ExtraInfo_001,
+    TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start ChangeRequestOperateAlbumAttribute_DbPermissionDenied_ExtraInfo_001");
+    int32_t albumId = CreatePortraitAlbum("portrait_album_db_permission_denied");
+    ASSERT_GT(albumId, 0);
+
+    ChangeRequestOperateAlbumAttributeReqBody reqBody;
+    reqBody.albumId = to_string(albumId);
+    reqBody.attr = ANALYSIS_ALBUM_ATTR_EXTRA_INFO;
+    reqBody.type = ANALYSIS_ALBUM_OP_UPDATE;
+    reqBody.values = { "extra_info_a" };
+    reqBody.albumType = static_cast<int32_t>(PhotoAlbumType::SMART);
+    reqBody.albumSubType = static_cast<int32_t>(PhotoAlbumSubType::PORTRAIT);
+
+    SelfTokenGuard tokenGuard;
+    uint64_t tokenId = 0;
+    PermissionUtilsUnitTest::SetAccessTokenPermission("OperateAttributeDbPermissionDenied",
+        { PERM_WRITE_IMAGEVIDEO }, tokenId);
+    ASSERT_NE(tokenId, 0);
+
+    EXPECT_EQ(ServiceOperateAlbumAttribute(reqBody), JS_INNER_FAIL);
+    MEDIA_INFO_LOG("End ChangeRequestOperateAlbumAttribute_DbPermissionDenied_ExtraInfo_001");
+}
 }  // namespace OHOS::Media

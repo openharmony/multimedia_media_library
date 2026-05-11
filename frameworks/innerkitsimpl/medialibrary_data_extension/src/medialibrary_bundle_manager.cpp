@@ -60,13 +60,11 @@ void MediaLibraryBundleManager::GetBundleNameByUID(const int32_t uid, string &bu
 
 void MediaLibraryBundleManager::GetBundleNameByTokenId(const uint64_t tokenId, string &bundleName)
 {
-    auto it = tokenIdToBundleNameCache_.find(tokenId);
-    if (it != tokenIdToBundleNameCache_.end()) {
-        bundleName = it->second;
+    if (tokenIdToBundleNameCache_.Find(tokenId, bundleName)) {
         return;
     }
     bundleName = GetClientBundleName();
-    tokenIdToBundleNameCache_[tokenId] = bundleName;
+    tokenIdToBundleNameCache_.EnsureInsert(tokenId, bundleName);
 }
 
 /**

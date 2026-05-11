@@ -656,6 +656,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         static_cast<uint32_t>(MediaLibraryBusinessCode::GET_COMPATIBLE_INFO),
         &MediaAssetsControllerService::GetCompatibleInfo
     },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_TRANSCODE_CHECK_INFO),
+        &MediaAssetsControllerService::GetTranscodeCheckInfo
+    },
 };
 
 bool MediaAssetsControllerService::Accept(uint32_t code)
@@ -3023,7 +3027,7 @@ int32_t MediaAssetsControllerService::NotifyAssetSended(MessageParcel &data, Mes
         MEDIA_ERR_LOG("NotifyAssetSended Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-    ret = MediaAssetsService::GetInstance().NotifyAssetSended(reqBody.uri);
+    ret = MediaAssetsService::GetInstance().NotifyAssetSended(reqBody.uri, reqBody.shareType);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("MediaAssetsControllerService::NotifyAssetSended fail, ret: %{public}d", ret);
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
@@ -3228,5 +3232,28 @@ int32_t MediaAssetsControllerService::SetMovingPhotoVersion(MessageParcel &data,
 
     ret = MediaAssetsService::GetInstance().SetMovingPhotoVersion(reqBody);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::GetTranscodeCheckInfo(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("Enter GetTranscodeCheckInfo");
+    GetTranscodeCheckInfoReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetTranscodeCheckInfo Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+        
+    if (reqBody.bundleName.empty()) {
+        MEDIA_ERR_LOG("GetTranscodeCheckInfo: invalid bundleName");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INNER_FAIL);
+    }
+    GetTranscodeCheckInfoRespBody respBody;
+    ret = MediaAssetsService::GetInstance().GetTranscodeCheckInfo(reqBody.bundleName, respBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetTranscodeCheckInfo faill %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INNER_FAIL);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 } // namespace OHOS::Media

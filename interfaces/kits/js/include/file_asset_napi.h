@@ -62,6 +62,8 @@ public:
     std::string GetFilePath() const;
     std::string GetTitle() const;
     std::string GetFileUri() const;
+    int32_t GetWidth() const;
+    int32_t GetHeight() const;
     int32_t GetFileId() const;
     int32_t GetUserId() const;
     int32_t GetOrientation() const;

@@ -142,6 +142,8 @@ public:
     EXPORT static void AddDefaultInsertPhotoValues(NativeRdb::ValuesBucket& values);
     EXPORT static int32_t PrepareShootingModeAlbum(NativeRdb::RdbStore &store);
     EXPORT static std::shared_ptr<NativeRdb::RdbStore> GetRaw();
+    EXPORT static void AddUpgradeTable(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void CheckAndAddColumns(const std::shared_ptr<MediaLibraryRdbStore> store);
 
 private:
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);

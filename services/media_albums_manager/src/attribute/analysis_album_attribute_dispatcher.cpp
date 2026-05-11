@@ -21,17 +21,21 @@
 #include "portrait_nickname_handler.h"
 #include "portrait_is_removed_handler.h"
 #include "media_log.h"
+#include "portrait_extra_info_handler.h"
 
 namespace OHOS::Media {
 namespace {
 using ValidateTargetFunc = int32_t (*)(const std::shared_ptr<PhotoAlbum> &photoAlbum);
 using ExecuteFunc = int32_t (*)(const std::shared_ptr<PhotoAlbum> &photoAlbum,
     const AnalysisAlbumOperation &operation);
+using GetAttributeExecuteFunc = int32_t (*)(const std::shared_ptr<PhotoAlbum> &photoAlbum,
+        std::string &attributeValue);
 
 struct AnalysisAlbumAttributeHandlerEntry {
     const AnalysisAlbumAttributeSpec *spec;
     ValidateTargetFunc validateTarget;
     ExecuteFunc execute;
+    GetAttributeExecuteFunc getAttributeExecute = nullptr;
 };
 
 const AnalysisAlbumAttributeHandlerEntry PORTRAIT_NICK_NAME_HANDLER = {
@@ -46,12 +50,21 @@ const AnalysisAlbumAttributeHandlerEntry PORTRAIT_IS_REMOVED_HANDLER = {
     PortraitIsRemovedHandler::Execute,
 };
 
+const AnalysisAlbumAttributeHandlerEntry PORTRAIT_EXTRA_INFO_HANDLER = {
+    &ANALYSIS_ALBUM_EXTRA_INFO_SPEC,
+    PortraitExtraInfoHandler::ValidateTarget,
+    PortraitExtraInfoHandler::Execute,
+    PortraitExtraInfoHandler::GetAttributeExecute,
+};
+
 const AnalysisAlbumAttributeHandlerEntry *ResolveHandler(const std::string &attr)
 {
     if (attr == PORTRAIT_NICK_NAME_HANDLER.spec->attr) {
         return &PORTRAIT_NICK_NAME_HANDLER;
     } else if (attr == PORTRAIT_IS_REMOVED_HANDLER.spec->attr) {
         return &PORTRAIT_IS_REMOVED_HANDLER;
+    } else if (attr == PORTRAIT_EXTRA_INFO_HANDLER.spec->attr) {
+        return &PORTRAIT_EXTRA_INFO_HANDLER;
     }
     return nullptr;
 }
@@ -78,5 +91,28 @@ int32_t AnalysisAlbumAttributeDispatcher::Execute(const std::shared_ptr<PhotoAlb
         "analysis album attribute target validation failed, attr: %{public}s, albumId: %{public}d",
         operation.attr.c_str(), photoAlbum->GetAlbumId());
     return handler->execute(photoAlbum, operation);
+}
+
+int32_t AnalysisAlbumAttributeDispatcher::GetAttributeExecute(const std::shared_ptr<PhotoAlbum> &photoAlbum,
+    std::vector<std::string> &attributeArray,
+    std::vector<std::unordered_map<std::string, std::string>> &queryResults)
+{
+    CHECK_AND_RETURN_RET_LOG(photoAlbum != nullptr, E_INVALID_VALUES, "photoAlbum is nullptr");
+    for (const auto &attr : attributeArray) {
+        const auto *handler = ResolveHandler(attr);
+        CHECK_AND_RETURN_RET_LOG(handler != nullptr && handler->getAttributeExecute != nullptr, E_INVALID_VALUES,
+            "no handler for analysis album attribute: %{public}s", attr.c_str());
+        int32_t checkResult = handler->validateTarget(photoAlbum);
+        CHECK_AND_RETURN_RET_LOG(checkResult == E_OK, checkResult,
+            "analysis album attribute target validation failed, attr: %{public}s, albumId: %{public}d",
+            attr.c_str(), photoAlbum->GetAlbumId());
+        std::string retVal;
+        checkResult = handler->getAttributeExecute(photoAlbum, retVal);
+        CHECK_AND_RETURN_RET_LOG(checkResult == E_OK, checkResult,
+            "execute analysis album attribute failed, attr: %{public}s, albumId: %{public}d",
+            attr.c_str(), photoAlbum->GetAlbumId());
+        queryResults.push_back({{ attr, retVal }});
+    }
+    return E_OK;
 }
 } // namespace OHOS::Media

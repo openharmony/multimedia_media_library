@@ -83,6 +83,7 @@ ohos_unittest("media_albums_controller_service_test") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_set_album_name_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_operate_album_attribute_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_set_cover_uri_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/analysis_album_get_attribute_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/album_add_assets_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/album_recover_assets_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/album_remove_assets_dto.cpp",
@@ -149,6 +150,7 @@ ohos_unittest("media_albums_controller_service_test") {
     "./src/album_dismiss_assets_test.cpp",
     "./src/get_albums_lpath_by_ids_test.cpp",
     "./src/query_albums_lpaths_test.cpp",
+    "./src/get_album_attribute_test.cpp",
   ]
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",

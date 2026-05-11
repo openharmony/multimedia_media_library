@@ -86,7 +86,6 @@ static constexpr int64_t MILLISECONDS_PER_SECOND = 1000LL;
 static constexpr int32_t HDC_FIRST_ARGS = 0;
 static constexpr int32_t HDC_SECOND_ARGS = 1;
 static constexpr int32_t HDC_THIRD_ARGS = 2;
-const int32_t HIGH_PIXEL_SIZE = 9 * 1024 * 12 * 1024;
 
 static const map<uint32_t, string> MEDIA_OPEN_MODE_MAP = {
     { O_RDONLY, MEDIA_FILEMODE_READONLY },
@@ -423,9 +422,7 @@ static bool NeedTranscodeHighPixelPicture(bool isHighPixel, const int uid,
         if (ret == E_OK && compatibleInfo.highResolution != -1) {
             return compatibleInfo.highResolution == 0;
         }
-        AccessTokenID tokenId;
-        PermissionUtils::GetTokenCallerForUid(uid, tokenId);
-        bool isSystemApp = TokenIdKit::IsSystemAppByFullTokenID(tokenId);
+        bool isSystemApp = PermissionUtils::IsSystemAppByBundleName(bundleName);
         if (isSystemApp) {
             return false;
         }
@@ -699,6 +696,7 @@ static int32_t OpenFile(const string &filePath, const string &fileId, const stri
     if (err == 0 && ret >= 0) {
         MEDIA_INFO_LOG("libc open transcode file success");
         auto dfxManager = DfxManager::GetInstance();
+        CHECK_AND_EXECUTE(dfxManager != nullptr, close(ret));
         CHECK_AND_RETURN_RET_LOG(dfxManager != nullptr, E_INNER_FAIL, "DfxManager::GetInstance() returned nullptr");
         dfxManager->HandleTranscodeAccessTime(ACCESS_LIBC, transcodeType);
     }

@@ -28,5 +28,14 @@ using namespace std;
 #define OTHER_TABLE_MODULE_NAME "OtherTable"
 // ==================== ADD Other Table Upgrade Code HERE  ====================
 
+static vector<pair<int32_t, int32_t>> AddExtraInfoColumn(NativeRdb::RdbStore &store)
+{
+    SqlBuilder builder;
+    auto commands = builder.AddColumn(TABLE_ANALYSIS_ALBUM, COLUMN_EXTRA_INFO, "TEXT")
+                        .Build();
+    return UpgradeHelper::ExecuteCommands(commands, store, true);
+}
+REGISTER_SYNC_UPGRADE_MODULE_TASK(VERSION_ADD_ANALYSIS_ALBUM_EXTRA_INFO,
+    OTHER_TABLE_MODULE_NAME, AddExtraInfoColumn);
 }
 }

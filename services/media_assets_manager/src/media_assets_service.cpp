@@ -740,7 +740,7 @@ static bool IsSupportHighResolution(const string& bundleName)
 {
     CompatibleInfo compatibleInfo;
     TranscodeCompatibleInfoOperation::QueryCompatibleInfo(bundleName, compatibleInfo);
-    if (compatibleInfo.highResolution) {
+    if (compatibleInfo.highResolution == 1) {
         return true;
     }
     return false;
@@ -1986,12 +1986,12 @@ int32_t MediaAssetsService::OpenAssetCompress(const OpenAssetCompressDto &dto, O
     return E_SUCCESS;
 }
 
-int32_t MediaAssetsService::NotifyAssetSended(const std::string &uri)
+int32_t MediaAssetsService::NotifyAssetSended(const std::string &uri, int32_t shareType)
 {
     MEDIA_INFO_LOG("MediaAssetsService::NotifyAssetSended start");
     auto dataManager = MediaLibraryDataManager::GetInstance();
     CHECK_AND_RETURN_RET_LOG(dataManager != nullptr, E_INNER_FAIL, "dataManager is nullptr");
-    int32_t ret = dataManager->NotifyAssetSended(uri);
+    int32_t ret = dataManager->NotifyAssetSended(uri, static_cast<ServiceShareType>(shareType));
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to notify asset sended, errCode = %{public}d", ret);
     return E_SUCCESS;
 }
@@ -2215,5 +2215,23 @@ int32_t MediaAssetsService::SetMovingPhotoVersion(const AssetChangeReqBody &reqB
 
     MEDIA_INFO_LOG("SetExtraDataVersion end, ret: %{public}d.", ret);
     return ret;
+}
+
+int32_t MediaAssetsService::GetTranscodeCheckInfo(const std::string bundleName,
+    GetTranscodeCheckInfoRespBody &respBody)
+{
+    GetCompatibleInfoRespBody resp;
+    int32_t ret = GetCompatibleInfo(bundleName, resp);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "failed to GetCompatibleInfo");
+    int32_t preferredCompatibleMode;
+    ret = GetPreferredCompatibleMode(bundleName, preferredCompatibleMode);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "failed to GetPreferredCompatibleMode");
+    respBody.bundleName = bundleName;
+    respBody.supportedHighResolution = resp.supportedHighResolution;
+    respBody.supportedMimeTypes = resp.supportedMimeTypes;
+    respBody.preferredCompatibleMode = preferredCompatibleMode;
+    MEDIA_ERR_LOG("bundleName %{public}s, supportedHighResolution %{public}d, preferredCompatibleMode %{public}d",
+        respBody.bundleName.c_str(), respBody.supportedHighResolution, respBody.preferredCompatibleMode);
+    return E_OK;
 }
 } // namespace OHOS::Media

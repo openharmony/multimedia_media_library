@@ -202,6 +202,10 @@ private:
     int32_t MoveThumbnailDir(FileInfo &fileInfo);
     int32_t MoveCloudThumbnailDir(FileInfo &fileInfo);
     int32_t MoveAstc(FileInfo &fileInfo);
+    int32_t MergeDuplicateAsset(FileInfo &fileInfo);
+    int32_t MergeDuplicateThumbnail(FileInfo &fileInfo);
+    void RemoveMergedDentryForSamePhoto(const FileInfo &fileInfo);
+    void UpdateMergedThumbnailStatusForSamePhotos(vector<FileInfo> &fileInfos);
     void InitThumbnailStatus();
     bool InitAllKvStore();
     void CloseAllKvStore();
@@ -236,6 +240,7 @@ private:
     void SetAggregateBitThird();
     bool ShouldRestoreFromCloud();
     void UpdateRiskStatusForSamePhotos(vector<FileInfo> &fileInfos);
+    void UpdatePositionForMergedCloudDuplicates(vector<FileInfo> &fileInfos);
     void PrevailUUIDForSamePhotos(vector<FileInfo> &fileInfos);
     bool CheckDestDbHasRiskStatusColumn();
     bool CheckSrcDbHasRiskStatusColumn();
@@ -252,6 +257,9 @@ private:
     template<typename T, typename U>
     void PutWithDefault(NativeRdb::ValuesBucket& values, const std::string& columnName,
         const std::optional<T>& optionalValue, const U& defaultValue);
+    bool NeedSkipMergedThumbnailUpdate(const FileInfo &fileInfo);
+    void ResolveMergedThumbExistence(const FileInfo &fileInfo, bool &isLcdExist, bool &isThmExist);
+    bool FillMergedLcdValues(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
     std::string GetThumbnailLocalPath(const string path);
     void BatchUpdateFileInfoData(std::vector<FileInfo> &fileInfos,
         unordered_map<string, CloudPhotoFileExistFlag> &resultExistMap);
