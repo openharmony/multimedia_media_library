@@ -16,8 +16,9 @@
 #ifndef UPGRADE_OTHER_TABLE_SQLS_H
 #define UPGRADE_OTHER_TABLE_SQLS_H
 // table name need to be added here
-
+#define TABLE_ANALYSIS_ALBUM "AnalysisAlbum"
 // column name should be added here
+#define COLUMN_EXTRA_INFO "extra_info"
 
 // sqls only execute in upgrade progress should be added here
 

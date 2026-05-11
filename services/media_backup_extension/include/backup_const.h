@@ -72,8 +72,10 @@ constexpr int32_t RECYCLE_FLAG_HARD_DELETE_UNSYNCED = -4;
 const std::string RESTORE_FILES_CLOUD_DIR = "/storage/cloud/files/";
 const std::string RESTORE_FILES_LOCAL_DIR = "/storage/media/local/files/";
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
+const std::string RESTORE_DENTRY_DIR = "/storage/media/cloud/files/Photo";
 const std::string RESTORE_AUDIO_CLOUD_DIR = "/storage/cloud/files/Audio";
 const std::string RESTORE_THUMB_CLOUD_DIR = "/storage/cloud/files/.thumbs/Photo";
+const std::string RESTORE_THUMB_DENTRY_DIR = "/storage/media/cloud/files/.thumbs/Photo";
 const std::string RESTORE_LOCAL_DIR = "/storage/media/local/files/Photo";
 const std::string RESTORE_AUDIO_LOCAL_DIR = "/storage/media/local/files/Audio";
 const std::string RESTORE_MUSIC_LOCAL_DIR = "/storage/media/local/files/Docs/UpdateBackup/";
@@ -490,6 +492,10 @@ struct FileInfo {
     int32_t fileSourceType {0};
     bool isStoragePathExistInDb {false};
     bool isCloudPathExistInDb {false};
+    bool needUpdatePositionToLocalAndCloud {false};
+    bool hasMergedOriginAsset {false};
+    bool hasMergedLcdThumbnail {false};
+    bool hasMergedThmThumbnail {false};
 };
 
 struct AlbumInfo {
@@ -612,6 +618,7 @@ struct AnalysisAlbumTbl {
     std::optional<int32_t> albumIdOld;
     std::optional<int32_t> albumIdNew;
     std::optional<int32_t> editOperation;
+    std::optional<std::string> extraInfo;
 };
 
 struct PortraitAlbumDfx {

@@ -28,6 +28,8 @@ struct AnalysisAlbumAttributeSpec {
     size_t maxValueCount;
     bool isSpecialValue;
     std::vector<std::string> supportedValues;
+    bool allowEmptyValue = false;
+    bool supportSpecialSymbols = false;
 };
 
 inline const AnalysisAlbumAttributeSpec ANALYSIS_ALBUM_NICK_NAME_SPEC = {
@@ -46,12 +48,24 @@ inline const AnalysisAlbumAttributeSpec ANALYSIS_ALBUM_IS_REMOVED_SPEC = {
     { "0", "1" },
 };
 
+inline const AnalysisAlbumAttributeSpec ANALYSIS_ALBUM_EXTRA_INFO_SPEC = {
+    ANALYSIS_ALBUM_ATTR_EXTRA_INFO,
+    { ANALYSIS_ALBUM_OP_UPDATE },
+    ANALYSIS_ALBUM_MAX_EXTRA_INFO_COUNT,
+    false,
+    {},
+    true,
+    true,
+};
+
 inline const AnalysisAlbumAttributeSpec *FindAnalysisAlbumAttributeSpec(const std::string &attr)
 {
     if (attr == ANALYSIS_ALBUM_ATTR_NICK_NAME) {
         return &ANALYSIS_ALBUM_NICK_NAME_SPEC;
     } else if (attr == ANALYSIS_ALBUM_ATTR_IS_REMOVED) {
         return &ANALYSIS_ALBUM_IS_REMOVED_SPEC;
+    } else if (attr == ANALYSIS_ALBUM_ATTR_EXTRA_INFO) {
+        return &ANALYSIS_ALBUM_EXTRA_INFO_SPEC;
     }
     return nullptr;
 }

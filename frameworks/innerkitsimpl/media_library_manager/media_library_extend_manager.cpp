@@ -301,14 +301,16 @@ int32_t MediaLibraryExtendManager::GetAssetCompressVersion()
     return respBody.version;
 }
 
-int32_t MediaLibraryExtendManager::NotifyAssetSended(const string &uri)
+int32_t MediaLibraryExtendManager::NotifyAssetSended(const string &uri, ShareType shareType)
 {
-    MEDIA_INFO_LOG("NotifyAssetSended begin, uri:%{private}s", uri.c_str());
+    MEDIA_INFO_LOG("NotifyAssetSended begin, uri:%{private}s, share type: %{public}d", uri.c_str(),
+        static_cast<int32_t>(shareType));
     CHECK_AND_RETURN_RET_LOG(CheckPhotoUri(uri), E_ERR, "invalid uri");
     CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR, "dataShareHelper is null");
 
     NotifyAssetSendedReqBody reqBody;
     reqBody.uri = uri;
+    reqBody.shareType = static_cast<int32_t>(shareType);
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_NOTIFY_ASSET_SENDED);
     int32_t errCode =
         IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody);

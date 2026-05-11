@@ -88,6 +88,7 @@
 #include "check_photo_uris_read_permission_vo.h"
 #include "check_db_availability_vo.h"
 #include "get_albumid_by_lpath_vo.h"
+#include "preferred_compatible_mode_check_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -303,6 +304,8 @@ const std::array photoAccessHelperMethos = {
         reinterpret_cast<void *>(MediaLibraryAni::GetAlbumIdByLpath)},
     ani_native_function {"getAlbumIdByBundleNameInner", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::GetAlbumIdByBundleName)},
+    ani_native_function {"getAssetCompatibleUrisInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::GetAssetCompatibleUris)},
 };
 } // namespace
 
@@ -6276,8 +6279,6 @@ static ani_status NormalizeSupportedMimeTypes(ani_env *env, const vector<string>
     }
     CHECK_ARGS_WITH_RET_MSG(env, mimeTypeMap.size() <= MAX_SUPPORTED_COMPATIBLE_MIME_TYPES,
         JS_E_PARAM_INVALID, ANI_ERROR, "supportedMimeTypes exceeds max size");
-    CHECK_ARGS_WITH_RET_MSG(env, !mimeTypeMap.empty(),
-        JS_E_PARAM_INVALID, ANI_ERROR, "supportedMimeType cannot be empty");
     normalizedMimeTypes.clear();
     normalizedMimeTypes.reserve(mimeTypeMap.size());
     for (const auto &pair : mimeTypeMap) {
@@ -6290,13 +6291,10 @@ static ani_status ParseSupportedMimeTypesFromConfig(ani_env *env, ani_object con
 {
     ani_object propertyValue;
     ani_status ret = MediaLibraryAniUtils::GetProperty(env, config, "supportedMimeType", propertyValue);
-    if (ret != ANI_OK) {
+    if (ret != ANI_OK || propertyValue == nullptr ||
+        MediaLibraryAniUtils::IsUndefined(env, propertyValue) == ANI_TRUE) {
         return ANI_OK;
     }
-
-    CHECK_ARGS_WITH_RET_MSG(env,
-        propertyValue != nullptr && MediaLibraryAniUtils::IsUndefined(env, propertyValue) != ANI_TRUE,
-        JS_E_PARAM_INVALID, ANI_ERROR, "supportedMimeType cannot be null or undefined");
 
     ret = MediaLibraryAniUtils::GetStringArray(env, propertyValue, supportedMimeTypes);
     CHECK_STATUS_RET(ret, "GetStringArray supportedMimeTypes fail");
@@ -7028,6 +7026,186 @@ ani_object MediaLibraryAni::GetAlbumIdByBundleName(ani_env *env, ani_object obje
     SetUserIdFromObjectInfo(asyncContext);
     GetAlbumIdByLpathOrBundleNameExecute(env, asyncContext);
     return GetAlbumIdByLpathOrBundleNameComplete(env, asyncContext);
+}
+
+static ani_status ParseArgsGetAssetCompatibleUris(ani_env *env, ani_string bundleName, ani_object assets,
+    ani_int compatibleFlags, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
+
+    std::string bundleNameStr;
+    CHECK_STATUS_RET(MediaLibraryAniUtils::GetParamStringPathMax(env, bundleName, bundleNameStr),
+        "Failed to parse bundleName");
+    CHECK_COND_RET(!bundleNameStr.empty(), ANI_ERROR, "bundleName is empty");
+    context->bundleName = bundleNameStr;
+
+    std::vector<ani_object> aniValues;
+    CHECK_STATUS_RET(MediaLibraryAniUtils::GetObjectArray(env, assets, aniValues),
+        "GetObjectArray fail");
+    CHECK_COND_RET(!aniValues.empty(), ANI_ERROR, "assets array is empty");
+
+    for (const auto &item : aniValues) {
+        FileAssetAni *fileAssetAni = FileAssetAni::Unwrap(env, item);
+        CHECK_COND_RET(fileAssetAni != nullptr, ANI_ERROR, "fileAssetAni is nullptr");
+
+        auto fileAsset = fileAssetAni->GetFileAssetInstance();
+        CHECK_COND_RET(fileAsset != nullptr, ANI_ERROR, "fileAsset is nullptr");
+
+        PhotoAssetInfoAni info;
+        info.width = fileAsset->GetWidth();
+        info.height = fileAsset->GetHeight();
+        info.uri = fileAsset->GetUri();
+        info.fileId = fileAsset->GetId();
+        context->photoAssetInfos.push_back(info);
+    }
+
+    context->compatibleFlags = compatibleFlags;
+    constexpr int32_t VALID_FLAGS_MASK = 0x3;
+    if ((context->compatibleFlags & ~VALID_FLAGS_MASK) != 0) {
+        ANI_ERR_LOG("invalid compatibleFlags: %{public}d", context->compatibleFlags);
+        return ANI_ERROR;
+    }
+    return ANI_OK;
+}
+
+static void GetAssetCompatibleUrisExecute(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAssetCompatibleUrisExecute");
+
+    GetTranscodeCheckInfoReqBody reqBody;
+    GetTranscodeCheckInfoRespBody respBody;
+    reqBody.bundleName = context->bundleName;
+    int32_t ret = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_TRANSCODE_CHECK_INFO), reqBody, respBody);
+    if (ret != 0) {
+        ANI_ERR_LOG("UserDefineIPCClient().Call failed, ret: %{public}d", ret);
+        context->SaveError(ret);
+        return;
+    }
+
+    context->supportedHighResolution = respBody.supportedHighResolution;
+    context->supportedMimeTypes = respBody.supportedMimeTypes;
+    context->preferredCompatibleMode = respBody.preferredCompatibleMode;
+    context->retVal = E_OK;
+}
+
+static void HandleCheckTranscodeUri(MediaLibraryAsyncContext *context,
+    bool checkHighPixel, bool checkHeif, vector<string> &result)
+{
+    for (auto &item : context->photoAssetInfos) {
+        bool isHighPixel = item.width * item.height >= HIGH_PIXEL_SIZE;
+        size_t atDot = item.uri.find('.');
+        if (atDot == std::string::npos) {
+            continue;
+        }
+        std::string ext = item.uri.substr(atDot + 1);
+        bool isHeifFile = (ext == "heif" || ext == "heic");
+        if (context->compatibleFlags == 0 || context->compatibleFlags == THIRD_ENUM) {
+            CompatibleInfo compatibleinfo;
+            compatibleinfo.bundleName = context->bundleName;
+            compatibleinfo.highResolution = context->supportedHighResolution;
+            compatibleinfo.encodings = context->supportedMimeTypes;
+            compatibleinfo.preferredCompatibleMode =
+                static_cast<PreferredCompatibleMode>(context->preferredCompatibleMode);
+            TranscodeMode res =
+                PreferredCompatibleModeCheckUtils::CheckTranscodeMode(compatibleinfo, isHighPixel, isHeifFile);
+            if (res == TranscodeMode::CURRENT) {
+                continue;
+            } else if (res == TranscodeMode::COMPATIBLE) {
+                result.push_back(item.uri);
+                continue;
+            }
+        }
+        if (isHighPixel && checkHighPixel && !context->supportedHighResolution) {
+            result.push_back(item.uri);
+            continue;
+        }
+        if (isHeifFile && checkHeif &&
+            find(context->supportedMimeTypes.begin(), context->supportedMimeTypes.end(), "image/heic") ==
+            context->supportedMimeTypes.end()) {
+            result.push_back(item.uri);
+            continue;
+        }
+    }
+}
+
+static vector<string> CheckTranscodeUriAni(MediaLibraryAsyncContext *context)
+{
+    vector<string> result;
+    bool checkHighPixel = (context->compatibleFlags & 0x1) != 0;
+    bool checkHeif = (context->compatibleFlags & 0x2) != 0;
+    if (context->preferredCompatibleMode ==
+        static_cast<int32_t>(TranscodeMode::CURRENT)) {
+        return result;
+    }
+    if (context->preferredCompatibleMode ==
+        static_cast<int32_t>(TranscodeMode::COMPATIBLE)) {
+        for (auto &item : context->photoAssetInfos) {
+            bool isHighPixel = item.width * item.height >= HIGH_PIXEL_SIZE;
+            size_t atDot = item.uri.find('.');
+            if (atDot == std::string::npos) {
+                continue;
+            }
+            std::string ext = item.uri.substr(atDot + 1);
+            bool isHeifFile = (ext == "heif" || ext == "heic");
+            if (!isHighPixel && !isHeifFile) {
+                continue;
+            }
+            result.push_back(item.uri);
+        }
+        return result;
+    }
+    HandleCheckTranscodeUri(context, checkHighPixel, checkHeif, result);
+    return result;
+}
+
+static ani_object GetAssetCompatibleUrisComplete(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAssetCompatibleUrisComplete");
+
+    if (context->error != ERR_DEFAULT) {
+        return nullptr;
+    }
+
+    vector<string> res = CheckTranscodeUriAni(context.get());
+    ani_object result = nullptr;
+    ani_status ret = MediaLibraryAniUtils::ToAniStringArray(env, res, result);
+    if (ret != ANI_OK) {
+        ANI_ERR_LOG("Failed to create string array");
+        return nullptr;
+    }
+    return result;
+}
+
+ani_object MediaLibraryAni::GetAssetCompatibleUris(ani_env *env, ani_object object,
+    ani_string bundleName, ani_object assets, ani_int compatibleFlags)
+{
+    ANI_DEBUG_LOG("GetAssetCompatibleUris start");
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
+    CHECK_COND_RET(object != nullptr, nullptr, "object is nullptr");
+
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_COND_RET(asyncContext != nullptr, nullptr, "asyncContext is nullptr");
+
+    asyncContext->objectInfo = Unwrap(env, object);
+    CHECK_COND_RET(asyncContext->objectInfo != nullptr, nullptr, "objectInfo is nullptr");
+
+    if (ANI_OK != ParseArgsGetAssetCompatibleUris(env, bundleName, assets, compatibleFlags, asyncContext)) {
+        AniError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to parse args");
+        return nullptr;
+    }
+
+    SetUserIdFromObjectInfo(asyncContext);
+    GetAssetCompatibleUrisExecute(env, asyncContext);
+    return GetAssetCompatibleUrisComplete(env, asyncContext);
 }
 } // namespace Media
 } // namespace OHOS

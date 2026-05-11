@@ -51,5 +51,25 @@ public:
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;
 };
+
+class GetTranscodeCheckInfoReqBody : IPC::IMediaParcelable {
+public:
+    std::string bundleName;
+public:
+    bool Unmarshalling(MessageParcel &parcel) override;
+    bool Marshalling(MessageParcel &parcel) const override;
+};
+
+class GetTranscodeCheckInfoRespBody : IPC::IMediaParcelable {
+public:
+    std::string bundleName;
+    bool supportedHighResolution;
+    std::vector<std::string> supportedMimeTypes;
+    int32_t preferredCompatibleMode = 0;
+
+public:
+    bool Unmarshalling(MessageParcel &parcel) override;
+    bool Marshalling(MessageParcel &parcel) const override;
+};
 } // namespace OHOS::Media
 #endif // OHOS_MEDIA_ASSETS_MANAGER_GET_RESULT_SET_FROM_DB_VO_H

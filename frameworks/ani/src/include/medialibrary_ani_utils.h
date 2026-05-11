@@ -310,6 +310,8 @@ public:
     static ani_status ToAniNumberObject(ani_env *env, int32_t src, ani_object &aniObj);
     static ani_status ToAniLongObject(ani_env *env, int64_t src, ani_object &aniObj);
     static ani_status ToAniDoubleObject(ani_env *env, double src, ani_object &aniObj);
+    static ani_status ToAniStringObject(ani_env *env, const std::string &src, ani_object &aniObj);
+    static ani_status MakeAniRecordObject(ani_env *env, ani_object &aniObj);
 
     static ani_status GetUint32Array(ani_env *env, ani_object arg, std::vector<uint32_t> &array);
     static ani_status GetInt32Array(ani_env *env, ani_object arg, std::vector<int32_t> &array);

@@ -81,4 +81,44 @@ bool GetCompatibleInfoRespBody::Marshalling(MessageParcel &parcel) const
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }
+
+bool GetTranscodeCheckInfoReqBody::Unmarshalling(MessageParcel &parcel)
+{
+    bool status = parcel.ReadString(this->bundleName);
+    CHECK_AND_RETURN_RET(status, status);
+    return true;
+}
+
+bool GetTranscodeCheckInfoReqBody::Marshalling(MessageParcel &parcel) const
+{
+    bool status = parcel.WriteString(this->bundleName);
+    CHECK_AND_RETURN_RET(status, status);
+    return true;
+}
+
+bool GetTranscodeCheckInfoRespBody::Unmarshalling(MessageParcel &parcel)
+{
+    bool status = parcel.ReadString(this->bundleName);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.ReadBool(this->supportedHighResolution);
+    CHECK_AND_RETURN_RET(status, status);
+    status = ITypesUtil::Unmarshalling(this->supportedMimeTypes, parcel);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.ReadInt32(this->preferredCompatibleMode);
+    CHECK_AND_RETURN_RET(status, status);
+    return true;
+}
+
+bool GetTranscodeCheckInfoRespBody::Marshalling(MessageParcel &parcel) const
+{
+    bool status = parcel.WriteString(this->bundleName);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.WriteBool(this->supportedHighResolution);
+    CHECK_AND_RETURN_RET(status, status);
+    status = ITypesUtil::Marshalling(this->supportedMimeTypes, parcel);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.WriteInt32(this->preferredCompatibleMode);
+    CHECK_AND_RETURN_RET(status, status);
+    return true;
+}
 }

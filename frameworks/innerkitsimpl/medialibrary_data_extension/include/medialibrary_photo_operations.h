@@ -175,6 +175,7 @@ public:
     EXPORT static int32_t ApplyEditEffectToFile(int32_t curBucketNum, const std::string &fileName);
     EXPORT static int32_t ScanExistFileRecord(int32_t fileId, const std::string &path);
     EXPORT static void StoreThumbnailInfoAsync(const std::vector<DownloadThumbInfo> &downloadThumbInfos);
+    EXPORT static std::string GetLivePhotoCachePathById(const std::string &fileId);
 private:
     static int32_t HandleSaveCameraPhoto(MediaLibraryCommand &cmd);
     static bool CheckAndReport(bool cond, const int32_t &fileId,

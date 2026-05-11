@@ -26,6 +26,9 @@ class AnalysisAlbumAttributeDispatcher {
 public:
     static int32_t Execute(const std::shared_ptr<PhotoAlbum> &photoAlbum,
         const AnalysisAlbumOperation &operation);
+    static int32_t GetAttributeExecute(const std::shared_ptr<PhotoAlbum> &photoAlbum,
+        std::vector<std::string> &attributeArray,
+        std::vector<std::unordered_map<std::string, std::string>> &queryResults);
 };
 } // namespace OHOS::Media
 

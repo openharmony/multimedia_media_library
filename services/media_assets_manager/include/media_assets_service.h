@@ -203,7 +203,7 @@ public:
     int32_t StartAssetChangeScanInner(const StartAssetChangeScanDto& startAssetChangeScanDto);
     int32_t GetFusionAssetsInfo(const int32_t albumId, GetFussionAssetsRespBody &respBody);
     int32_t OpenAssetCompress(const OpenAssetCompressDto &dto, OpenAssetCompressRespBody &respBody);
-    int32_t NotifyAssetSended(const std::string &uri);
+    int32_t NotifyAssetSended(const std::string &uri, int32_t shareType);
     int32_t GetAssetCompressVersion(int32_t &version);
     int32_t SetPreferredCompatibleMode(const std::string &bundleName, int32_t preferredCompatibleMode);
     int32_t GetPreferredCompatibleMode(const std::string &bundleName, int32_t &preferredCompatibleMode);
@@ -221,6 +221,7 @@ public:
     int32_t ResumePhotoUriPermission(const ResumePhotoUriPermissionReqBody &reqBody,
         ResumePhotoUriPermissionRespBody &respBody);
     int32_t SetMovingPhotoVersion(const AssetChangeReqBody &reqBody);
+    int32_t GetTranscodeCheckInfo(const std::string bundleName, GetTranscodeCheckInfoRespBody &respBody);
 
 private:
     int32_t SubmitMetadataChanged(const int32_t fileId);

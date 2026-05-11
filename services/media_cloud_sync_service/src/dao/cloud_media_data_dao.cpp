@@ -26,6 +26,7 @@
 #include "asset_accurate_refresh.h"
 #include "refresh_business_name.h"
 #include "rdb_utils.h"
+#include "cloud_media_context.h"
 
 using namespace OHOS::RdbDataShareAdapter;
 
@@ -51,8 +52,6 @@ int32_t CloudMediaDataDao::UpdateDirty(const std::string &cloudId, int32_t dirty
 
 int32_t CloudMediaDataDao::UpdatePosition(const std::vector<std::string> &cloudIds, int32_t position)
 {
-    MEDIA_INFO_LOG("enter UpdatePosition, cloudIds size: %{public}zu, position: %{public}d", cloudIds.size(), position);
-
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
     predicates.In(PhotoColumn::PHOTO_CLOUD_ID, cloudIds);
 
@@ -60,6 +59,8 @@ int32_t CloudMediaDataDao::UpdatePosition(const std::vector<std::string> &cloudI
     values.PutInt(PhotoColumn::PHOTO_POSITION, position);
     if (position == static_cast<int32_t>(PhotoPositionType::LOCAL)) {
         values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, static_cast<int32_t>(SouthDeviceType::SOUTH_DEVICE_NULL));
+    } else {
+        values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, CloudMediaContext::GetInstance().GetCloudType());
     }
     if (position == static_cast<int32_t>(PhotoPositionType::CLOUD)) {
         values.Put(PhotoColumn::LOCAL_ASSET_SIZE, 0);
@@ -70,18 +71,19 @@ int32_t CloudMediaDataDao::UpdatePosition(const std::vector<std::string> &cloudI
     int32_t ret = assetRefresh.Update(changedRows, values, predicates);
     CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, ret,
         "Failed to UpdatePosition, ret: %{public}d.", ret);
-    CHECK_AND_PRINT_LOG(changedRows > 0, "UpdatePosition Check updateRows: %{public}d.", changedRows);
-    assetRefresh.Notify();
+    CHECK_AND_EXECUTE(ret != E_OK, assetRefresh.Notify());
+    MEDIA_INFO_LOG("UpdatePosition completed, ret: %{public}d, changedRows: %{public}d, "
+                   "cloudIds size: %{public}zu, position: %{public}d",
+                   ret,
+                   changedRows,
+                   cloudIds.size(),
+                   position);
     return ret;
 }
 
 int32_t CloudMediaDataDao::UpdatePosWithType(const std::vector<std::string> &cloudIds,
     int32_t position, int32_t fileSourceType)
 {
-    MEDIA_INFO_LOG("enter UpdatePosWithType, cloudIds size: %{public}zu, position: %{public}d,"
-        "fileSourceType: %{public}d",
-        cloudIds.size(), position, fileSourceType);
-
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
     predicates.In(PhotoColumn::PHOTO_CLOUD_ID, cloudIds);
 
@@ -89,25 +91,30 @@ int32_t CloudMediaDataDao::UpdatePosWithType(const std::vector<std::string> &clo
     values.PutInt(PhotoColumn::PHOTO_POSITION, position);
     if (position == static_cast<int32_t>(PhotoPositionType::LOCAL)) {
         values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, static_cast<int32_t>(SouthDeviceType::SOUTH_DEVICE_NULL));
+    } else {
+        values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, CloudMediaContext::GetInstance().GetCloudType());
     }
     values.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, fileSourceType);
+    if (position == static_cast<int32_t>(PhotoPositionType::CLOUD)) {
+        values.Put(PhotoColumn::LOCAL_ASSET_SIZE, 0);
+    }
 
     int32_t changedRows = DEFAULT_VALUE;
     AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::UPDATE_POSITION_BUSSINESS_NAME);
     int32_t ret = assetRefresh.Update(changedRows, values, predicates);
-    CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, ret,
-        "Failed to UpdatePosWithType, ret: %{public}d.", ret);
-    CHECK_AND_PRINT_LOG(changedRows > 0, "UpdatePosWithType Check updateRows: %{public}d.", changedRows);
-    assetRefresh.Notify();
+    CHECK_AND_EXECUTE(ret != E_OK, assetRefresh.Notify());
+    MEDIA_INFO_LOG("UpdatePosWithType completed, ret: %{public}d, changedRows: %{public}d, "
+                   "cloudIds size: %{public}zu, position: %{public}d, fileSourceType: %{public}d",
+                   ret,
+                   changedRows,
+                   cloudIds.size(),
+                   position,
+                   fileSourceType);
     return ret;
 }
 
-int32_t CloudMediaDataDao::UpdateFileSourceType(const std::vector<std::string> &cloudIds,
-    int32_t fileSourceType)
+int32_t CloudMediaDataDao::UpdateFileSourceType(const std::vector<std::string> &cloudIds, int32_t fileSourceType)
 {
-    MEDIA_INFO_LOG("enter UpdatePosWithType, cloudIds size: %{public}zu, fileSourceType: %{public}d",
-        cloudIds.size(), fileSourceType);
-
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
     predicates.In(PhotoColumn::PHOTO_CLOUD_ID, cloudIds);
 
@@ -117,10 +124,13 @@ int32_t CloudMediaDataDao::UpdateFileSourceType(const std::vector<std::string> &
     int32_t changedRows = DEFAULT_VALUE;
     AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::UPDATE_POSITION_BUSSINESS_NAME);
     int32_t ret = assetRefresh.Update(changedRows, values, predicates);
-    CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, ret,
-        "Failed to UpdateFileSourceType, ret: %{public}d.", ret);
-    CHECK_AND_PRINT_LOG(changedRows > 0, "UpdateFileSourceType Check updateRows: %{public}d.", changedRows);
-    assetRefresh.Notify();
+    CHECK_AND_EXECUTE(ret != E_OK, assetRefresh.Notify());
+    MEDIA_INFO_LOG("UpdateFileSourceType completed, ret: %{public}d, changedRows: %{public}d, "
+                   "cloudIds size: %{public}zu, fileSourceType: %{public}d",
+                   ret,
+                   changedRows,
+                   cloudIds.size(),
+                   fileSourceType);
     return ret;
 }
 

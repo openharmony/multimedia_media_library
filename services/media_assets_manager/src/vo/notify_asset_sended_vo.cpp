@@ -27,12 +27,16 @@ bool NotifyAssetSendedReqBody::Unmarshalling(MessageParcel &parcel)
 {
     bool status = parcel.ReadString(this->uri);
     CHECK_AND_RETURN_RET(status, status);
+    status = parcel.ReadInt32(this->shareType);
+    CHECK_AND_RETURN_RET(status, status);
     return true;
 }
 
 bool NotifyAssetSendedReqBody::Marshalling(MessageParcel &parcel) const
 {
     bool status = parcel.WriteString(this->uri);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.WriteInt32(this->shareType);
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }

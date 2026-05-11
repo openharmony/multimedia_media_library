@@ -733,11 +733,16 @@ HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, manager_cancel_process_request
 
     MultiStagesVideoCaptureManager &instance = MultiStagesVideoCaptureManager::GetInstance();
     instance.AddVideoInternal(videoId, videoInfo, false);
+    ProcessVideoDto dto;
+    dto.fileId = fileId;
+    dto.photoId = videoId;
+    dto.deliveryMode = 1;
+    instance.ProcessVideo(dto);
     instance.CancelProcessRequest(videoId);
 
     EXPECT_EQ(MultiStagesCaptureRequestTaskManager::photoIdInProcess_.count(videoId), 1);
     EXPECT_EQ(MultiStagesVideoCaptureManager::videoInfoMap_.count(videoId), 1);
-    EXPECT_EQ(MultiStagesCaptureRequestTaskManager::photoIdInProcess_[videoId]->requestCount, -1);
+    EXPECT_EQ(MultiStagesCaptureRequestTaskManager::photoIdInProcess_[videoId]->requestCount, 0);
     EXPECT_EQ(GetQuality(fileId), static_cast<int32_t>(MultiStagesPhotoQuality::LOW));
     EXPECT_EQ(GetDirty(fileId), -1);
 }

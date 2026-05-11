@@ -235,8 +235,7 @@ int32_t CloudFileDataConvert::HandleUniqueFileds(
     map[PhotoColumn::PHOTO_OWNER_ALBUM_ID] = MDKRecordField(upLoadRecord.ownerAlbumId);
     map[FILE_FIX_VERSION] = MDKRecordField(0);
     map[KEY_EDITED_TIME_MS] = MDKRecordField(upLoadRecord.dateModified);
-    map[PhotoColumn::PHOTO_FILE_SOURCE_TYPE] = MDKRecordField(upLoadRecord.fileSourceType);
-    map[PhotoColumn::PHOTO_STORAGE_PATH] = MDKRecordField(upLoadRecord.storagePath);
+    // no need to upload file_source_type and storage_path.
     map[PhotoColumn::UNIQUE_ID] = MDKRecordField(upLoadRecord.uniqueId);
     map[MediaColumn::MEDIA_PACKAGE_NAME] = MDKRecordField(upLoadRecord.packageName);
     map[PhotoColumn::PHOTO_RISK_STATUS] = MDKRecordField(upLoadRecord.photoRiskStatus);
@@ -996,8 +995,7 @@ void CloudFileDataConvert::ConvertAttributes(MDKRecordPhotosData &data, OnFetchP
     onFetchPhotoVo.exifRotate = data.GetExifRotate().value_or(0);
     onFetchPhotoVo.supportedWatermarkType = data.GetSupportedWatermarkType().value_or(0);
     onFetchPhotoVo.strongAssociation = data.GetStrongAssociation().value_or(0);
-    onFetchPhotoVo.fileSourceType = data.GetFileSourceType().value_or(0);
-    onFetchPhotoVo.storagePath = data.GetStoragePath().value_or("");
+    // no need to fetch file_source_type and storage_path from cloud.
     onFetchPhotoVo.uniqueId = data.GetUniqueId().value_or("");
     onFetchPhotoVo.packageName = data.GetPackageName().value_or("");
     onFetchPhotoVo.photoRiskStatus = data.GetPhotoRiskStatus().value_or(0);

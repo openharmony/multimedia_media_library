@@ -203,7 +203,7 @@ int32_t CloudMediaPhotosService::PullUpdate(CloudMediaPullDataDto &pullData, std
     std::vector<PhotosDto> &fdirtyData, std::vector<int32_t> &stats,
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
-    std::string cloudId = pullData.cloudId;
+    const std::string cloudId = pullData.cloudId;
     MEDIA_DEBUG_LOG("Update cloudId: %{public}s.", cloudId.c_str());
     CHECK_AND_RETURN_RET_INFO_LOG(!CloudMediaSyncUtils::IsLocalDirty(pullData.localDirty, false),
         E_OK,
@@ -248,9 +248,7 @@ int32_t CloudMediaPhotosService::PullUpdate(CloudMediaPullDataDto &pullData, std
     if (mtimeChanged && (updateCount != stats[StatsIndex::FILE_MODIFY_RECORDS_COUNT])) {
         this->ClearLocalData(pullData, fdirtyData);
     } else {
-        this->fileManagerService_.RelocateFile(pullData);
-        // 处理元数据变更
-        CloudLakeFileHandler::HandleMetaChanged(pullData.localFileId);
+        this->PullUpdateEndWithNoFdirty(pullData, fdirtyData);
     }
     return E_OK;
 }
@@ -326,7 +324,7 @@ int32_t CloudMediaPhotosService::DoDataMerge(CloudMediaPullDataDto &pullData, co
             static_cast<ChangeType>(ExtraChangeType::PHOTO_TIME_UPDATE),
             to_string(pullData.attributesFileId));
     }
-    if (cloudStd) {
+    if (cloudStd) { // 云信息覆盖本地信息，需要维护本地文件存储位置
         this->fileManagerService_.RelocateFile(pullData);
     }
     return E_OK;
@@ -1593,6 +1591,23 @@ int32_t CloudMediaPhotosService::HandleInvalidCloudResource(
         MediaFileUtils::DesensitizePath(cloudPath).c_str(), errno);
     CloudMediaSyncUtils::RemoveThmParentPath(photosData, PhotoColumn::FILES_CLOUD_DIR);
     return E_DATA;
+}
+
+int32_t CloudMediaPhotosService::PullUpdateEndWithNoFdirty(
+    CloudMediaPullDataDto &pullData, std::vector<PhotosDto> &fdirtyData)
+{
+    int32_t ret = this->fileManagerService_.RelocateFile(pullData);
+    // 如果移动文件失败且已经被设置为纯云资产，则调用 ClearLocalData 清理本地数据，避免文件路径不一致导致的各种问题
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Relocate file failed, cloudId: %{public}s, ret: %{public}d.", pullData.cloudId.c_str(), ret);
+        // reload local photo info after RelocateFile, to make sure the following process have the latest local data.
+        this->commonDao_.QueryPhotoByCloudId(pullData.cloudId, pullData.localPhotosPoOp);
+        this->ClearLocalData(pullData, fdirtyData);
+        return E_OK;
+    }
+    // 处理元数据变更
+    CloudLakeFileHandler::HandleMetaChanged(pullData.localFileId);
+    return E_OK;
 }
 }  // namespace OHOS::Media::CloudSync
 // LCOV_EXCL_STOP

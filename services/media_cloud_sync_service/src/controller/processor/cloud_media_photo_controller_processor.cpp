@@ -275,8 +275,6 @@ bool CloudMediaPhotoControllerProcessor::GetAttributesInfo(const OnFetchPhotosVo
     data.attributesEditDataCamera = photosVo.editDataCamera;
     data.attributesSupportedWatermarkType = photosVo.supportedWatermarkType;
     data.attributesStrongAssociation = photosVo.strongAssociation;
-    data.attributesFileSourceType = photosVo.fileSourceType;
-    data.attributesStoragePath = photosVo.storagePath;
     data.attributesUniqueId = photosVo.uniqueId;
     data.attributesPackageName = photosVo.packageName;
     // Safe Album: risk status for children's watch

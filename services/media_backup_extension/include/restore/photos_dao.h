@@ -27,6 +27,9 @@ public:
     struct PhotosRowData {
         int32_t fileId {0};
         std::string data;
+        std::string displayName;
+        int64_t fileSize {0};
+        int32_t orientation {0};
         int32_t ownerAlbumId {0};
         std::string burstKey;
         int32_t cleanFlag {0};
@@ -144,6 +147,9 @@ private:
         SELECT \
             P.file_id, \
             P.data, \
+            P.display_name, \
+            P.size, \
+            P.orientation, \
             P.clean_flag, \
             P.position, \
             P.file_source_type \

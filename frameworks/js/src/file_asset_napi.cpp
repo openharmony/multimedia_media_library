@@ -455,6 +455,16 @@ std::string FileAssetNapi::GetFileUri() const
     return fileAssetPtr->GetUri();
 }
 
+int32_t FileAssetNapi::GetWidth() const
+{
+    return fileAssetPtr->GetWidth();
+}
+
+int32_t FileAssetNapi::GetHeight() const
+{
+    return fileAssetPtr->GetHeight();
+}
+
 int32_t FileAssetNapi::GetFileId() const
 {
     return fileAssetPtr->GetId();
@@ -3332,7 +3342,7 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
     if (CheckSystemApiKeys(env, inputKey) < 0) {
         return nullptr;
     }
-
+    NAPI_INFO_LOG("inputKey : %{public}s", inputKey.c_str());
     napi_value jsResult = nullptr;
     auto obj = asyncContext->objectInfo;
     napi_get_undefined(env, &jsResult);

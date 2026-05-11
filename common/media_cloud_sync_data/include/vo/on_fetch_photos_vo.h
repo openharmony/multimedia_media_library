@@ -88,9 +88,6 @@ public:
     bool isFavorite;
     bool isRecycle;
     std::vector<std::string> sourceAlbumIds;
-    // lake
-    int32_t fileSourceType;
-    std::string storagePath;
     std::string uniqueId;
     std::string packageName;
     std::map<std::string, std::string> stringfields;
