@@ -24,14 +24,10 @@
 #include "bundle_mgr_interface.h"
 #include "common_event_manager.h"
 #include "highpixel_bundle_info_cache.h"
+#include "preferred_compatible_mode_check_utils.h"
 
 namespace OHOS {
 namespace Media {
-enum class TranscodeMode {
-    DEFAULT = 0,
-    CURRENT = 1,
-    COMPATIBLE = 2,
-};
 #define EXPORT __attribute__ ((visibility ("default")))
 class HeifTranscodingCheckUtils {
 public:
