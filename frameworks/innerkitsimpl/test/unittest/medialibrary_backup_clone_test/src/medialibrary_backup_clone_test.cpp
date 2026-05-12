@@ -5985,5 +5985,382 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_water_ma
     MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_water_mark_test_004");
 }
 
+static std::string GenerateCloneBackupInfo(const std::string& type, const std::string& detail)
+{
+    std::string backupInfo = "[{\"type\": \"" + type + "\", \"detail\": \"" + detail + "\"}]";
+    MEDIA_INFO_LOG("backupInfo: %{public}s", backupInfo.c_str());
+    return backupInfo;
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_create_file_info_db_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_create_file_info_db_test_001");
+    ClearData();
+    
+    restoreService->srcDevFileListCloneConfig_.ancoFileListClone = AncoFileListClone::ANCO_FILE_LIST_CLONE_NONE;
+    restoreService->srcDevFileListCloneConfig_.fileManagerFileListClone =
+        FileManagerFileListClone::FILE_MANAGER_FILE_LIST_CLONE_NONE;
+    restoreService->sceneCode_ = CLONE_RESTORE_ID;
+    restoreService->taskId_ = "test_task_001";
+    
+    restoreService->CreateCloneFileInfoDb();
+    EXPECT_EQ(restoreService->errorCode_, RestoreError::SUCCESS);
+    
+    restoreService->srcDevFileListCloneConfig_.ancoFileListClone =
+        AncoFileListClone::ANCO_FILE_LIST_CLONE_SUPPORTED;
+    restoreService->srcDevFileListCloneConfig_.fileManagerFileListClone =
+        FileManagerFileListClone::FILE_MANAGER_FILE_LIST_CLONE_NONE;
+    restoreService->CreateCloneFileInfoDb();
+    EXPECT_EQ(restoreService->errorCode_, RestoreError::SUCCESS);
+    
+    restoreService->srcDevFileListCloneConfig_.ancoFileListClone =
+        AncoFileListClone::ANCO_FILE_LIST_CLONE_SUPPORTED;
+    restoreService->srcDevFileListCloneConfig_.fileManagerFileListClone =
+        FileManagerFileListClone::FILE_MANAGER_FILE_LIST_CLONE_SUPPORTED;
+    restoreService->CreateCloneFileInfoDb();
+    EXPECT_EQ(restoreService->errorCode_, RestoreError::SUCCESS);
+    
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_create_file_info_db_test_001");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_parse_clone_config_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_parse_clone_config_test_001");
+    ClearData();
+    
+    restoreService->restoreInfo_ = EMPTY_STR;
+    restoreService->ParseSrcDevFileListCloneConfig();
+    EXPECT_EQ(restoreService->srcDevFileListCloneConfig_.ancoFileListClone,
+        AncoFileListClone::ANCO_FILE_LIST_CLONE_NONE);
+    EXPECT_EQ(restoreService->srcDevFileListCloneConfig_.fileManagerFileListClone,
+        FileManagerFileListClone::FILE_MANAGER_FILE_LIST_CLONE_NONE);
+    
+    restoreService->restoreInfo_ = "invalid json";
+    restoreService->ParseSrcDevFileListCloneConfig();
+    EXPECT_EQ(restoreService->srcDevFileListCloneConfig_.ancoFileListClone,
+        AncoFileListClone::ANCO_FILE_LIST_CLONE_NONE);
+    EXPECT_EQ(restoreService->srcDevFileListCloneConfig_.fileManagerFileListClone,
+        FileManagerFileListClone::FILE_MANAGER_FILE_LIST_CLONE_NONE);
+    
+    restoreService->restoreInfo_ = GenerateCloneBackupInfo(BACKUP_SRC_DEV_ANCO_FILE_LIST_CLONE_KEY, "invalid");
+    restoreService->ParseSrcDevFileListCloneConfig();
+    EXPECT_EQ(restoreService->srcDevFileListCloneConfig_.ancoFileListClone,
+        AncoFileListClone::ANCO_FILE_LIST_CLONE_NONE);
+    
+    restoreService->restoreInfo_ = GenerateCloneBackupInfo(BACKUP_SRC_DEV_ANCO_FILE_LIST_CLONE_KEY, "1");
+    restoreService->ParseSrcDevFileListCloneConfig();
+    EXPECT_EQ(restoreService->srcDevFileListCloneConfig_.ancoFileListClone,
+        AncoFileListClone::ANCO_FILE_LIST_CLONE_SUPPORTED);
+    
+    restoreService->restoreInfo_ = GenerateCloneBackupInfo(BACKUP_SRC_DEV_FILE_MANAGER_FILE_LIST_CLONE_KEY, "1");
+    restoreService->ParseSrcDevFileListCloneConfig();
+    EXPECT_EQ(restoreService->srcDevFileListCloneConfig_.fileManagerFileListClone,
+        FileManagerFileListClone::FILE_MANAGER_FILE_LIST_CLONE_SUPPORTED);
+    
+    restoreService->restoreInfo_ = "[{\"type\": \"" + BACKUP_SRC_DEV_ANCO_FILE_LIST_CLONE_KEY +
+        "\", \"detail\": \"1\"},{\"type\": \"" + BACKUP_SRC_DEV_FILE_MANAGER_FILE_LIST_CLONE_KEY +
+        "\", \"detail\": \"1\"}]";
+    restoreService->ParseSrcDevFileListCloneConfig();
+    EXPECT_EQ(restoreService->srcDevFileListCloneConfig_.ancoFileListClone,
+        AncoFileListClone::ANCO_FILE_LIST_CLONE_SUPPORTED);
+    EXPECT_EQ(restoreService->srcDevFileListCloneConfig_.fileManagerFileListClone,
+        FileManagerFileListClone::FILE_MANAGER_FILE_LIST_CLONE_SUPPORTED);
+    
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_parse_clone_config_test_001");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_lake_fail_count_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_lake_fail_count_test_001");
+    ClearData();
+    
+    restoreService->migrateLakePhotoFailNumber_ = 5;
+    restoreService->migrateLakeVideoFailNumber_ = 3;
+    
+    int32_t photoFailCount = static_cast<int32_t>(restoreService->migrateLakePhotoFailNumber_);
+    int32_t videoFailCount = static_cast<int32_t>(restoreService->migrateLakeVideoFailNumber_);
+    
+    EXPECT_EQ(photoFailCount, 5);
+    EXPECT_EQ(videoFailCount, 3);
+    
+    restoreService->migrateLakePhotoFailNumber_ = 0;
+    restoreService->migrateLakeVideoFailNumber_ = 0;
+    
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_lake_fail_count_test_001");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_lake_statistics_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_lake_statistics_test_001");
+    ClearData();
+    
+    restoreService->migrateLakePhotoNumber_ = 100;
+    restoreService->migrateLakeVideoNumber_ = 50;
+    restoreService->migrateLakePhotoDuplicateNumber_ = 10;
+    restoreService->migrateLakeVideoDuplicateNumber_ = 5;
+    restoreService->migrateLakePhotoFailNumber_ = 3;
+    restoreService->migrateLakeVideoFailNumber_ = 2;
+    
+    uint64_t totalSuccess = restoreService->migrateLakePhotoNumber_ + restoreService->migrateLakeVideoNumber_;
+    uint64_t totalDuplicate = restoreService->migrateLakePhotoDuplicateNumber_ +
+        restoreService->migrateLakeVideoDuplicateNumber_;
+    uint64_t totalFail = restoreService->migrateLakePhotoFailNumber_ + restoreService->migrateLakeVideoFailNumber_;
+    
+    EXPECT_EQ(totalSuccess, 150);
+    EXPECT_EQ(totalDuplicate, 15);
+    EXPECT_EQ(totalFail, 5);
+    
+    restoreService->migrateLakePhotoNumber_ = 0;
+    restoreService->migrateLakeVideoNumber_ = 0;
+    restoreService->migrateLakePhotoDuplicateNumber_ = 0;
+    restoreService->migrateLakeVideoDuplicateNumber_ = 0;
+    restoreService->migrateLakePhotoFailNumber_ = 0;
+    restoreService->migrateLakeVideoFailNumber_ = 0;
+    
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_lake_statistics_test_001");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_failed_files_lake_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_failed_files_lake_test_001");
+    ClearData();
+    
+    restoreService->failedFilesMap_.clear();
+    restoreService->sceneCode_ = CLONE_RESTORE_ID;
+    
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::MEDIA_HO_LAKE;
+    fileInfo.storagePath = "/storage/emulated/0/Pictures/lake_test.jpg";
+    fileInfo.oldPath = "/storage/emulated/0/Pictures/lake_test.jpg";
+    fileInfo.fileType = static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE);
+    
+    restoreService->UpdateFailedFileByFileType(static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE), fileInfo, E_ERR);
+    
+    auto failedFiles = restoreService->GetFailedFiles(STAT_TYPE_LAKE_PHOTO);
+    EXPECT_EQ(failedFiles.size(), 1);
+    
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_get_failed_files_lake_test_001");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_failed_files_lake_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_failed_files_lake_test_002");
+    ClearData();
+    
+    restoreService->sceneCode_ = CLONE_RESTORE_ID;
+    
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::MEDIA_HO_LAKE;
+    fileInfo.oldPath = "/storage/emulated/0/Pictures/lake_test.mp4";
+    fileInfo.fileType = static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO);
+    
+    restoreService->UpdateFailedFileByFileType(static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO), fileInfo, E_ERR);
+    
+    auto failedFiles = restoreService->GetFailedFiles(STAT_TYPE_LAKE_VIDEO);
+    EXPECT_EQ(failedFiles.size(), 1);
+    
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_get_failed_files_lake_test_002");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_sub_count_info_lake_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_sub_count_info_lake_test_001");
+    ClearData();
+    
+    restoreService->migrateLakePhotoNumber_ = 100;
+    restoreService->migrateLakePhotoDuplicateNumber_ = 10;
+    
+    FileInfo fileInfo;
+    fileInfo.displayName = "test.jpg";
+    FailedFileInfo failedFileInfo(CLONE_RESTORE_ID, fileInfo, RestoreError::ANCO_TRANSFER_FAILED);
+    restoreService->failedFilesMap_[STAT_TYPE_LAKE_PHOTO].emplace("/test/path1.jpg", failedFileInfo);
+    restoreService->failedFilesMap_[STAT_TYPE_LAKE_PHOTO].emplace("/test/path2.jpg", failedFileInfo);
+    restoreService->failedFilesMap_[STAT_TYPE_LAKE_PHOTO].emplace("/test/path3.jpg", failedFileInfo);
+    restoreService->failedFilesMap_[STAT_TYPE_LAKE_PHOTO].emplace("/test/path4.jpg", failedFileInfo);
+    restoreService->failedFilesMap_[STAT_TYPE_LAKE_PHOTO].emplace("/test/path5.jpg", failedFileInfo);
+    
+    SubCountInfo info = restoreService->GetSubCountInfo(STAT_TYPE_LAKE_PHOTO);
+    EXPECT_EQ(info.successCount, 100);
+    EXPECT_EQ(info.duplicateCount, 10);
+    EXPECT_EQ(info.failCount, 5);
+    
+    restoreService->migrateLakePhotoNumber_ = 0;
+    restoreService->migrateLakePhotoDuplicateNumber_ = 0;
+    restoreService->failedFilesMap_.clear();
+    
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_get_sub_count_info_lake_test_001");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_sub_count_info_lake_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_sub_count_info_lake_test_002");
+    ClearData();
+    
+    restoreService->migrateLakeVideoNumber_ = 50;
+    restoreService->migrateLakeVideoDuplicateNumber_ = 5;
+    
+    FileInfo fileInfo;
+    fileInfo.displayName = "test.mp4";
+    FailedFileInfo failedFileInfo(CLONE_RESTORE_ID, fileInfo, RestoreError::ANCO_TRANSFER_FAILED);
+    restoreService->failedFilesMap_[STAT_TYPE_LAKE_VIDEO].emplace("/test/path1.mp4", failedFileInfo);
+    restoreService->failedFilesMap_[STAT_TYPE_LAKE_VIDEO].emplace("/test/path2.mp4", failedFileInfo);
+    restoreService->failedFilesMap_[STAT_TYPE_LAKE_VIDEO].emplace("/test/path3.mp4", failedFileInfo);
+    
+    SubCountInfo info = restoreService->GetSubCountInfo(STAT_TYPE_LAKE_VIDEO);
+    EXPECT_EQ(info.successCount, 50);
+    EXPECT_EQ(info.duplicateCount, 5);
+    EXPECT_EQ(info.failCount, 3);
+    
+    restoreService->migrateLakeVideoNumber_ = 0;
+    restoreService->migrateLakeVideoDuplicateNumber_ = 0;
+    restoreService->failedFilesMap_.clear();
+    
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_get_sub_count_info_lake_test_002");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_photo_video_with_lake_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_photo_video_with_lake_test_001");
+    ClearData();
+    
+    restoreService->migrateFileNumber_ = 200;
+    restoreService->migrateVideoFileNumber_ = 30;
+    restoreService->migrateLakePhotoNumber_ = 20;
+    restoreService->migrateLakeVideoNumber_ = 10;
+    restoreService->migratePhotoDuplicateNumber_ = 5;
+    restoreService->migrateVideoDuplicateNumber_ = 3;
+    
+    SubCountInfo photoInfo = restoreService->GetSubCountInfo(STAT_TYPE_PHOTO);
+    uint64_t expectedPhotoSuccess = 200 - 30;
+    EXPECT_EQ(photoInfo.successCount, expectedPhotoSuccess);
+    EXPECT_EQ(photoInfo.duplicateCount, 5);
+    
+    SubCountInfo videoInfo = restoreService->GetSubCountInfo(STAT_TYPE_VIDEO);
+    uint64_t expectedVideoSuccess = 30;
+    EXPECT_EQ(videoInfo.successCount, expectedVideoSuccess);
+    EXPECT_EQ(videoInfo.duplicateCount, 3);
+    
+    restoreService->migrateFileNumber_ = 0;
+    restoreService->migrateVideoFileNumber_ = 0;
+    restoreService->migrateLakePhotoNumber_ = 0;
+    restoreService->migrateLakeVideoNumber_ = 0;
+    restoreService->migratePhotoDuplicateNumber_ = 0;
+    restoreService->migrateVideoDuplicateNumber_ = 0;
+    
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_photo_video_with_lake_test_001");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_update_failed_lake_photo_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_update_failed_lake_photo_test_001");
+    ClearData();
+    
+    restoreService->failedFilesMap_.clear();
+    restoreService->sceneCode_ = CLONE_RESTORE_ID;
+    
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::MEDIA_HO_LAKE;
+    fileInfo.storagePath = "/storage/emulated/0/Pictures/test.jpg";
+    fileInfo.oldPath = "/storage/emulated/0/Pictures/test.jpg";
+    fileInfo.displayName = "test.jpg";
+    fileInfo.fileType = static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE);
+    
+    restoreService->UpdateFailedFileByFileType(static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE), fileInfo,
+        RestoreError::ANCO_TRANSFER_FAILED);
+    
+    auto failedFiles = restoreService->GetFailedFiles(STAT_TYPE_LAKE_PHOTO);
+    EXPECT_EQ(failedFiles.size(), 1);
+    EXPECT_NE(failedFiles.find("/storage/emulated/0/Pictures/test.jpg"), failedFiles.end());
+    
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_update_failed_lake_photo_test_001");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_update_failed_lake_video_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_update_failed_lake_video_test_001");
+    ClearData();
+    
+    restoreService->failedFilesMap_.clear();
+    restoreService->sceneCode_ = CLONE_RESTORE_ID;
+    
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::MEDIA_HO_LAKE;
+    fileInfo.storagePath = "/storage/emulated/0/Pictures/test.mp4";
+    fileInfo.oldPath = "/storage/emulated/0/Pictures/test.mp4";
+    fileInfo.displayName = "test.mp4";
+    fileInfo.fileType = static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO);
+    
+    restoreService->UpdateFailedFileByFileType(static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO), fileInfo,
+        RestoreError::ANCO_TRANSFER_FAILED);
+    
+    auto failedFiles = restoreService->GetFailedFiles(STAT_TYPE_LAKE_VIDEO);
+    EXPECT_EQ(failedFiles.size(), 1);
+    EXPECT_NE(failedFiles.find("/storage/emulated/0/Pictures/test.mp4"), failedFiles.end());
+    
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_update_failed_lake_video_test_001");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_lake_fail_info_content_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_lake_fail_info_content_test_001");
+    ClearData();
+    
+    restoreService->failedFilesMap_.clear();
+    restoreService->sceneCode_ = CLONE_RESTORE_ID;
+    
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::MEDIA_HO_LAKE;
+    fileInfo.storagePath = "/storage/emulated/0/Pictures/content_test.jpg";
+    fileInfo.oldPath = "/storage/emulated/0/Pictures/content_test.jpg";
+    fileInfo.displayName = "content_test.jpg";
+    fileInfo.fileType = static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE);
+    
+    restoreService->UpdateFailedFileByFileType(static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE), fileInfo,
+        RestoreError::ANCO_TRANSFER_FAILED);
+    
+    auto failedFiles = restoreService->GetFailedFiles(STAT_TYPE_LAKE_PHOTO);
+    EXPECT_EQ(failedFiles.size(), 1);
+    
+    auto it = failedFiles.find("/storage/emulated/0/Pictures/content_test.jpg");
+    EXPECT_NE(it, failedFiles.end());
+    EXPECT_EQ(it->second.displayName, "content_test.jpg");
+    EXPECT_EQ(it->second.errorCode, std::to_string(RestoreError::ANCO_TRANSFER_FAILED));
+    
+    restoreService->failedFilesMap_.clear();
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_lake_fail_info_content_test_001");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_parse_file_transfer_config_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_parse_file_transfer_config_test_001");
+    ClearData();
+    
+    restoreService->restoreInfo_ = EMPTY_STR;
+    restoreService->ParseDstDevFileTransferConfig();
+    EXPECT_EQ(restoreService->dstDevFileTransferConfig_.ancoFileTransfer,
+        AncoFileTransfer::ANCO_FILE_TRANSFER_NONE);
+    
+    restoreService->restoreInfo_ = "invalid json";
+    restoreService->ParseDstDevFileTransferConfig();
+    EXPECT_EQ(restoreService->dstDevFileTransferConfig_.ancoFileTransfer,
+        AncoFileTransfer::ANCO_FILE_TRANSFER_NONE);
+    
+    restoreService->restoreInfo_ = GenerateCloneBackupInfo(BACKUP_DST_DEV_ANCO_FILE_TRANSFER_KEY, "invalid");
+    restoreService->ParseDstDevFileTransferConfig();
+    EXPECT_EQ(restoreService->dstDevFileTransferConfig_.ancoFileTransfer,
+        AncoFileTransfer::ANCO_FILE_TRANSFER_NONE);
+    
+    restoreService->restoreInfo_ = GenerateCloneBackupInfo(BACKUP_DST_DEV_ANCO_FILE_TRANSFER_KEY, "1");
+    restoreService->ParseDstDevFileTransferConfig();
+    EXPECT_EQ(restoreService->dstDevFileTransferConfig_.ancoFileTransfer,
+        AncoFileTransfer::ANCO_FILE_TRANSFER_SUPPORTED);
+    
+    restoreService->restoreInfo_ = GenerateCloneBackupInfo(BACKUP_DST_DEV_ANCO_FILE_TRANSFER_KEY, "0");
+    restoreService->ParseDstDevFileTransferConfig();
+    EXPECT_EQ(restoreService->dstDevFileTransferConfig_.ancoFileTransfer,
+        AncoFileTransfer::ANCO_FILE_TRANSFER_NONE);
+    
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_parse_file_transfer_config_test_001");
+}
 } // namespace Media
 } // namespace OHOS

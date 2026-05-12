@@ -68,6 +68,12 @@ public:
     std::unordered_set<std::string> GetExistingStoragePaths(const std::vector<std::string> &storagePaths,
         int32_t maxFileId);
     std::unordered_set<std::string> GetExistingData(const std::vector<std::string> &data, int32_t maxFileId);
+    std::shared_ptr<NativeRdb::ResultSet> QueryCloneFileInfo(const std::vector<int32_t> &fileSourceTypes);
+    int32_t InsertCloneFileInfo(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+        std::shared_ptr<NativeRdb::ResultSet> resultSet, AncoFileListClone ancoFileListClone,
+        FileManagerFileListClone fileManagerFileListClone);
+    int32_t GetCloneFileInfo(std::shared_ptr<NativeRdb::RdbStore> rdbStore, AncoFileListClone ancoFileListClone,
+        FileManagerFileListClone fileManagerFileListClone);
 
 private:
     PhotosRowData FindSameFileWithoutAlbum(const FileInfo &fileInfo, int32_t maxFileId);
@@ -217,6 +223,10 @@ private:
     const std::string SQL_PHOTOS_GET_EXISTING_STORAGE_PATHS =
         "SELECT storage_path FROM Photos WHERE file_id <= ? AND file_source_type = ? AND storage_path IN ({0})";
     const std::string SQL_PHOTOS_GET_EXISTING_DATA = "SELECT data FROM Photos WHERE file_id <= ? AND data IN ({0})";
+    const std::string SQL_GET_CLONE_FILE_INFO = "\
+        SELECT file_id, storage_path, display_name, media_type, size, date_modified, file_source_type \
+        FROM Photos \
+        WHERE file_source_type IN ({0})";
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_PHOTOS_DAO

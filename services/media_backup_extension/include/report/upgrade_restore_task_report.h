@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "backup_const.h"
 #include "media_backup_report_data_type.h"
 
 namespace OHOS::Media {
@@ -55,6 +56,9 @@ public:
         const size_t failCount);
     UpgradeRestoreTaskReport &ReportUpgradeEnh(const std::string &errorCode, const std::string &info);
     UpgradeRestoreTaskReport &ReportRestoreMode(int32_t restoreMode, uint64_t notFoundFileNum);
+    UpgradeRestoreTaskReport &ReportFileListCloneConfig(AncoFileListClone ancoFileListClone,
+        FileManagerFileListClone fileManagerFileListClone);
+    UpgradeRestoreTaskReport &ReportFileTransferConfig(AncoFileTransfer ancoFileTransfer);
 
 private:
     int32_t PostInfoDfx(const MediaRestoreResultInfo &info);

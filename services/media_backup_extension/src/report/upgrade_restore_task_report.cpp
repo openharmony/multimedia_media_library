@@ -167,9 +167,9 @@ UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportTimeCost(const uint64_
                                             .SetSceneCode(this->sceneCode_)
                                             .SetTaskId(this->taskId_)
                                             .Load(type, errorCode, errorInfo);
-    resultInfo.duplicateCount = static_cast<int>(duplicateCount);
-    resultInfo.failedCount = static_cast<int>(failCount);
-    resultInfo.successCount = static_cast<int>(successCount);
+    resultInfo.duplicateCount = static_cast<int64_t>(duplicateCount);
+    resultInfo.failedCount = static_cast<int64_t>(failCount);
+    resultInfo.successCount = static_cast<int64_t>(successCount);
     MEDIA_INFO_LOG("[%{public}s]: %{public}s, successCount: %{public}d, duplicateCount: %{public}d, "
         "failCount: %{public}d", type.c_str(), errorCode.c_str(), resultInfo.successCount, resultInfo.duplicateCount,
         resultInfo.failedCount);
@@ -181,6 +181,28 @@ UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportTimeCost(const uint64_
 UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportRestoreMode(int32_t restoreMode, uint64_t notFoundFileNum)
 {
     return Report("RestoreMode:NotFoundFileNum", std::to_string(restoreMode), std::to_string(notFoundFileNum));
+}
+
+UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportFileListCloneConfig(
+    AncoFileListClone ancoFileListClone, FileManagerFileListClone fileManagerFileListClone)
+{
+    std::ostringstream oss;
+    oss << "ancoFileListClone=" << static_cast<int32_t>(ancoFileListClone)
+        << ",fileManagerFileListClone=" << static_cast<int32_t>(fileManagerFileListClone);
+    std::string extend = oss.str();
+    MEDIA_INFO_LOG("[FileListCloneConfig] %{public}s", extend.c_str());
+    BackupHiAuditHelper().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_)
+        .WriteReportAuditLog(extend);
+    return *this;
+}
+
+UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportFileTransferConfig(AncoFileTransfer ancoFileTransfer)
+{
+    std::string extend = "ancoFileTransfer=" + std::to_string(static_cast<int32_t>(ancoFileTransfer));
+    MEDIA_INFO_LOG("[FileTransferConfig] %{public}s", extend.c_str());
+    BackupHiAuditHelper().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_)
+        .WriteReportAuditLog(extend);
+    return *this;
 }
 
 int32_t UpgradeRestoreTaskReport::PostInfoDfx(const MediaRestoreResultInfo &info)

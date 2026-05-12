@@ -240,6 +240,11 @@ bool GlobalScanner::IsForceScanning()
         std::lock_guard<std::mutex> lock(scanMutex_);
         std::queue<std::pair<MediaNotifyInfo, ScanTaskType>> scanTaskQueue;
         scanTaskQueue.swap(scanTaskQueue_);
+        // 添加清理状态
+        if (scannerStatus_ != ScannerStatus::IDLE) {
+            scannerStatus_ = ScannerStatus::IDLE;
+            MEDIA_INFO_LOG("LakeClone: set scannerStatus to IDLE");
+        }
     }
     MEDIA_WARN_LOG("Global scan is forcibly stopped");
     return true;

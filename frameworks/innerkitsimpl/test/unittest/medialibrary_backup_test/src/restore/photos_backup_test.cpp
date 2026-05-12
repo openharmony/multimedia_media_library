@@ -20,6 +20,7 @@
 #include <string>
 
 #include "backup_const.h"
+#include "json_utils.h"
 #include "media_log.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
@@ -27,6 +28,7 @@
 #include "photos_backup.h"
 #include "userfile_manager_types.h"
 #include "media_string_utils.h"
+#include "media_file_utils.h"
 
 using namespace testing::ext;
 
@@ -40,6 +42,7 @@ void PhotosBackupTest::SetUpTestCase(void)
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(g_rdbStore, nullptr);
+    MediaFileUtils::CreateDirectory(CLONE_RESTORE_BACKUP_DIR);
 }
 
 void PhotosBackupTest::TearDownTestCase(void)
@@ -219,5 +222,104 @@ HWTEST_F(PhotosBackupTest, GetBackupTotalSizeOfLakeFile_Test_001, TestSize.Level
     nlohmann::json jsonObject = nlohmann::json::parse(backupInfo);
     EXPECT_TRUE(jsonObject.is_array());
     MEDIA_INFO_LOG("GetBackupTotalSizeOfLakeFile_Test_001 end");
+}
+
+HWTEST_F(PhotosBackupTest, BackupInfo_LakeFields_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupInfo_LakeFields_Test_001 start");
+    PhotosBackup::BackupInfo backupInfo;
+    backupInfo.suffix = "";
+    backupInfo.photoCount = 10;
+    backupInfo.videoCount = 5;
+    backupInfo.cloudPhotoCount = 3;
+    backupInfo.cloudVideoCount = 2;
+    backupInfo.audioCount = 7;
+    backupInfo.totalSize = 1024000;
+    backupInfo.lakePhotoCount = 15;
+    backupInfo.lakeVideoCount = 8;
+    backupInfo.lakeTotalSize = 2048000;
+    
+    std::string result = backupInfo.ToString();
+    EXPECT_FALSE(result.empty());
+    
+    nlohmann::json jsonObject = nlohmann::json::parse(result);
+    ASSERT_FALSE(jsonObject.is_discarded());
+    EXPECT_TRUE(jsonObject.is_array());
+    EXPECT_GE(jsonObject.size(), 9);
+    MEDIA_INFO_LOG("BackupInfo_LakeFields_Test_001 end");
+}
+
+HWTEST_F(PhotosBackupTest, BackupInfo_LakeFields_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupInfo_LakeFields_Test_002 start");
+    PhotosBackup::BackupInfo backupInfo;
+    backupInfo.suffix = "_lake";
+    backupInfo.lakePhotoCount = 0;
+    backupInfo.lakeVideoCount = 0;
+    backupInfo.lakeTotalSize = 0;
+    
+    std::string result = backupInfo.ToString();
+    EXPECT_FALSE(result.empty());
+    
+    nlohmann::json jsonObject = nlohmann::json::parse(result);
+    ASSERT_FALSE(jsonObject.is_discarded());
+    EXPECT_TRUE(jsonObject.is_array());
+    MEDIA_INFO_LOG("BackupInfo_LakeFields_Test_002 end");
+}
+
+HWTEST_F(PhotosBackupTest, CreateCloneFileInfoDb_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CreateCloneFileInfoDb_Test_001 start");
+    int32_t sceneCode = 1001;
+    std::string taskId = "task_001";
+    
+    PhotosBackup photosBackup(sceneCode, taskId, g_rdbStore->GetRaw());
+    
+    int32_t result = photosBackup.CreateCloneFileInfoDb(AncoFileListClone::ANCO_FILE_LIST_CLONE_NONE,
+        FileManagerFileListClone::FILE_MANAGER_FILE_LIST_CLONE_NONE);
+    EXPECT_EQ(result, NativeRdb::E_OK);
+    MEDIA_INFO_LOG("CreateCloneFileInfoDb_Test_001 end");
+}
+
+HWTEST_F(PhotosBackupTest, CreateCloneFileInfoDb_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CreateCloneFileInfoDb_Test_002 start");
+    int32_t sceneCode = 1001;
+    std::string taskId = "task_002";
+    
+    PhotosBackup photosBackup(sceneCode, taskId, g_rdbStore->GetRaw());
+    
+    int32_t result = photosBackup.CreateCloneFileInfoDb(AncoFileListClone::ANCO_FILE_LIST_CLONE_SUPPORTED,
+        FileManagerFileListClone::FILE_MANAGER_FILE_LIST_CLONE_NONE);
+    EXPECT_EQ(result, NativeRdb::E_OK);
+    MEDIA_INFO_LOG("CreateCloneFileInfoDb_Test_002 end");
+}
+
+HWTEST_F(PhotosBackupTest, CreateCloneFileInfoDb_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CreateCloneFileInfoDb_Test_003 start");
+    int32_t sceneCode = 1001;
+    std::string taskId = "task_003";
+    
+    PhotosBackup photosBackup(sceneCode, taskId, g_rdbStore->GetRaw());
+    
+    int32_t result = photosBackup.CreateCloneFileInfoDb(AncoFileListClone::ANCO_FILE_LIST_CLONE_NONE,
+        FileManagerFileListClone::FILE_MANAGER_FILE_LIST_CLONE_SUPPORTED);
+    EXPECT_EQ(result, NativeRdb::E_OK);
+    MEDIA_INFO_LOG("CreateCloneFileInfoDb_Test_003 end");
+}
+
+HWTEST_F(PhotosBackupTest, CreateCloneFileInfoDb_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CreateCloneFileInfoDb_Test_004 start");
+    int32_t sceneCode = 1001;
+    std::string taskId = "task_004";
+    
+    PhotosBackup photosBackup(sceneCode, taskId, g_rdbStore->GetRaw());
+    
+    int32_t result = photosBackup.CreateCloneFileInfoDb(AncoFileListClone::ANCO_FILE_LIST_CLONE_SUPPORTED,
+        FileManagerFileListClone::FILE_MANAGER_FILE_LIST_CLONE_SUPPORTED);
+    EXPECT_EQ(result, NativeRdb::E_OK);
+    MEDIA_INFO_LOG("CreateCloneFileInfoDb_Test_004 end");
 }
 }  // namespace OHOS::Media

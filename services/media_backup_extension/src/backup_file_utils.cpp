@@ -20,6 +20,7 @@
 #include <utime.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <regex>
 
 #include "backup_const_column.h"
 #include "datashare_helper.h"
@@ -63,6 +64,7 @@ const int32_t BackupFileUtils::IMAGE_MIN_BUF_SIZE = 8192;
 static const std::string CLOUD_BASE_URI = "datashareproxy://generic.cloudstorage";
 static const std::string CLOUD_SYNC_SWITCH_URI = CLOUD_BASE_URI + "/sync_switch";
 static const std::string MOBILE_NETWORK_STATUS_ON = "1";
+const std::string ROOT_LAKE_DIR = "/storage/media/local/files/Docs/HO_DATA_EXT_MISC/";
 
 bool FileAccessHelper::GetValidPath(string &filePath)
 {
@@ -953,6 +955,17 @@ void BackupFileUtils::RestoreInvalidHDCCloudDataPos()
     CHECK_AND_PRINT_LOG(result >= 0, "restore invaildated pos of cloud hdc data failed,"
         "the sDataShareHelper_ update error");
     MEDIA_INFO_LOG("RestoreInvalidHDCCloudDataPos update success");
+}
+
+std::string BackupFileUtils::ConvertToStoragePath(const std::string& input)
+{
+    CHECK_AND_RETURN_RET_LOG(!input.empty(), input, "LakeClone: ConvertToStoragePath input is empty");
+    const std::regex RESTORE_PATH_PREFIX_REGEX(R"(^/mnt/data/\d+/HO_MEDIA/)");
+    if (std::regex_search(input, RESTORE_PATH_PREFIX_REGEX)) {
+        return std::regex_replace(input, RESTORE_PATH_PREFIX_REGEX, ROOT_LAKE_DIR);
+    }
+
+    return input;
 }
 } // namespace Media
 } // namespace OHOS

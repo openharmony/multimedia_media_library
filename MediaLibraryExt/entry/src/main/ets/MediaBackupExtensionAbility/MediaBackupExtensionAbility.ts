@@ -38,6 +38,7 @@ const OTHERS_PHONE_FRAME_CLONE_NAME = '99.99.99.998';
 const DUAL_FRAME_CLONE_NAME = '99.99.99.999';
 const STAT_KEY_RESULT_INFO = 'resultInfo';
 const STAT_KEY_TYPE = 'type';
+const STAT_KEY_PATH = 'path';
 const STAT_KEY_ERROR_CODE = 'errorCode';
 const STAT_KEY_ERROR_INFO = 'errorInfo';
 const STAT_KEY_INFOS = 'infos';
@@ -57,12 +58,15 @@ const STAT_VALUE_COUNT_INFO = 'CountInfo';
 const STAT_TYPE_PHOTO = 'photo';
 const STAT_TYPE_VIDEO = 'video';
 const STAT_TYPE_AUDIO = 'audio';
+const STAT_TYPE_LAKE_PHOTO = 'ancoPhoto';
+const STAT_TYPE_LAKE_VIDEO = 'ancoVideo';
 const STAT_TYPE_PHOTO_VIDEO = 'photo&video';
 const STAT_TYPE_UPDATE = 'update';
 const STAT_TYPE_THUMBNAIL = 'thumbnail';
 const STAT_TYPE_OTHER = 'other';
 const STAT_TYPE_ONGOING = 'ongoing';
-const STAT_TYPES = [STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, STAT_TYPE_AUDIO];
+const STAT_TYPES = [STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, STAT_TYPE_AUDIO,
+    STAT_TYPE_LAKE_PHOTO, STAT_TYPE_LAKE_VIDEO];
 const RESULT_INFO_NUM = 2;
 const JS_TYPE_STRING = 'string';
 const JS_TYPE_BOOLEAN = 'boolean';
@@ -95,6 +99,20 @@ const DEFAULT_RESTORE_EX_INFO = {
         },
         {
           'backupInfo': STAT_TYPE_AUDIO,
+          'successCount': 0,
+          'duplicateCount': 0,
+          'failedCount': 0,
+          'details': null
+        },
+        {
+          'backupInfo': STAT_TYPE_LAKE_PHOTO,
+          'successCount': 0,
+          'duplicateCount': 0,
+          'failedCount': 0,
+          'details': null
+        },
+        {
+          'backupInfo': STAT_TYPE_LAKE_VIDEO,
           'successCount': 0,
           'duplicateCount': 0,
           'failedCount': 0,
@@ -343,6 +361,8 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     let hasPhoto = false;
     let hasVideo = false;
     let hasAudio = false;
+    let hasLakePhoto = false;
+    let hasLakeVideo = false;
     for (let subCountInfo of subCountInfos) {
       if (!this.isSubCountInfoValid(subCountInfo)) {
         return false;
@@ -350,8 +370,10 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
       hasPhoto = hasPhoto || subCountInfo[STAT_KEY_BACKUP_INFO] === STAT_TYPE_PHOTO;
       hasVideo = hasVideo || subCountInfo[STAT_KEY_BACKUP_INFO] === STAT_TYPE_VIDEO;
       hasAudio = hasAudio || subCountInfo[STAT_KEY_BACKUP_INFO] === STAT_TYPE_AUDIO;
+      hasLakePhoto = hasLakePhoto || subCountInfo[STAT_KEY_BACKUP_INFO] === STAT_TYPE_LAKE_PHOTO;
+      hasLakeVideo = hasLakeVideo || subCountInfo[STAT_KEY_BACKUP_INFO] === STAT_TYPE_LAKE_VIDEO;
     }
-    return hasPhoto && hasVideo && hasAudio;
+    return hasPhoto && hasVideo && hasAudio && hasLakePhoto && hasLakeVideo;
   }
 
   private isSubCountInfoValid(subCountInfo: JSON): boolean {

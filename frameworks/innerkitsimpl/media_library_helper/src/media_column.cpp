@@ -237,6 +237,9 @@ const std::set<std::string> PhotoColumn::DEFAULT_FETCH_COLUMNS = {
     PHOTO_SUBTYPE, PHOTO_BURST_KEY,
 };
 
+const std::string PhotoColumn::CLONE_FILE_INFO_PATH = "path";
+const std::string PhotoColumn::CLONE_FILE_INFO_NEW_PATH = "new_path";
+
 const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::PHOTO_LATITUDE, PhotoColumn::PHOTO_LONGITUDE,
     PhotoColumn::PHOTO_HEIGHT, PhotoColumn::PHOTO_WIDTH, PhotoColumn::PHOTO_LCD_VISIT_TIME, PhotoColumn::PHOTO_POSITION,

@@ -64,9 +64,9 @@ public:
     std::string errorInfo;
     std::string type;
     std::string backupInfo;
-    int duplicateCount{0};
-    int failedCount{0};
-    int successCount{0};
+    int duplicateCount;
+    int failedCount;
+    int successCount;
 
 public:
     std::string ToString() const
@@ -356,9 +356,9 @@ struct RestoreTaskInfo {
     std::string type;
     std::string errorCode;
     std::string errorInfo;
-    int32_t successCount{0};
-    int32_t failedCount{0};
-    int32_t duplicateCount{0};
+    int64_t successCount{0};
+    int64_t failedCount{0};
+    int64_t duplicateCount{0};
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_BACKUP_REPORT_DATA_TYPE_H

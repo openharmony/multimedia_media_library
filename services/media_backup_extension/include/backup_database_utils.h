@@ -208,6 +208,33 @@ public:
     }
 };
 
+class CloneFileInfoRestoreDbCallBack : public RdbCallback {
+public:
+    int32_t OnCreate(NativeRdb::RdbStore &rdbStore) override;
+};
+
+class CloneFileInfoDbCallBack : public RdbCallback {
+public:
+    CloneFileInfoDbCallBack(AncoFileListClone ancoFileListClone, FileManagerFileListClone fileManagerFileListClone)
+        : ancoFileListClone_(ancoFileListClone), fileManagerFileListClone_(fileManagerFileListClone) {}
+
+    int32_t OnCreate(NativeRdb::RdbStore &rdbStore) override;
+
+private:
+    AncoFileListClone ancoFileListClone_;
+    FileManagerFileListClone fileManagerFileListClone_;
+
+    const std::string SQL_CREATE_FILE_INFO_TABLE_FOR_CLONE = "\
+        CREATE TABLE IF NOT EXISTS {0} (\
+            file_id INTEGER PRIMARY KEY,\
+            path TEXT,\
+            display_name TEXT,\
+            media_type INTEGER,\
+            size INTEGER,\
+            date_modified INTEGER\
+        )";
+};
+
 template <typename T>
 std::string BackupDatabaseUtils::JoinSQLValues(const std::vector<T>& values, std::string_view delimiter)
 {
