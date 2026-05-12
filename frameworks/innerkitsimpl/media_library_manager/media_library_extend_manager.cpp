@@ -303,8 +303,7 @@ int32_t MediaLibraryExtendManager::GetAssetCompressVersion()
 
 int32_t MediaLibraryExtendManager::NotifyAssetSended(const string &uri, ShareType shareType)
 {
-    MEDIA_INFO_LOG("NotifyAssetSended begin, uri:%{private}s, share type: %{public}d", uri.c_str(),
-        static_cast<int32_t>(shareType));
+    MEDIA_INFO_LOG("NotifyAssetSended begin, share type: %{public}d", static_cast<int32_t>(shareType));
     CHECK_AND_RETURN_RET_LOG(CheckPhotoUri(uri), E_ERR, "invalid uri");
     CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR, "dataShareHelper is null");
 
