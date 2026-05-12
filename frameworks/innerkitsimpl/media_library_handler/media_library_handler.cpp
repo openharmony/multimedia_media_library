@@ -74,6 +74,7 @@ const std::string ROOT_LAKE_DIR = "/storage/media/";
 constexpr int32_t NUM_TWO = 2;
 constexpr int32_t NUM_THREE = 3;
 constexpr int32_t FILE_POS_LAKE = 3;
+constexpr int32_t FILE_POS_FILE_MGR = 1;
 
 MediaLibraryHandler *MediaLibraryHandler::GetMediaLibraryHandler()
 {
@@ -236,8 +237,8 @@ int32_t MediaLibraryHandler::ProcessResultSet(shared_ptr<DataShareResultSet> &re
         }
 
         string uriStr;
-        if (fileSourceType == FILE_POS_LAKE && StartWith(storagePath, ROOT_LAKE_DIR)) {
-            MEDIA_INFO_LOG("convert lake path: %{private}s", storagePath.c_str());
+        if ((fileSourceType == FILE_POS_LAKE || fileSourceType == FILE_POS_FILE_MGR) &&
+            StartWith(storagePath, ROOT_LAKE_DIR)) {
             uriStr = ROOT_LAKE_DIR + to_string(userId) + "/" + storagePath.substr(ROOT_LAKE_DIR.length());
         } else if (StartWith(path, ROOT_MEDIA_DIR)) {
             uriStr = OHOS::Media::HMDFS + to_string(userId) + OHOS::Media::CLOUD_MERGE_VIEW +

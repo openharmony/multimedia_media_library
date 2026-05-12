@@ -140,6 +140,10 @@ public:
     EXPORT static std::string GetAssetCompressCachePath(const std::string &path);
     static int32_t GetFileAssetVectorFromDb(std::vector<std::shared_ptr<FileAsset>> &fileAssetVector,
         MediaLibraryCommand& cmd, const std::vector<std::string>& columns);
+    static void ScanFileWithoutAlbumUpdate(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
+        bool isForceScan = false, int32_t fileId = 0, std::shared_ptr<Media::Picture> resultPicture = nullptr);
+    static void ScanFileWithoutAlbumUpdateAndThumbGeneration(const std::string &path, bool isForceScan = false,
+        int32_t fileId = 0);
 
 protected:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(NativeRdb::AbsPredicates &predicates,
@@ -157,7 +161,8 @@ protected:
         shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh = nullptr);
     static int32_t CheckWithType(bool isContains, const std::string &displayName,
          const std::string &extention, int32_t mediaType);
-    static int32_t CheckDisplayNameWithType(const std::string &displayName, int32_t mediaType);
+    static int32_t CheckDisplayNameWithType(const std::string &displayName, int32_t mediaType,
+        bool useDotCompatibleRule = false);
     static int32_t CheckExtWithType(const std::string &extention, int32_t mediaType);
     static int32_t CheckRelativePathWithType(const std::string &relativePath, int32_t mediaType);
     static void GetAssetRootDir(int32_t mediaType, std::string &rootDirPath);
@@ -169,7 +174,7 @@ protected:
         std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh = nullptr);
 
     EXPORT static int32_t UpdateFileName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
-        bool &isNameChanged);
+        bool &isNameChanged, bool useDotCompatibleRule = false);
     EXPORT static int32_t SetUserComment(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     EXPORT static int32_t UpdateRelativePath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNameChanged);
@@ -196,10 +201,6 @@ protected:
     EXPORT static std::string CreateExtUriForV10Asset(FileAsset &fileAsset);
     EXPORT static int32_t OpenFileWithPrivacy(const std::string &filePath, const std::string &mode,
         const std::string &fileId, int32_t type = -1);
-    static void ScanFileWithoutAlbumUpdate(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
-        bool isForceScan = false, int32_t fileId = 0, std::shared_ptr<Media::Picture> resultPicture = nullptr);
-    static void ScanFileWithoutAlbumUpdateAndThumbGeneration(const std::string &path, bool isForceScan = false,
-        int32_t fileId = 0);
 
     static std::string GetAssetCacheDir();
     static std::string GetAssetCompressJsonPath(const std::string &path);

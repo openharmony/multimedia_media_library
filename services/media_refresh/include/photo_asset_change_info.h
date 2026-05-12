@@ -60,7 +60,7 @@ public:
     std::string dateDay_ = EMPTY_STR;
 
     // 相册相关
-    std::string ownerAlbumUri_; // todo 或者使用ownerAlbumId
+    std::string ownerAlbumUri_;
     bool isFavorite_ = false;
     int32_t mediaType_ = INVALID_INT32_VALUE;
     std::string mimeType_ = EMPTY_STR;

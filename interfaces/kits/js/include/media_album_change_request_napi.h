@@ -60,6 +60,8 @@ enum class AlbumChangeOperation {
     REMOVE_NICK_NAME,
     UPDATE_IS_REMOVED,
     UPDATE_EXTRA_INFO,
+	SET_HIDDEN_ATTRIBUTE,
+    SET_ALBUM_NAME_BY_FILE,
 };
 
 enum class ParameterType {
@@ -120,6 +122,7 @@ public:
     void SetExtraInfoOperationData(AnalysisAlbumOperation &operations);
     void ClearMoveMap();
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
+    bool hiddenInherited_ = false;
 
 private:
     EXPORT static napi_value Constructor(napi_env env, napi_callback_info info);
@@ -161,6 +164,8 @@ private:
     EXPORT static bool CheckDismissAssetVaild(std::vector<std::string> &dismissAssets,
         std::vector<std::string> &newAssetArray);
     EXPORT static napi_value JSCreateAnalysisAlbumRequest(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetHiddenAttribute(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetAlbumNameByFile(napi_env env, napi_callback_info info);
 
     bool CheckPortraitMergeAlbum();
     bool CheckChangeOperations(napi_env env);

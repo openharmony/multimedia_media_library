@@ -120,6 +120,52 @@ void NapiError::SaveRealErr(int32_t ret)
     NAPI_ERR_LOG("SaveRealErr errCode:%{public}d realErr:%{public}d", ret, realErr);
 }
 
+void NapiError::SaveSceneErr(int32_t ret)
+{
+    if (ret < 0) {
+        error = MediaLibraryNapiUtils::TransErrorCode(apiName, ret);
+        if (ret == E_SCENE_HAS_DELETED) {
+            errorMsg = "1.The asset to be copied has been deleted";
+        } else if (ret == E_SCENE_IS_HIDDEN) {
+            errorMsg = "2.The asset to be copied is hidden";
+        } else if (ret == E_SCENE_IS_CLOUD) {
+            errorMsg = "3.The asset to be copied is a pure cloud image and does not support copying";
+        } else if (ret == E_SCENE_ALBUM_NOT_EXIST) {
+            errorMsg = "4.The target album does not exist";
+        } else if (ret == E_SCENE_NO_ENOUGH_SPACE) {
+            errorMsg = "5.Not enough space";
+        } else if (ret == E_SCENE_HAS_RENAMED) {
+            errorMsg = "6.Renaming files is not supported";
+        } else if (ret == E_SCENE_HAS_CANCEL) {
+            errorMsg = "7.Operation cancelled";
+        } else {
+            errorMsg = "File operation failed";
+        }
+    }
+    NAPI_ERR_LOG("SaveSceneErr errCode:%{public}d error:%{public}d", ret, error);
+}
+
+void NapiError::SaveMoveError(int32_t ret)
+{
+    if (ret < 0) {
+        error = MediaLibraryNapiUtils::TransMoveErrorCode(apiName, ret);
+        if (error == JS_E_PARAM_INVALID) {
+            if (ret == E_PATH_NOT_SUPPORT) {
+                errorMsg = "Path not support";
+            } else if (ret == E_FILE_NOT_EXIST) {
+                errorMsg = "File not exist";
+            } else if (ret == E_RENAME) {
+                errorMsg = "The file with the same name already exists";
+            } else if (ret == E_MEDIA_TYPE) {
+                errorMsg = "This file type is not supported.";
+            } else if (ret == E_CANCEL_TASK) {
+                errorMsg = "Task has been canceled";
+            }
+        }
+    }
+    NAPI_ERR_LOG("SaveMoveErr errCode:%{public}d error:%{public}d", ret, error);
+}
+
 void NapiError::HandleError(napi_env env, napi_value &errorObj)
 {
     // deal with context->error

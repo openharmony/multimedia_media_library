@@ -181,6 +181,8 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("addResourceForPicker", JSAddResourceForPicker),
             DECLARE_NAPI_STATIC_FUNCTION("deleteLocalAssetsWithUri", JSDeleteLocalAssetsWithUri),
             DECLARE_NAPI_STATIC_FUNCTION("deleteCloudAssetsWithUri", JSDeleteCloudAssetsWithUri),
+            DECLARE_NAPI_FUNCTION("setHiddenAttribute", JSSetHiddenAttribute),
+            DECLARE_NAPI_FUNCTION("setDisplayNameByFile", JSSetDisplayNameByFile),
             DECLARE_NAPI_STATIC_FUNCTION("deleteAssetsPermanentlyWithUri", JSDeleteAssetsPermanentlyWithUri),
             DECLARE_NAPI_FUNCTION("setLivePhoto4dStatus", JSSetLivePhoto4dStatus),
             DECLARE_NAPI_FUNCTION("setMovingPhotoVersion", JSSetMovingPhotoVersion),
@@ -1206,6 +1208,51 @@ napi_value MediaAssetChangeRequestNapi::JSSetHidden(napi_env env, napi_callback_
     CHECK_COND(env, changeRequest->GetFileAssetInstance() != nullptr, JS_INNER_FAIL);
     changeRequest->GetFileAssetInstance()->SetHidden(isHidden);
     changeRequest->RecordChangeOperation(AssetChangeOperation::SET_HIDDEN);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
+napi_value MediaAssetChangeRequestNapi::JSSetHiddenAttribute(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = std::make_unique<MediaAssetChangeRequestAsyncContext>();
+    bool hiddenState = false;
+    napi_status status = MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, hiddenState);
+    CHECK_COND_WITH_ERR_MESSAGE(env, status == napi_ok && asyncContext->argc == 1,
+        JS_E_PARAM_INVALID, "Scene parameters validate failed.");
+
+    auto changeRequest = asyncContext->objectInfo;
+    CHECK_COND(env, changeRequest != nullptr && changeRequest->GetFileAssetInstance() != nullptr, JS_E_PARAM_INVALID);
+
+    changeRequest->GetFileAssetInstance()->SetFileHidden(hiddenState);
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_HIDDEN_ATTRIBUTE);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
+napi_value MediaAssetChangeRequestNapi::JSSetDisplayNameByFile(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = std::make_unique<MediaAssetChangeRequestAsyncContext>();
+    std::string displayName;
+    napi_status status = MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, displayName);
+    CHECK_COND_WITH_ERR_MESSAGE(env, status == napi_ok && asyncContext->argc == 1,
+        JS_E_PARAM_INVALID, "Scene parameters validate failed.");
+
+    auto changeRequest = asyncContext->objectInfo;
+    CHECK_COND(env, changeRequest != nullptr && changeRequest->GetFileAssetInstance() != nullptr, JS_E_PARAM_INVALID);
+
+    CHECK_COND_WITH_ERR_MESSAGE(env, MediaFileUtils::CheckDisplayName(displayName, false, true) == E_OK,
+        JS_E_PARAM_INVALID, "Invalid display name.");
+
+    changeRequest->GetFileAssetInstance()->SetDisplayName(displayName);
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_DISPLAY_NAME_BY_FILE);
     RETURN_NAPI_UNDEFINED(env);
 }
 
@@ -3119,6 +3166,62 @@ static bool SetCompositeDisplayModeExecute(MediaAssetChangeRequestAsyncContext &
     return true;
 }
 
+static bool SetHiddenAttributeExecute(MediaAssetChangeRequestAsyncContext &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetHiddenAttributeExecute");
+
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
+
+    AssetChangeReqBody reqBody;
+    reqBody.uri = fileAsset->GetUri();
+    reqBody.fileHidden = fileAsset->IsFileHidden();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_HIDDEN_ATTRIBUTE);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, std::to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}
+    };
+    int32_t changedRows =
+        IPC::UserDefineIPCClient().SetUserId(fileAsset->GetUserId()).SetHeader(headerMap).Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        int32_t errCode = MediaLibraryNapiUtils::TransErrorCode("SetHiddenAttributeExecute", changedRows);
+        context.SaveError(errCode);
+        NAPI_ERR_LOG("SetHiddenAttributeExecute failed, err: %{public}d", errCode);
+        return false;
+    }
+    return true;
+}
+
+static bool SetDisplayNameByFileExecute(MediaAssetChangeRequestAsyncContext &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetDisplayNameByFileExecute");
+
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
+
+    AssetChangeReqBody reqBody;
+    reqBody.uri = fileAsset->GetUri();
+    reqBody.displayName = fileAsset->GetDisplayName();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_DISPLAY_NAME_BY_FILE);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, std::to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}
+    };
+    int32_t changedRows =
+        IPC::UserDefineIPCClient().SetUserId(fileAsset->GetUserId()).SetHeader(headerMap).Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        int32_t errCode = MediaLibraryNapiUtils::TransErrorCode("SetDisplayNameByFileExecute", changedRows);
+        context.SaveError(errCode);
+        NAPI_ERR_LOG("SetDisplayNameByFileExecute failed, err: %{public}d", errCode);
+        return false;
+    }
+    return true;
+}
+
 static bool SetMovingPhotoVersionExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     NAPI_INFO_LOG("SetMovingPhotoVersionExecute enter");
@@ -3167,6 +3270,8 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_COMPOSITE_DISPLAY_MODE, SetCompositeDisplayModeExecute },
     { AssetChangeOperation::ADD_RESOURCE_FOR_PICKER, AddResourceExecute },
     { AssetChangeOperation::SET_LIVEPHOTO_4D_STATUS, SetLivePhoto4dStatusExecute },
+    { AssetChangeOperation::SET_HIDDEN_ATTRIBUTE, SetHiddenAttributeExecute },
+    { AssetChangeOperation::SET_DISPLAY_NAME_BY_FILE, SetDisplayNameByFileExecute },
     { AssetChangeOperation::SET_MOVING_PHOTO_VERSION, SetMovingPhotoVersionExecute },
 };
 

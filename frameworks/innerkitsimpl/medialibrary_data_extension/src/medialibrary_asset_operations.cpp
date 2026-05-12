@@ -59,16 +59,24 @@
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
 #include "background_cloud_batch_selected_file_processor.h"
 #endif
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+#include "lake_file_operations.h"
+#include "file_scan_utils.h"
+#endif
 #include "media_file_manager_temp_file_aging_task.h"
 #include "preferences_helper.h"
 #include "file_utils.h"
 #include "medialibrary_transcode_data_aging_operation.h"
-#include "lake_file_utils.h"
 #include "cloud_media_common.h"
 #include "media_audio_column.h"
-#include "lake_file_operations.h"
 #include "medialibrary_db_const.h"
 #include "media_edit_utils.h"
+#include "file_manager_asset_operations.h"
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+#include "asset_operation_info.h"
+#include "media_file_access_utils.h"
+#endif
+#include "file_const.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -1127,6 +1135,17 @@ static void HandlePhotoInfo(MediaLibraryCommand &cmd, ValuesBucket &outValues, c
     ExtractHandlePhotoInfo(cmd, outValues, fileAsset);
 }
 
+static void HandleFileSourceType(const FileAsset &fileAsset, ValuesBucket &assetInfo)
+{
+    assetInfo.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, fileAsset.GetFileSourceType());
+    if (fileAsset.GetFileSourceType() == static_cast<int32_t>(FileSourceType::TEMP_FILE_MANAGER)) {
+        assetInfo.Put(PhotoColumn::PHOTO_DIRTY, -1);
+        assetInfo.Put(PhotoColumn::PHOTO_IS_TEMP, static_cast<int32_t>(true));
+    } else if (fileAsset.GetFileSourceType() == static_cast<int32_t>(FileSourceType::FILE_MANAGER)) {
+        assetInfo.Put(PhotoColumn::PHOTO_STORAGE_PATH, fileAsset.GetStoragePath());
+    }
+}
+
 static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
 {
     const string& displayName = fileAsset.GetDisplayName();
@@ -1155,12 +1174,7 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
             HandleBurstPhoto(cmd, assetInfo, displayName);
         }
     }
-    assetInfo.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, fileAsset.GetFileResourceType());
-    if (fileAsset.GetFileResourceType() == static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) {
-        assetInfo.Put(PhotoColumn::PHOTO_DIRTY, -1);
-        assetInfo.Put(PhotoColumn::PHOTO_IS_TEMP, static_cast<int32_t>(true));
-    }
-
+    HandleFileSourceType(fileAsset, assetInfo);
     HandleCallingPackage(cmd, fileAsset, assetInfo);
 
     assetInfo.PutString(MediaColumn::MEDIA_DEVICE_NAME, cmd.GetDeviceName());
@@ -1302,9 +1316,10 @@ int32_t MediaLibraryAssetOperations::CheckWithType(bool isContains, const string
     return errCode;
 }
 
-int32_t MediaLibraryAssetOperations::CheckDisplayNameWithType(const string &displayName, int32_t mediaType)
+int32_t MediaLibraryAssetOperations::CheckDisplayNameWithType(const string &displayName, int32_t mediaType,
+    bool useDotCompatibleRule)
 {
-    int32_t ret = MediaFileUtils::CheckDisplayName(displayName);
+    int32_t ret = MediaFileUtils::CheckDisplayName(displayName, false, useDotCompatibleRule);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_INVALID_DISPLAY_NAME, "Check DisplayName failed, "
         "displayName=%{private}s", displayName.c_str());
 
@@ -1433,7 +1448,7 @@ int32_t MediaLibraryAssetOperations::DeleteAssetInDb(MediaLibraryCommand &cmd,
 }
 
 int32_t MediaLibraryAssetOperations::UpdateFileName(MediaLibraryCommand &cmd,
-    const shared_ptr<FileAsset> &fileAsset, bool &isNameChanged)
+    const shared_ptr<FileAsset> &fileAsset, bool &isNameChanged, bool useDotCompatibleRule)
 {
     ValuesBucket &values = cmd.GetValueBucket();
     ValueObject valueObject;
@@ -1468,7 +1483,7 @@ int32_t MediaLibraryAssetOperations::UpdateFileName(MediaLibraryCommand &cmd,
         newDisplayName = newTitle + "." + MediaFileUtils::SplitByChar(fileAsset->GetDisplayName(), '.');
     }
 
-    int32_t ret = CheckDisplayNameWithType(newDisplayName, fileAsset->GetMediaType());
+    int32_t ret = CheckDisplayNameWithType(newDisplayName, fileAsset->GetMediaType(), useDotCompatibleRule);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Input displayName invalid %{private}s", newDisplayName.c_str());
     values.PutString(MediaColumn::MEDIA_TITLE, newTitle);
     values.PutString(MediaColumn::MEDIA_NAME, newDisplayName);
@@ -2750,7 +2765,12 @@ void MediaLibraryAssetOperations::TaskDataFileProcess(const std::vector<std::str
         if (i < subTypes.size() && subTypes[i] == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
             // delete video file of moving photo
             string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(filePath);
-            if (!LakeFileUtils::DeleteFile(videoPath) && (errno != ENOENT)) {
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+            bool ret = MediaFileAccessUtils::DeleteAsset(AssetOperationInfo::CreateFromPath(videoPath));
+#else
+            bool ret = MediaFileUtils::DeleteFile(videoPath);
+#endif
+            if (!ret && (errno != ENOENT)) {
                 MEDIA_WARN_LOG("Failed to delete video file, errno: %{public}d, path: %{private}s", errno,
                     videoPath.c_str());
             }
@@ -2936,7 +2956,16 @@ static int32_t GetFileAssetsFromResultSet(const shared_ptr<NativeRdb::ResultSet>
 static int64_t GetAssetSize(const std::string &extraPath)
 {
     MEDIA_DEBUG_LOG("GetAssetSize start.");
-    UniqueFd fd(LakeFileUtils::OpenFile(extraPath, O_RDONLY));
+    int32_t uniqueFd = 0;
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+    uniqueFd = MediaFileAccessUtils::OpenAssetFile(extraPath, MEDIA_FILEMODE_READONLY);
+#else
+    string absExtraPath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(extraPath, absExtraPath), static_cast<int64_t>(E_ERR),
+        "file is not real path: %{private}s", extraPath.c_str());
+    uniqueFd = open(absExtraPath.c_str(), O_RDONLY);
+#endif
+    UniqueFd fd(uniqueFd);
     if (fd.Get() == E_ERR) {
         MEDIA_ERR_LOG("failed to open extra file");
         return static_cast<int64_t>(E_ERR);
@@ -3336,7 +3365,11 @@ int32_t MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(shared_ptr<Fil
     MEDIA_DEBUG_LOG("Delete Photo path is %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
     CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_INVALID_PATH, "get file path failed");
     FileUtils::DeleteTempVideoFile(filePath);
-    bool res = LakeFileUtils::DeleteFile(filePath);
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+    bool res = MediaFileAccessUtils::DeleteAsset(AssetOperationInfo::CreateFromPath(filePath));
+#else
+    bool res = MediaFileUtils::DeleteFile(filePath);
+#endif
     CHECK_AND_RETURN_RET_LOG(res, E_HAS_FS_ERROR, "Delete photo file failed, errno: %{public}d", errno);
 
     //delete thumbnail
@@ -3693,8 +3726,12 @@ int32_t MediaLibraryAssetOperations::DeletePermanentlyWithUri(AbsRdbPredicates &
     set<string> albumIds;
     MediaLibraryRdbUtils::QueryAnalysisAlbumIdOfAssets(fileIds, albumIds);
     MediaLibraryPhotoOperations::UpdateSourcePath(fileIds);
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
     int32_t ret = LakeFileOperations::MoveAssetsFromLake(fileIds);
     CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to move assets from lake.");
+#endif
+    int32_t res = FileManagerAssetOperations::MoveAssetsFromFileManager(fileIds);
+    CHECK_AND_PRINT_LOG(res == E_OK, "Failed to move assets from file manager.");
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     vector<string> photoIds;
     EnhancementManager::GetInstance().CancelTasksInternal(fileIds, photoIds, CloudEnhancementAvailableType::TRASH);

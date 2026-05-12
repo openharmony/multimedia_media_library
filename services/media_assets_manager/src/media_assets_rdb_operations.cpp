@@ -539,4 +539,23 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsRdbOperations::GetUris
     shared_ptr<DataShareResultSet> dataShareResultSet = make_shared<DataShareResultSet>(queryResultSet);
     return dataShareResultSet;
 }
+
+std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsRdbOperations::QueryAssetByStoragePath(
+    const string &path)
+{
+    CHECK_AND_RETURN_RET_LOG(!path.empty(), nullptr, "Empty path.");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, nullptr, "Failed to get rdbStore.");
+    NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::PHOTO_STORAGE_PATH, path);
+    auto resultSet = rdbStore->Query(predicates, {});
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("queryResultSet is nullptr! ");
+        return nullptr;
+    }
+    MEDIA_INFO_LOG("QueryAssetByStoragePath, path: %{private}s", MediaFileUtils::DesensitizePath(path).c_str());
+    auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
+    shared_ptr<DataShareResultSet> dataShareResultSet = make_shared<DataShareResultSet>(resultSetBridge);
+    return dataShareResultSet;
+}
 } // namespace OHOS::Media

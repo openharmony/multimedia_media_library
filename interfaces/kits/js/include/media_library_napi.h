@@ -40,6 +40,9 @@
 #include "media_change_info.h"
 #include "medialibrary_notify_new_observer.h"
 #include "report_event.h"
+#include "clone_to_album_context.h"
+
+#include "task_signal_napi.h"
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -250,6 +253,7 @@ public:
         FileAssetNapi* obj);
     int32_t GetUserId();
     void SetUserId(const int32_t &userId);
+    static int32_t AssignRequestId();
 
     EXPORT MediaLibraryNapi();
     EXPORT ~MediaLibraryNapi();
@@ -410,6 +414,12 @@ private:
     EXPORT static napi_value AvailabilityRegisterCallback(napi_env env, napi_callback_info info);
     EXPORT static napi_value AvailabilityUnregisterCallback(napi_env env, napi_callback_info info);
     EXPORT static napi_value QueryMediaDataReady(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSConvertToAsset(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSCloneToAlbum(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSCloneToDir(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSCloneAssetsByPath(napi_env env, napi_callback_info info);
+    EXPORT static napi_value MoveAssetsToDir(napi_env env, napi_callback_info info);
+    EXPORT static napi_value MoveAssetsByPath(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value CreateAlbumTypeEnum(napi_env env);
     EXPORT static napi_value CreateAlbumSubTypeEnum(napi_env env);
@@ -683,6 +693,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::string strParam;
     bool boolResult = false;
     bool supportedHighResolution = false;
+    std::string path;
     std::vector<int32_t> activeAnalysisTypes;
     std::vector<std::string> activeAnalysisFileIds;
     std::string activeAnalysisParam;
@@ -693,6 +704,14 @@ struct MediaLibraryAsyncContext : public NapiError {
     ChangeListenerNapi* availabilityListObj = nullptr;
     std::vector<PhotoAssetInfo> photoAssetInfos;
     int32_t compatibleFlags = 0;
+    CloneToAlbumContext cloneCtx;
+    std::string targetDir;
+    napi_threadsafe_function onSizeProgress;
+    napi_threadsafe_function onCountProgress;
+    napi_threadsafe_function onResultProcess;
+    int32_t mode;
+    std::atomic<bool> isCancelled{false};
+    napi_ref taskSignalRef;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

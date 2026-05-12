@@ -39,10 +39,15 @@
 #include "medialibrary_urisensitive_operations.h"
 #include "medialibrary_tracer.h"
 #include "parameters.h"
-#include "lake_file_utils.h"
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+#include "file_scan_utils.h"
+#endif
 #include "directory_ex.h"
 #include "media_app_uri_permission_column.h"
 #include "medialibrary_rdbstore.h"
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+#include "media_file_access_utils.h"
+#endif
 
 using namespace std;
 using PrivacyRanges = vector<pair<uint32_t, uint32_t>>;
@@ -470,7 +475,9 @@ static bool IsDeveloperMediaTool()
 
 int32_t MediaPrivacyManager::Open()
 {
-    path_ = LakeFileUtils::GetAssetRealPath(path_);
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+    path_ = MediaFileAccessUtils::GetAssetRealPath(path_);
+#endif
     int err = GetPrivacyRanges();
     if (err < 0) {
         MEDIA_ERR_LOG("GetPrivacyRanges failed");

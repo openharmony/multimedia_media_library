@@ -29,7 +29,6 @@
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "cloud_media_file_utils.h"
-#include "cloud_lake_file_handler.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "on_fetch_records_vo.h"
@@ -47,7 +46,10 @@
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
 #include "background_cloud_batch_selected_file_processor.h"
 #endif
-#include "lake_file_utils.h"
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+#include "file_scan_utils.h"
+#include "cloud_lake_file_handler.h"
+#endif
 #include "album_plugin_config.h"
 #include "cloud_media_retain_smart_data.h"
 #include "cloud_media_context.h"
@@ -1606,7 +1608,9 @@ int32_t CloudMediaPhotosService::PullUpdateEndWithNoFdirty(
         return E_OK;
     }
     // 处理元数据变更
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
     CloudLakeFileHandler::HandleMetaChanged(pullData.localFileId);
+#endif
     return E_OK;
 }
 }  // namespace OHOS::Media::CloudSync

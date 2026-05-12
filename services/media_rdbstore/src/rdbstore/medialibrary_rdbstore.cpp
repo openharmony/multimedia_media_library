@@ -20,6 +20,7 @@
 #include <thread>
 #include <chrono>
 
+#include "album_scan_info_column.h"
 #include "album_plugin_table_event_handler.h"
 #include "cloud_sync_helper.h"
 #include "dfx_timer.h"
@@ -82,6 +83,9 @@
 #include "medialibrary_audio_operations.h"
 #include "photo_day_month_year_operation.h"
 #include "medialibrary_rdb_utils.h"
+#include "moving_photo_file_utils.h"
+#include "media_file_access_utils.h"
+#include "media_fileinterwork_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -1368,6 +1372,13 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QueryMovingPhotoVideoRead
     CHECK_AND_RETURN_RET_LOG(!cond, resultSet, "query moving photo video ready err");
 
     string photoPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+
+    string realPath = MediaFileAccessUtils::GetAssetRealPath(photoPath);
+    if (!realPath.empty() && MovingPhotoFileUtils::IsLivePhotoAsset(realPath)) {
+        MEDIA_DEBUG_LOG("photoPath:%{public}s is livePhoto, video is ready",
+            DfxUtils::GetSafePath(photoPath).c_str());
+        return MediaLibraryRdbStore::GetRaw()->QuerySql("SELECT 1 AS movingPhotoVideoReady");
+    }
     size_t fileSize;
     size_t oriFileSize;
     auto videoPath = MediaFileUtils::GetMovingPhotoVideoPath(photoPath);
@@ -2297,6 +2308,10 @@ static const vector<string> onCreateSqlStrs = {
     ConfigInfoColumn::CREATE_CONFIG_INFO_TABLE,
     CREATE_ALBUM_ORDER_BACK_TABLE,
     CREATE_LAKE_ALBUM_TABLE,
+    // interwork of photos-file
+    AlbumScanInfoColumn::CREATE_TABLE,
+    AlbumScanInfoColumn::CREATE_INDEX_ON_ALBUM_ID_STORAGE_PATH,
+    MediaFileInterworkColumn::CREATE_FILE_OPT_TABLE,
 
     // search
     CREATE_SEARCH_TOTAL_TABLE,
@@ -6629,6 +6644,59 @@ static int32_t FixDbUpgradeToApi20(RdbStore &store)
     return ret;
 }
 REGISTER_ASYNC_UPGRADE_TASK(VERSION_FIX_DB_UPGRADE_TO_API20, "Photos", FixDbUpgradeToApi20);
+
+static int32_t AddFileManagerRelatedTables(RdbStore &store)
+{
+    const vector<string> sqls = {
+        AlbumScanInfoColumn::CREATE_TABLE,
+        MediaFileInterworkColumn::CREATE_FILE_OPT_TABLE,
+    };
+    MEDIA_INFO_LOG("AddFileManagerRelatedTables start");
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_ADD_FILE_MANAGER_RELATED);
+    MEDIA_INFO_LOG("AddFileManagerRelatedTables end");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_FILE_MANAGER_RELATED, "Album", AddFileManagerRelatedTables);
+
+static int32_t AddFileHiddenColumns(RdbStore &store)
+{
+    const std::vector<std::string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_FILE_HIDDEN + " INT NOT NULL DEFAULT 0",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+            PhotoAlbumColumns::ALBUM_FILE_HIDDEN + " INT NOT NULL DEFAULT 0"
+    };
+    MEDIA_INFO_LOG("Add file_hidden columns to Photos and PhotoAlbum start");
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_ADD_FILE_HIDDEN_COLUMN);
+    MEDIA_INFO_LOG("Add file_hidden columns to Photos and PhotoAlbum end");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_FILE_HIDDEN_COLUMN,
+    "Photos", AddFileHiddenColumns);
+
+static int32_t AddLakeTriggerFilterForFileManager(RdbStore &store)
+{
+    const std::vector<std::string> sqls = {
+        "DROP TRIGGER IF EXISTS operation_asset_insert_trigger",
+        SQL_CREATE_OPERATION_ASSET_INSERT_TRIGGER,
+        "DROP TRIGGER IF EXISTS operation_asset_delete_trigger",
+        SQL_CREATE_OPERATION_ASSET_DELETE_TRIGGER,
+        "DROP TRIGGER IF EXISTS operation_asset_update_trigger",
+        SQL_CREATE_OPERATION_ASSET_UPDATE_TRIGGER,
+        "DROP TRIGGER IF EXISTS operation_album_insert_trigger",
+        SQL_CREATE_OPERATION_ALBUM_INSERT_TRIGGER,
+        "DROP TRIGGER IF EXISTS operation_album_delete_trigger",
+        SQL_CREATE_OPERATION_ALBUM_DELETE_TRIGGER,
+        "DROP TRIGGER IF EXISTS operation_album_update_trigger",
+        SQL_CREATE_OPERATION_ALBUM_UPDATE_TRIGGER,
+    };
+    MEDIA_INFO_LOG("Add lake trigger filter for file manager start");
+    int32_t ret = ExecSqlsWithDfx(sqls, store, VERSION_ADD_LAKE_TRIGGER_FILTER_FOR_FILE_MANAGER);
+    MEDIA_INFO_LOG("Add lake trigger filter for file manager end");
+    return ret;
+}
+REGISTER_ASYNC_UPGRADE_TASK(VERSION_ADD_LAKE_TRIGGER_FILTER_FOR_FILE_MANAGER,
+    "Photos", AddLakeTriggerFilterForFileManager);
 
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {

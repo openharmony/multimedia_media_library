@@ -44,6 +44,8 @@ public:
     int32_t livePhoto4dStatus{0};
     std::string livePhoto4dLatestPair;
     int32_t movingPhotoVersion{0};
+    bool fileHidden{false};
+    std::string displayName;
 
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;

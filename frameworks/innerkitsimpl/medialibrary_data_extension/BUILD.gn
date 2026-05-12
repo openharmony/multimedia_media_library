@@ -122,6 +122,7 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_IPC_COMMON}/include/config",
     "${MEDIALIB_IPC_COMMON}/include/utils",
     "${MEDIALIB_IPC_COMMON}/include/vo",
+    "${MEDIALIB_IPC_COMMON}/include/callback",
   ]
 
   include_media_orm = [
@@ -148,6 +149,10 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/dao",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/vo",
   ]
+  
+  include_media_file_management = [
+    "${MEDIALIB_BUSINESS_PATH}/media_file_management/include/",
+  ]  
 
   include_media_permission =
       [ "${MEDIALIB_BUSINESS_PATH}/media_permission/include/" ]
@@ -158,6 +163,7 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/data",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/utils",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/progress_callback_notify",
   ]
 
   include_accurate_refresh = [
@@ -215,6 +221,11 @@ config("media_data_extension_public_config") {
   include_lcd_aging = [
     "${MEDIALIB_NEW_SERVICES_PATH}/media_lcd_aging/include",
   ]
+  
+  include_media_file_manager = [
+    "${MEDIALIB_SERVICES_PATH}/media_file_manager/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/file_manager/include",
+  ]
 
   include_dirs = [
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
@@ -269,6 +280,7 @@ config("media_data_extension_public_config") {
   include_dirs += include_media_ipc_common
   include_dirs += include_media_cloud_sync_data
   include_dirs += include_lcd_aging
+  include_dirs += include_media_file_manager
 
   if (media_library_analysis_data_enable) {
     include_media_analysis_data_server = [
@@ -279,6 +291,39 @@ config("media_data_extension_public_config") {
       "${MEDIALIB_BUSINESS_PATH}/media_analysis_data_manager/include/utils",
     ]
     include_dirs += include_media_analysis_data_server
+  }
+
+  if (media_library_lake_enable) {
+    include_media_lake = [
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/lake/include",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/include",
+    ]
+    include_dirs += include_media_lake
+  }
+
+  if (media_library_file_manager_enable) {
+    include_media_file_manager_source = [
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/file_manager/include",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/file_manager/include",
+    ]
+    include_dirs += include_media_file_manager_source
+  }
+  
+  
+  if (media_library_file_manager_enable || media_library_lake_enable) {
+    include_media_file_access_load = [
+      "${MEDIALIB_SERVICES_PATH}/media_file_access_load/include",
+    ]
+    include_media_file_scan = [
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/common/include",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/include",
+    ]
+    include_dirs += include_media_file_access_load
+    include_dirs += include_media_file_scan
+  }
+
+  if (media_library_file_manager_enable) {
+    include_dirs += include_media_file_management
   }
 
   if (media_library_facard_enable) {
@@ -362,6 +407,14 @@ ohos_shared_library("medialibrary_data_extension") {
 
   if (media_library_feature_custom_restore) {
     defines += [ "MEDIALIBRARY_FEATURE_CUSTOM_RESTORE" ]
+  }
+
+  if (media_library_lake_enable) {
+    defines += [ "MEDIALIBRARY_LAKE_SUPPORT" ]
+  }
+
+  if (media_library_file_manager_enable) {
+    defines += [ "MEDIALIBRARY_FILE_MGR_SUPPORT" ]
   }
 
   media_video_mode_source = [
@@ -533,7 +586,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_file_manager_service.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_photos_album_hidden_service.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_scan_service.cpp",
-    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_lake_file_handler.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/processor/cloud_media_data_service_processor.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/processor/cloud_media_photo_service_processor.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/processor/cloud_media_download_service_processor.cpp",
@@ -586,6 +638,8 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dao/media_assets_dao.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/service/media_assets_delete_service.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/service/media_assets_recover_service.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/service/clone_to_album_service.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/service/clone_to_album_callback_proxy.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/utils/media_assets_utils.cpp",
   ]
 
@@ -661,6 +715,10 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/compatible_info_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/resume_photo_uri_permission_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/reserve_photo_uri_permission_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/convert_to_asset_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/change_request_move_assets_by_path_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/change_request_move_assets_to_dir_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/asset_cancel_task_vo.cpp",
   ]
 
   media_assets_manager_dto_source = [
@@ -676,6 +734,9 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/get_assets_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/restore_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/convert_format_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/change_request_move_assets_by_path_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/asset_cancel_task_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/change_request_move_assets_to_dir_dto.cpp",
   ]
 
   media_albums_manager_source = [
@@ -692,6 +753,7 @@ ohos_shared_library("medialibrary_data_extension") {
   media_albums_manager_vo_source = [
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/create_album_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/delete_albums_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/clone_to_album_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_set_album_name_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_operate_album_attribute_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_set_cover_uri_vo.cpp",
@@ -704,6 +766,8 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_set_highlight_attribute_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_commit_modify_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_add_assets_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_change_set_hidden_attribute_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_change_set_album_name_by_file_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_remove_assets_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_recover_assets_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_photo_query_vo.cpp",
@@ -747,6 +811,8 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/get_albums_by_ids_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/get_photo_album_object_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/get_cloned_album_uris_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/album_change_set_album_name_by_file_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/album_change_set_hidden_attribute_dto.cpp",
   ]
 
   media_analysis_data_vo_source = [
@@ -809,36 +875,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_NEW_SERVICES_PATH}/background_task_manager/src/background/media_share_dirty_data_task.cpp",
   ]
 
-  media_lake_scanner_source = [
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_scanner/src/folder_scanner.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_scanner/src/folder_scanner_utils.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_scanner/src/global_scanner.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_scanner/src/file_scanner.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_scanner/src/folder_scanner_helper.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_scanner/src/media_lake_check_manager.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_scanner/src/media_lake_check.cpp",
-  ]
-
-  media_load_lake_source = [
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/src/file_parser.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/src/lake_file_utils.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/src/folder_parser.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/src/lake_file_operations.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_load/src/product_info.cpp",
-  ]
-
-  media_lake_file_monitor_source = [
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_file_monitor/src/file_monitor_wrapper.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_file_monitor/src/media_delete_dir_processor.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_file_monitor/src/media_delete_file_processor.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_file_monitor/src/media_file_change_manager.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_file_monitor/src/media_file_change_processor.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_file_monitor/src/media_file_notify_processor.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_file_monitor/src/media_lake_clone_event_manager.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_file_monitor/src/media_lake_monitor_rdb_utils.cpp",
-    "${MEDIALIB_NEW_SERVICES_PATH}/media_lake_file_monitor/src/media_delete_lake_dir_processor.cpp",
-  ]
-
   media_analysis_extension_source = [
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
@@ -887,7 +923,6 @@ ohos_shared_library("medialibrary_data_extension") {
 
   sources = [
     "${MEDIALIB_FACARD_PATH}/src/tab_facard_photos_table_event_handler.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/lake_file_handler.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_anco_manager.cpp",
     "${MEDIALIB_UTILS_PATH}/src/common_event_utils.cpp",
     "${MEDIALIB_UTILS_PATH}/src/cover_position_parser.cpp",
@@ -985,6 +1020,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/notification_merging.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/notification_distribution.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/utils/media_notification_utils.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/progress_callback_notify/progress_observer_manager.cpp",
   ]
 
   accurate_refresh_source = [
@@ -1069,11 +1105,19 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_NEW_SERVICES_PATH}/media_lcd_aging/src/lcd_aging_worker.cpp",
   ]
 
+  media_file_manager_source = [
+    "${MEDIALIB_SERVICES_PATH}/media_file_manager/src/file_manager_asset_operations.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_file_manager/src/file_manager_album_operations.cpp",
+    "${MEDIALIB_UTILS_PATH}/src/media_duplicate_checker_utils.cpp",
+  ]
+
   sources += media_video_mode_source
   sources += media_scan_source
   sources += media_fuse_source
   sources += media_thumbnail_source
   sources += media_cloud_sync_source
+  sources += media_cloud_sync_server_source_dto
+  sources += media_cloud_sync_server_source
   sources += media_rdb_utils_source
   sources += media_multistages_capture_source
   sources += media_dfx_source
@@ -1104,22 +1148,99 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_camera_character_service_source
   sources += media_camera_character_service_vo_source
   sources += media_camera_character_service_dto_source
-  sources += media_lake_scanner_source
-  sources += media_load_lake_source
-  sources += media_lake_file_monitor_source
   sources += media_analysis_data_client_vo_source
   sources += media_analysis_extension_source
   sources += event_handler_source
   sources += upgrade_source
   sources += media_old_notification
   sources += media_lcd_aging
+  sources += media_file_manager_source 
 
-  if (media_library_cloud_sync_enable) {
-    media_cloud_sync_server_source += media_cloud_sync_server_source_dto
-    sources += media_cloud_sync_server_source
-  } else {
-    media_cloud_sync_server_source = []
-    media_cloud_sync_server_source_dto = []
+  if (media_library_lake_enable) {
+    media_lake_scanner_source = [
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/src/lake_check_scenario.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/src/lake_file_operations.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/src/lake_file_parser.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/src/lake_file_scanner.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/src/lake_folder_parser.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/src/lake_scan_policy.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/src/media_lake_check.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/src/media_lake_check_manager.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/lake/src/product_info.cpp",
+    ]
+    
+    media_lake_only_file_monitor_source = [
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/lake/src/media_delete_lake_album_processor.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/lake/src/media_delete_lake_dir_processor.cpp",
+    ]
+
+    media_lake_file_handle_source = [
+      "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_lake_file_handler.cpp",
+      "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/lake_file_handler.cpp",
+    ]
+    sources += media_lake_scanner_source
+    sources += media_lake_only_file_monitor_source
+    sources += media_lake_file_handle_source
+  }
+
+  if (media_library_file_manager_enable || media_library_lake_enable) {
+    media_load_file_access_source = [
+      "${MEDIALIB_SERVICES_PATH}/media_file_access_load/src/asset_operation_info.cpp",
+      "${MEDIALIB_SERVICES_PATH}/media_file_access_load/src/media_file_access_utils.cpp",
+    ]
+
+    media_file_scan_common_source = [
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/check_dfx_collector.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/check_scene_helper.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/check_status_helper.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/consistency_check_data_types.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/consistency_check_manager.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/file_parser.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/file_scanner.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/file_scan_utils.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/folder_parser.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/folder_scanner.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/folder_scanner_helper.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/folder_scanner_utils.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/global_scanner.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/file_manager_scan_rule_config.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/common/src/lake_scan_rule_config.cpp",
+    ]
+    
+    media_file_manager_scan_source = [
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/file_manager/src/file_manager_check_scenario.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/file_manager/src/file_manager_folder_parser.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/file_manager/src/file_manager_parser.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/file_manager/src/file_manager_scanner.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/file_manager/src/file_manager_scan_policy.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/file_manager/src/media_fileinterwork_scanner.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_scan/file_manager/src/media_fileinterwork_util.cpp",
+    ]
+
+    media_file_monitor_source = [
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/common/src/file_monitor_wrapper.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/common/src/media_file_change_manager.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/common/src/media_file_change_processor.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/common/src/media_file_notify_processor.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/common/src/media_file_monitor_rdb_utils.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/common/src/media_lake_clone_event_manager.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/file_manager/src/media_delete_file_manager_album_processor.cpp",
+      "${MEDIALIB_NEW_SERVICES_PATH}/media_file_monitor/file_manager/src/media_delete_file_manager_dir_processor.cpp",
+    ]
+    sources += media_load_file_access_source
+    sources += media_file_scan_common_source
+    sources += media_file_manager_scan_source
+    sources += media_file_monitor_source
+    
+    defines += [ "MEDIALIBRARY_FILE_MGR_SUPPORT" ]
+  }
+
+  if (media_library_file_manager_enable) {
+    media_file_management_source = [
+      "${MEDIALIB_BUSINESS_PATH}/media_file_management/src/file_management_utils.cpp",
+      "${MEDIALIB_BUSINESS_PATH}/media_file_management/src/file_move_handle.cpp",
+    ]
+    sources += media_file_management_source
   }
 
   if (media_library_facard_enable) {

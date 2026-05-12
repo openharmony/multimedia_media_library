@@ -59,6 +59,8 @@ public:
     EXPORT int32_t CheckDbAvailability(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t NotifyDbAvailability(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetAnalysisAlbumAttribute(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t AlbumChangeSetHiddenAttribute(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t AlbumChangeSetAlbumNameByFile(MessageParcel &data, MessageParcel &reply);
 
 public:
     virtual ~MediaAlbumsControllerService() = default;

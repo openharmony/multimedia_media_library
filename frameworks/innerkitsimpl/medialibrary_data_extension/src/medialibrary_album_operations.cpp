@@ -62,6 +62,9 @@
 #include "photo_album_upload_status_operation.h"
 #include "media_string_utils.h"
 #include "portrait_extra_info_service.h"
+#include "file_manager_asset_operations.h"
+#include "file_manager_album_operations.h"
+#include "media_duplicate_checker_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -755,6 +758,11 @@ int32_t IsAllUserOrSourcePhotoAlbum(std::shared_ptr<MediaLibraryRdbStore> rdbSto
     queryPredicates.And()->BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SOURCE));
     queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE_GENERIC));
     queryPredicates.EndWrap();
+    queryPredicates.Or();
+    queryPredicates.And()->BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SOURCE));
+    queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE,
+        to_string(PhotoAlbumSubType::SOURCE_GENERIC_FROM_FILEMANAGER));
+    queryPredicates.EndWrap();
     queryPredicates.EndWrap();
     queryPredicates.And()->BeginWrap()->NotIn(PhotoAlbumColumns::ALBUM_LPATH, NOT_CHANGEABLE_ALBUM);
     queryPredicates.EndWrap();
@@ -1266,6 +1274,9 @@ static int32_t CheckConflictsWithExistingAlbum(const NativeRdb::ValuesBucket& ne
         "Get non-deleted album with same name row count failed");
     CHECK_AND_RETURN_RET_LOG(rowCount <= 0, E_ERR, "Non-deleted album with same name exists");
 
+    // 如果是文管相册，需要校验同目录下是否存在同名
+    CHECK_AND_RETURN_RET_LOG(MediaDuplicateCheckerUtils::checkDirectoryNameConflict(newAlbumValues) == E_OK,
+        E_ERR, "the album name already exists in the file management system");
     // Check albums with same lpath
     sql = "SELECT * FROM PhotoAlbum WHERE lpath = ?";
     resultSetAlbum = rdbStore->QueryByStep(sql, { newLPath });
@@ -1412,27 +1423,53 @@ static int32_t NotifyForRenameUserAlbum(std::shared_ptr<AccurateRefresh::AlbumAc
     return E_OK;
 }
 
+static int32_t DoRenameUserAlbum(const RenameAlbumInput& input, RenameAlbumOutput& output)
+{
+    NativeRdb::ValuesBucket newNameValues {};
+    bool isCloudAlbum {};
+    if (!BuildNewNameValuesBucket(input.rdbStore, input.oldAlbumId, newNameValues, input.newAlbumName, isCloudAlbum)) {
+        MEDIA_ERR_LOG("Build new name values bucket failed");
+        output.argInvalid = true;
+        return E_OK;
+    }
+    int32_t ret = CheckConflictsWithAlbumPlugin(newNameValues, input.oldAlbumType, input.rdbStore);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "New name conflicts with existing album plugin");
+    ret = CheckConflictsWithExistingAlbum(newNameValues, input.rdbStore, input.oldAlbumType);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("New name conflicts with existing album");
+        output.argInvalid = true;
+        return E_OK;
+    } else if (ret > 0) {
+        output.newAlbumId = ret;
+    }
+    MediaLibraryAlbumFusionUtils::ExecuteObject executeObject{
+        input.rdbStore, input.trans, input.albumRefresh, input.assetRefresh};
+    NewNameExecuteInfo executeInfo{input.oldAlbumId, output.newAlbumId, isCloudAlbum};
+    CHECK_AND_RETURN_RET_LOG(
+        SetNewNameExecute(executeObject, executeInfo, newNameValues, input.fileIdsInAlbum),
+        E_HAS_DB_ERROR, "Set new name execute failed");
+    output.newAlbumId = executeInfo.newAlbumId;
+    return E_OK;
+}
+
 // Set album name: delete old and build a new one
-static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
+static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName, bool useDotCompatibleRule)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Rename album failed. RdbStore is null");
     CHECK_AND_RETURN_RET_LOG(oldAlbumId > 0, E_INVALID_ARGS, "Rename album failed. Invalid album id: %{public}d",
         oldAlbumId);
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckAlbumName(newAlbumName) == E_OK, E_INVALID_ARGS,
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckAlbumName(newAlbumName, useDotCompatibleRule) == E_OK, E_INVALID_ARGS,
         "Check album name failed");
 
     vector<string> fileIdsInAlbum = GetAssetIdsFromOldAlbum(rdbStore, oldAlbumId);
     int32_t oldAlbumType = GetAlbumTypeFromOldAlbum(rdbStore, oldAlbumId);
     CHECK_AND_RETURN_RET_LOG(oldAlbumType != PhotoAlbumType::SOURCE ||
         CheckIsSpecialSourceAlbum(rdbStore, oldAlbumId) == E_OK, E_HAS_DB_ERROR, "Check album name renameable failed");
-
     MEDIA_INFO_LOG("Start to set %{public}s album name of id %{public}d",
         oldAlbumType == PhotoAlbumType::SOURCE ? "source" : "user", oldAlbumId);
-
-    bool argInvalid { false };
+    RenameAlbumOutput output;
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
-    int64_t newAlbumId = -1;
 
     auto albumRefresh = make_shared<AccurateRefresh::AlbumAccurateRefresh>(
         AccurateRefresh::RENAME_USER_ALBUM_BUSSINESS_NAME, trans);
@@ -1443,46 +1480,30 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
     if (dfxRefreshManager != nullptr) {
         assetRefresh->SetDfxRefreshManager(dfxRefreshManager);
     }
+    string oldAlbumPath;
+    int32_t ret = MediaDuplicateCheckerUtils::getAlbumActualPathByAlbumId(to_string(oldAlbumId), oldAlbumPath);
+    CHECK_AND_PRINT_LOG(ret == E_OK, "get old album path failed.");
     std::function<int(void)> trySetUserAlbumName = [&]()->int {
-        NativeRdb::ValuesBucket newNameValues {};
-        bool isCloudAlbum {};
-        if (!BuildNewNameValuesBucket(rdbStore, oldAlbumId, newNameValues, newAlbumName, isCloudAlbum)) {
-            MEDIA_ERR_LOG("Build new name values bucket failed");
-            argInvalid = true;
-            return E_OK;
-        }
-        newAlbumId = -1;
-        int32_t ret = CheckConflictsWithAlbumPlugin(newNameValues, oldAlbumType, rdbStore);
-        CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "New name conflicts with existing album plugin");
-        ret = CheckConflictsWithExistingAlbum(newNameValues, rdbStore, oldAlbumType);
-        if (ret < 0) {
-            MEDIA_ERR_LOG("New name conflicts with existing album");
-            argInvalid = true;
-            return E_OK;
-        } else if (ret > 0) {
-            newAlbumId = ret;
-        }
-        MediaLibraryAlbumFusionUtils::ExecuteObject executeObject{rdbStore, trans, albumRefresh, assetRefresh};
-        NewNameExecuteInfo executeInfo{oldAlbumId, newAlbumId, isCloudAlbum};
-        CHECK_AND_RETURN_RET_LOG(
-            SetNewNameExecute(executeObject, executeInfo, newNameValues, fileIdsInAlbum),
-            E_HAS_DB_ERROR, "Set new name execute failed");
-        newAlbumId = executeInfo.newAlbumId;
-        return E_OK;
+        RenameAlbumInput input{
+            rdbStore, oldAlbumId, oldAlbumType, newAlbumName, fileIdsInAlbum, trans, albumRefresh, assetRefresh};
+        return DoRenameUserAlbum(input, output);
     };
-    int ret = trans->RetryTrans(trySetUserAlbumName);
-    if (argInvalid) {
+    ret = trans->RetryTrans(trySetUserAlbumName);
+    if (output.argInvalid) {
         return E_INVALID_ARGUMENTS;
     }
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_HAS_DB_ERROR, "Try trans fail!, ret: %{public}d", ret);
-
+    CHECK_AND_PRINT_LOG(
+        FileManagerAlbumOperations::RenameFileManagerAlbum(oldAlbumPath, output.newAlbumId, newAlbumName) == E_OK,
+        "Check album name failed");
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
     auto assetsRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
     AccurateRefreshBase &refreshBase = *assetsRefresh;
-    ret = LakeFileOperations::MoveInnerLakeAssetsToNewAlbum(refreshBase, fileIdsInAlbum, newAlbumId);
+    ret = LakeFileOperations::MoveInnerLakeAssetsToNewAlbum(refreshBase, fileIdsInAlbum, output.newAlbumId);
     CHECK_AND_PRINT_LOG(ret == E_OK, "move inner anco asset to new album error");
-
+#endif
     UpdateAnalysisIndexAfterRename(fileIdsInAlbum);
-    ret = NotifyForRenameUserAlbum(albumRefresh, dfxRefreshManager, newAlbumId, assetRefresh);
+    ret = NotifyForRenameUserAlbum(albumRefresh, dfxRefreshManager, output.newAlbumId, assetRefresh);
     CHECK_AND_PRINT_LOG(ret == E_OK, "failed to send notification for rename user album");
     return ALBUM_SETNAME_OK;
 }
@@ -1625,7 +1646,7 @@ int32_t MediaLibraryAlbumOperations::UpdatePhotoAlbum(const ValuesBucket &values
 
     if (needRename) {
         // Rename process changes the album id, so put the rename process at the end
-        int32_t ret = RenameUserAlbum(albumId, newAlbumName);
+        int32_t ret = RenameUserAlbum(albumId, newAlbumName, false);
         CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "Rename user album failed");
     }
 
@@ -1962,6 +1983,17 @@ static set<string> GetHiddenUri(const vector<string> &uris)
     return result;
 }
 
+static void HandleLakeAndFileManager(AccurateRefreshBase &refresh, const std::vector<std::string> &ids)
+{
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+    int32_t ret = LakeFileOperations::MoveAssetsToLake(refresh, ids);
+    CHECK_AND_PRINT_LOG(ret == E_OK, "recover inner anco file error when recover asset");
+#endif
+    int32_t res = FileManagerAssetOperations::MoveAssetsToFileManager(refresh, ids);
+    CHECK_AND_PRINT_LOG(res == E_OK, "recover file manager asset error when recover asset");
+    return;
+}
+
 int32_t MediaLibraryAlbumOperations::RecoverPhotoAssets(const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
@@ -1982,9 +2014,7 @@ int32_t MediaLibraryAlbumOperations::RecoverPhotoAssets(const DataSharePredicate
     int32_t changedRows = assetRefresh.UpdateWithDateTime(rdbValues, rdbPredicates);
     CHECK_AND_RETURN_RET(changedRows >= 0, changedRows);
     assetRefresh.RefreshAlbum(NotifyAlbumType::SYS_ALBUM);
-    int32_t ret = LakeFileOperations::MoveAssetsToLake(assetRefresh, rdbPredicates.GetWhereArgs());
-    CHECK_AND_PRINT_LOG(ret == E_OK, "recover inner anco file error when recover asset");
-
+    HandleLakeAndFileManager(assetRefresh, rdbPredicates.GetWhereArgs());
     // set cloud enhancement to available
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     EnhancementManager::GetInstance().RecoverTrashUpdateInternal(rdbPredicates.GetWhereArgs());
@@ -3756,13 +3786,13 @@ static bool GetArgsSetUserAlbumName(const ValuesBucket& values,
 }
 
 int32_t MediaLibraryAlbumOperations::HandleSetAlbumNameRequest(const ValuesBucket &values,
-    const DataSharePredicates &predicates)
+    const DataSharePredicates &predicates, bool isGroupPhotoAlbum)
 {
     int32_t oldAlbumId {};
     string newAlbumName {};
     CHECK_AND_RETURN_RET_LOG(GetArgsSetUserAlbumName(values, predicates, oldAlbumId, newAlbumName),
         E_INVALID_ARGS, "Set album name args invalid");
-    return RenameUserAlbum(oldAlbumId, newAlbumName);
+    return RenameUserAlbum(oldAlbumId, newAlbumName, isGroupPhotoAlbum);
 }
 
 int32_t MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(const OperationType &opType,
@@ -3967,6 +3997,40 @@ int64_t MediaLibraryAlbumOperations::CreateSourceAlbum(const string &albumName,
     MEDIA_INFO_LOG("Create new source album success, album id: %{public}" PRId64 ", album name is %{public}s",
         newAlbumId, DfxUtils::GetSafeAlbumName(albumName).c_str());
     return newAlbumId;
+}
+
+int32_t MediaLibraryAlbumOperations::AlbumChangeSetHiddenAttribute(int32_t albumId, bool fileHidden, bool inherited)
+{
+    int32_t YES = 1;
+    int32_t NO = 0;
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "get rdbStore failed");
+    CHECK_AND_RETURN_RET_LOG(albumId > 0, E_INVALID_ARGS, "Invalid album id");
+
+    NativeRdb::ValuesBucket albumValues;
+    albumValues.PutInt(PhotoAlbumColumns::ALBUM_FILE_HIDDEN, fileHidden ? YES : NO);
+    NativeRdb::RdbPredicates albumPred(PhotoAlbumColumns::TABLE);
+    albumPred.EqualTo(PhotoAlbumColumns::ALBUM_ID, std::to_string(albumId));
+    int32_t albumChanged = 0;
+    int32_t ret = rdbStore->Update(albumChanged, albumValues, albumPred);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Failed to update album hidden");
+
+    // 逻辑: fileHidden: true  inherited: true  -> 相册和资产全部隐藏
+    // fileHidden:true  inherited:false -> 相册隐藏，资产不变
+    // false false -> 相册不隐藏，资产不变
+    // false true  -> 相册和资产全部取消隐藏
+    if (inherited) {
+        NativeRdb::ValuesBucket assetValues;
+        assetValues.PutInt(PhotoColumn::PHOTO_FILE_HIDDEN, fileHidden ? YES : NO);
+        NativeRdb::RdbPredicates assetPred(PhotoColumn::PHOTOS_TABLE);
+        assetPred.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, std::to_string(albumId));
+        int32_t assetChanged = 0;
+        ret = rdbStore->Update(assetChanged, assetValues, assetPred);
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Failed to update asset hidden");
+    }
+
+    return E_OK;
 }
 } // namespace OHOS::Media
 // LCOV_EXCL_STOP

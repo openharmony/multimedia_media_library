@@ -39,9 +39,15 @@
 #include "result_set_reader.h"
 #include "photos_po_writer.h"
 #include "photos_po.h"
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+#include "file_scan_utils.h"
+#endif
 #include "cloud_media_scan_service.h"
 #include "cloud_media_dao_utils.h"
 #include "medialibrary_related_system_state_manager.h"
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+#include "media_file_access_utils.h"
+#endif
 
 namespace OHOS::Media::Background {
 

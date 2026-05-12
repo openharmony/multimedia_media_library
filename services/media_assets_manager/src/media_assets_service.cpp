@@ -19,6 +19,7 @@
 
 #include <unordered_set>
 #include <charconv>
+#include <unistd.h>
 
 #include "medialibrary_bundle_manager.h"
 #ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
@@ -67,15 +68,30 @@
 #include "accesstoken_kit.h"
 #include "ipc_skeleton.h"
 #include "media_uri_utils.h"
+#include "media_file_notify_info.h"
+#include "file_manager_scanner.h"
 #include "permission_utils.h"
 #include "transcode_compatible_info_operations.h"
 #include "medialibrary_uripermission_operations.h"
+#include "user_define_notify_info.h"
+#include "notification_distribution.h"
+#include "media_uri_utils.h"
+#include "progress_observer_manager.h"
+#include "photo_album_upload_status_operation.h"
+#include "file_management_utils.h"
+#include "media_file_access_utils.h"
+#include "asset_operation_info.h"
+#include "file_move_handle.h"
+#include "media_progress_change_info.h"
+#include "medialibrary_db_const.h"
+#include "media_file_uri.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS::Media {
-
+using namespace AccurateRefresh;
+using namespace Notification;
 const int32_t YES = 1;
 const int32_t NO = 0;
 const int32_t MEDIA_HO_LAKE_CONST = 3;
@@ -92,6 +108,7 @@ const std::string PERM_READ_IMAGEVIDEO_FOR_URI_CHECK = "ohos.permission.READ_IMA
 const std::string JPEG_MIME_TYPE = "image/jpeg";
 constexpr size_t MAX_SUPPORTED_COMPATIBLE_MIME_TYPES = 2;
 constexpr int32_t HIGH_QUALITY_IMAGE = 0;
+constexpr int32_t PROGRESS_TIMER_INTERVAL_MS = 1000;
 enum class PhotoPermissionState : int32_t {
     URI_FORMAT_ERROR = 0,
     FILE_NOT_EXIST = 1,
@@ -100,6 +117,9 @@ enum class PhotoPermissionState : int32_t {
 };
 unordered_set<std::string> DFXTaskSet;
 std::mutex DFXTaskMutex;
+std::string ROOT_FILE_MANAGEMENT_ALBUM_NAME = "根目录";
+std::mutex g_taskCancelMutex;
+std::unordered_map<int32_t, std::shared_ptr<std::atomic<bool>>> g_taskCancelMap;
 
 MediaAssetsService &MediaAssetsService::GetInstance()
 {
@@ -236,6 +256,47 @@ int32_t MediaAssetsService::AssetChangeSetHidden(const std::string &uri, const b
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
     return MediaLibraryPhotoOperations::Update(cmd);
+}
+
+int32_t MediaAssetsService::AssetChangeSetFileHidden(const std::string &uri, const bool fileHidden)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "get rdbStore failed");
+
+    DataShare::DataSharePredicates predicate;
+    string fileId = MediaFileUri::GetPhotoId(uri);
+    predicate.EqualTo(PhotoColumn::MEDIA_ID, fileId);
+
+    NativeRdb::ValuesBucket values;
+    values.PutInt(PhotoColumn::PHOTO_FILE_HIDDEN, fileHidden ? YES : NO);
+
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicate, PhotoColumn::PHOTOS_TABLE);
+
+    int32_t changeRows = 0;
+    auto ret = rdbStore->Update(changeRows, values, rdbPredicate);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Failed to update file hidden");
+    return ret;
+}
+
+int32_t MediaAssetsService::AssetChangeSetDisplayNameByFile(const std::string &uri, const std::string &displayName)
+{
+    DataShare::DataSharePredicates predicate;
+    string fileId = MediaFileUri::GetPhotoId(uri);
+    predicate.EqualTo(PhotoColumn::MEDIA_ID, fileId);
+
+    NativeRdb::ValuesBucket values;
+    values.Put(PhotoColumn::MEDIA_NAME, displayName);
+
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
+
+    cmd.SetValueBucket(values);
+    cmd.SetDataSharePred(predicate);
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicate, cmd.GetTableName());
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+    int32_t ret = MediaLibraryPhotoOperations::UpdateFileAsset(cmd, true);
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "MediaLibraryPhotoOperations::UpdateFileAsset failed");
+    return UpdateExistedTasksTitle(stoi(fileId));
 }
 
 int32_t MediaAssetsService::AssetChangeSetUserComment(const int32_t fileId, const std::string &userComment)
@@ -2232,6 +2293,321 @@ int32_t MediaAssetsService::GetTranscodeCheckInfo(const std::string bundleName,
     respBody.preferredCompatibleMode = preferredCompatibleMode;
     MEDIA_ERR_LOG("bundleName %{public}s, supportedHighResolution %{public}d, preferredCompatibleMode %{public}d",
         respBody.bundleName.c_str(), respBody.supportedHighResolution, respBody.preferredCompatibleMode);
+    return E_OK;
+}
+
+int32_t MediaAssetsService::ConvertToAsset(const std::string &path, ConvertToAssetRespBody &respBody)
+{
+    MEDIA_INFO_LOG("MediaAssetsService::ConvertToAsset start path: %{public}s", path.c_str());
+    int32_t ret = 0;
+    //todo 判断过滤文件
+    if (!MediaFileUtils::IsFileExists(path)) {
+        MEDIA_ERR_LOG("The file does not exist, path: %{public}s", path.c_str());
+        return E_SCENE_PARAM_INVALID;
+    }
+    //根据资产路径查询资产对象,资产存在则直接返回
+    auto resultSet = this->rdbOperation_.QueryAssetByStoragePath(path);
+    int32_t count = 0;
+    if (resultSet != nullptr && resultSet->GetRowCount(count) == NativeRdb::E_OK && count > 0) {
+        MEDIA_INFO_LOG("The file has been an asset, path: %{public}s", path.c_str());
+        respBody.resultSet = std::move(resultSet);
+        return E_SUCCESS;
+    }
+    MediaNotifyInfo info {
+        .beforePath = path,
+        .afterPath  = path,
+        .objType    = FileNotifyObjectType::FILE,
+        .optType    = FileNotifyOperationType::MOD
+    };
+    std::vector<MediaNotifyInfo> input = {info};
+    FileManagerScanner scanner;
+    ret = scanner.Run(input);
+    if (ret != E_SUCCESS) {
+        MEDIA_ERR_LOG("scanner failed");
+        return E_INNER_FAIL;
+    }
+    resultSet = this->rdbOperation_.QueryAssetByStoragePath(path);
+    if (resultSet != nullptr && resultSet->GetRowCount(count) == NativeRdb::E_OK && count > 0) {
+        MEDIA_INFO_LOG("The file has been an asset, path: %{public}s", path.c_str());
+        respBody.resultSet = std::move(resultSet);
+        return E_SUCCESS;
+    }
+    MEDIA_ERR_LOG("QueryAssetByStoragePath failed");
+    return E_INNER_FAIL;
+}
+
+bool MediaAssetsService::RegisterTaskCancelFlag(int32_t requestId, std::shared_ptr<std::atomic<bool>> cancelFlag)
+{
+    std::lock_guard<std::mutex> lock(g_taskCancelMutex);
+    auto it = g_taskCancelMap.find(requestId);
+    if (it == g_taskCancelMap.end()) {
+        g_taskCancelMap[requestId] = cancelFlag;
+    } else {
+        MEDIA_ERR_LOG("fail to register cancel taskId");
+        return false;
+    }
+    return true;
+}
+
+bool MediaAssetsService::EarseTaskCancelFlag(const int32_t &requestId)
+{
+    MEDIA_INFO_LOG("EarseTaskCancelFlag: requestId=%{public}d", requestId);
+    std::lock_guard<std::mutex> lock(g_taskCancelMutex);
+    auto it = g_taskCancelMap.find(requestId);
+    if (it != g_taskCancelMap.end()) {
+        g_taskCancelMap.erase(requestId);
+    } else {
+        MEDIA_ERR_LOG("fail to earse cancel taskId");
+        return false;
+    }
+    return true;
+}
+
+int32_t MediaAssetsService::CancelTask(const int32_t &requestId)
+{
+    MEDIA_INFO_LOG("CancelTask: requestId=%{public}d", requestId);
+    std::lock_guard<std::mutex> lock(g_taskCancelMutex);
+    auto it = g_taskCancelMap.find(requestId);
+    if (it != g_taskCancelMap.end() && it->second) {
+        *(it->second) = true;
+        MEDIA_INFO_LOG("Task cancelled: %{public}d", requestId);
+    }
+    return E_OK;
+}
+
+int32_t UpdateMoveAssetData(std::shared_ptr<AssetAccurateRefresh> &refresh, const FileAssetsInfo &info)
+{
+    int32_t ret = FileManagementUtils::UpdateMoveAsset(refresh, info);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR, "failed to update burstcover,ret:%{public}d", ret);
+    PhotoSubType subtype = static_cast<PhotoSubType>(info.photoSubtype);
+    if (subtype == PhotoSubType::BURST) {
+        ret = FileManagementUtils::UpdateBurstNumber(refresh, info);
+    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "fail to update asset");
+    return E_OK;
+}
+
+int32_t DoMoveFilesToDir(const std::map<int32_t, FileAssetsInfo> &infos, std::shared_ptr<FileMoveHandle> &handle,
+    ChangeRequestMoveAssetsToDirDto &dto, std::string & targetDir, int32_t targetAlbumId)
+{
+    std::shared_ptr<AssetAccurateRefresh> assetRefresh = make_shared<AssetAccurateRefresh>();
+    for (const auto &info : infos) {
+        {
+            std::lock_guard<std::mutex> lock(g_taskCancelMutex);
+            if (*g_taskCancelMap[dto.requestId]) {
+                dto.errCode = CANCEL_TASK_ERROR;
+                return E_CANCEL_TASK;
+            }
+        }
+        FileAssetsInfo updateInfo;
+        std::string storagePath;
+        std::string localSrcPath = FileManagementUtils::GetLocalPath(info.second.data);
+        AssetOperationInfo srcpath = AssetOperationInfo::CreateFromPath(localSrcPath, AssetPathType::NORMAL_PATH);
+        if (targetDir == FILE_MANAGEMENT_PREFIX) {
+            storagePath = targetDir + info.second.displayName;
+        } else {
+            storagePath = targetDir + '/' + info.second.displayName;
+        }
+        handle->targetPath_ = storagePath;
+        updateInfo.fileId = info.second.fileId;
+        updateInfo.fileSourceType = info.second.fileSourceType;
+        updateInfo.ownerAlbumId = targetAlbumId;
+        updateInfo.storagePath = storagePath;
+        updateInfo.burstKey = info.second.burstKey;
+        updateInfo.fileSourceType = static_cast<int32_t>(FileSourceType::FILE_MANAGER);
+        int32_t ret = UpdateMoveAssetData(assetRefresh, updateInfo);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "fail to update asset");
+        RenameMode mode = static_cast<RenameMode>(dto.mode);
+        auto result = MediaFileAccessUtils::MoveAsset(srcpath, storagePath, FileSourceType::FILE_MANAGER, mode);
+        if (result.errCode != E_OK) {
+            dto.resultList.push_back("null");
+            dto.errCode = result.errCode;
+            ret = UpdateMoveAssetData(assetRefresh, info.second);
+            MEDIA_ERR_LOG("fail to move asset");
+            return E_INVALID_PARAM;
+        }
+        handle->targetPath_ = "";
+        dto.changeInfo->processedCount++;
+        dto.changeInfo->processedSize += info.second.size;
+        dto.resultList.push_back(storagePath);
+        handle->CalculateProgress();
+    }
+    assetRefresh->RefreshAlbum();
+    assetRefresh->Notify();
+    return E_OK;
+}
+
+int32_t MediaAssetsService::MoveAssetsToDir(ChangeRequestMoveAssetsToDirDto &dto)
+{
+    if (dto.changeInfo == nullptr) {
+        dto.changeInfo = std::make_shared<MediaProgressChangeInfo>();
+    }
+    std::string relativeDir = "";
+    int32_t albumId = 0;
+    std::string targetDir = dto.targetDir;
+    dto.changeInfo->requestId = dto.requestId;
+    dto.changeInfo->type = static_cast<int32_t>(NotifyForUserDefineType::MOVE_ASSETS_TO_DIR_PROGRESS);
+    dto.changeInfo->totalSize = FileManagementUtils::CalculateTotalSize(dto.assets);
+    dto.changeInfo->totalCount = static_cast<int64_t>(dto.assets.size());
+    std::shared_ptr<FileMoveHandle> handle = std::make_shared<FileMoveHandle>(dto.changeInfo, "MoveAssetToDirTimer");
+    handle->StartProgressTimer(PROGRESS_TIMER_INTERVAL_MS, false);
+
+    std::map<int32_t, FileAssetsInfo> moveAssetInfos;
+    std::vector<std::string> fileIds = MediaLibraryDataManagerUtils::GetFileIdsFromUriString(dto.assets);
+    NativeRdb::RdbPredicates predicate(PhotoColumn::PHOTOS_TABLE);
+    predicate.In(PhotoColumn::MEDIA_ID, fileIds);
+    int32_t ret = FileManagementUtils::QueryMoveAssetInfos(predicate, moveAssetInfos);
+    CHECK_AND_RETURN_RET_LOG(moveAssetInfos.size() == dto.assets.size(), E_INVALID_PARAM, "uris is invaild");
+    ret = FileManagementUtils::GetRelativeDir(targetDir, relativeDir);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_INVALID_PARAM, "target dir is invaild");
+    ret = FileManagementUtils::QueryTargetAlbumInfo(relativeDir, albumId);
+    if (ret != E_OK) {
+        MEDIA_INFO_LOG("fail to query file album, insert a new album");
+        FileAlbumInfo insertAlbumInfo;
+        std::string lastDirName = FileManagementUtils::GetLastDirName(relativeDir);
+        insertAlbumInfo.albumName = (lastDirName == "") ? ROOT_FILE_MANAGEMENT_ALBUM_NAME : lastDirName;
+        insertAlbumInfo.lpath = "/FromDocs/" + relativeDir;
+        albumId = FileManagementUtils::InsertFileAlbum(insertAlbumInfo);
+        CHECK_AND_RETURN_RET_LOG(albumId > 0, E_RDB, "fail to insert file album");
+    }
+    ret = DoMoveFilesToDir(moveAssetInfos, handle, dto, targetDir, albumId);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "fail to move file");
+    return E_OK;
+}
+
+int32_t MediaAssetsService::ScanMoveAssets(const std::vector<std::string> &allAssetPath,
+    std::map<int32_t, FileAssetsInfo> &recordedInfos, ChangeRequestMoveAssetsByPathDto &dto)
+{
+    std::vector<MediaNotifyInfo> input;
+    std::vector<std::string> unScannedAssetPath;
+    std::map<std::string, std::int32_t> infos;
+    for (const auto& pair : recordedInfos) {
+        infos.emplace(pair.second.storagePath, pair.first);
+    }
+    for (const auto& assetPath : allAssetPath) {
+        if (infos.count(assetPath) == 0) {
+            MediaNotifyInfo info {
+                .beforePath = "",
+                .afterPath  = assetPath,
+                .objType    = FileNotifyObjectType::FILE,
+                .optType    = FileNotifyOperationType::MOD
+            };
+
+            if (access(assetPath.c_str(), F_OK) != F_OK) {
+                MEDIA_ERR_LOG("file is not exist");
+                dto.resultList.push_back("null");
+                dto.errCode = TARGET_FILE_NOT_EXIST;
+                return E_INVALID_PARAM;
+            }
+            input.push_back(info);
+            unScannedAssetPath.push_back(assetPath);
+        }
+    }
+    FileManagerScanner scanner;
+    int32_t ret = scanner.Run(input);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_INNER_FAIL, "scanner failed");
+    NativeRdb::RdbPredicates predicate(PhotoColumn::PHOTOS_TABLE);
+    predicate.In(PhotoColumn::PHOTO_STORAGE_PATH, unScannedAssetPath);
+    ret = FileManagementUtils::QueryMoveAssetInfos(predicate, recordedInfos);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_INNER_FAIL, "fail to query moveassets.");
+    return E_OK;
+}
+
+int32_t DoMoveFilesByPath(const std::map<int32_t, FileAssetsInfo> &moveAssetInfos,
+    std::shared_ptr<FileMoveHandle> &handle, ChangeRequestMoveAssetsByPathDto &dto)
+{
+    std::shared_ptr<AssetAccurateRefresh> assetRefresh = make_shared<AssetAccurateRefresh>();
+    for (const auto &info : moveAssetInfos) {
+        {
+            std::lock_guard<std::mutex> lock(g_taskCancelMutex);
+            if (*g_taskCancelMap[dto.requestId]) {
+                dto.errCode = CANCEL_TASK_ERROR;
+                return E_CANCEL_TASK;
+            }
+        }
+        FileAssetsInfo updateInfo;
+        AssetOperationInfo srcpath = AssetOperationInfo::CreateFromPath(info.second.data);
+        std::string localTargetPath = FileManagementUtils::GetLocalPath(info.second.data);
+        CHECK_AND_RETURN_RET_LOG(localTargetPath != "", E_INNER_FAIL, "targetPath is invalid");
+        handle->targetPath_ = localTargetPath;
+        updateInfo.fileId = info.second.fileId;
+        updateInfo.fileSourceType = info.second.fileSourceType;
+        updateInfo.ownerAlbumId = std::stoi(dto.targetAlbumId.c_str());
+        updateInfo.storagePath = "";
+        updateInfo.burstKey = info.second.burstKey;
+        updateInfo.fileSourceType = static_cast<int32_t>(FileSourceType::MEDIA);
+        int32_t ret = UpdateMoveAssetData(assetRefresh, updateInfo);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "fail to update asset");
+        RenameMode mode = static_cast<RenameMode>(dto.mode);
+        auto result = MediaFileAccessUtils::MoveAsset(srcpath, localTargetPath, FileSourceType::MEDIA, mode);
+        if (result.errCode != E_OK) {
+            dto.resultList.push_back("null");
+            dto.errCode = result.errCode;
+            ret = UpdateMoveAssetData(assetRefresh, info.second);
+            MEDIA_INFO_LOG("fail to move asset");
+            return E_INVALID_PARAM;
+        }
+        std::string extraUri = MediaFileUtils::GetExtraUri(info.second.displayName, info.second.data, false);
+        std::string photoUri = MediaFileUri(MediaType(info.second.mediaType), ToString(info.second.fileId), "",
+            MEDIA_API_VERSION_V10,  extraUri).ToString();
+        handle->targetPath_ = "";
+        dto.changeInfo->processedCount++;
+        dto.changeInfo->processedSize += info.second.size;
+        dto.resultList.push_back(photoUri);
+        handle->CalculateProgress();
+    }
+    assetRefresh->RefreshAlbum();
+    assetRefresh->Notify();
+    return E_OK;
+}
+
+int32_t MediaAssetsService::MoveAssetsByPath(ChangeRequestMoveAssetsByPathDto &dto)
+{
+    if (dto.changeInfo == nullptr) {
+        dto.changeInfo = std::make_shared<MediaProgressChangeInfo>();
+    }
+    dto.changeInfo->requestId = dto.requestId;
+    dto.changeInfo->type =
+        static_cast<int32_t>(NotifyForUserDefineType::MOVE_ASSETS_BY_PATH_PROGRESS);
+    std::shared_ptr<FileMoveHandle> handle = std::make_shared<FileMoveHandle>(dto.changeInfo,
+        "MoveAssetByPathTimer");
+    dto.changeInfo->totalSize = FileManagementUtils::CalculateTotalSizeByPath(dto.assetPaths);
+    dto.changeInfo->totalCount = static_cast<int64_t>(dto.assetPaths.size());
+    handle->StartProgressTimer(PROGRESS_TIMER_INTERVAL_MS, false);
+    std::map<int32_t, FileAssetsInfo> moveAssetInfos;
+    NativeRdb::RdbPredicates predicate(PhotoColumn::PHOTOS_TABLE);
+    predicate.In(PhotoColumn::PHOTO_STORAGE_PATH, dto.assetPaths);
+    int32_t ret = FileManagementUtils::QueryMoveAssetInfos(predicate, moveAssetInfos);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "failed to query assets info");
+    if (dto.assetPaths.size() > moveAssetInfos.size()) {
+        ret = ScanMoveAssets(dto.assetPaths, moveAssetInfos, dto);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "fail to scan file");
+    }
+    ret = DoMoveFilesByPath(moveAssetInfos, handle, dto);
+    return E_OK;
+}
+
+int32_t MediaAssetsService::CreateFileManagerAsset(CreateAssetDto& dto)
+{
+    if (!this->rdbOperation_.QueryAlbumIdIfExists(dto.ownerAlbumId)) {
+        MEDIA_ERR_LOG("Invalid ownerAlbumId:%{public}s", dto.ownerAlbumId.c_str());
+        return -EINVAL;
+    }
+
+    NativeRdb::ValuesBucket assetInfo;
+    assetInfo.PutString(MediaColumn::MEDIA_NAME, dto.displayName);
+    assetInfo.PutInt(MediaColumn::MEDIA_TYPE, MediaFileUtils::GetMediaType(dto.displayName));
+    assetInfo.PutString(PhotoColumn::PHOTO_OWNER_ALBUM_ID, dto.ownerAlbumId);
+
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
+
+    cmd.SetValueBucket(assetInfo);
+    cmd.SetDeviceName(GetLocalDeviceName());
+    cmd.SetBundleName(GetClientBundleName());
+    int32_t ret = MediaLibraryPhotoOperations::Create(cmd);
+    CHECK_AND_RETURN_RET_LOG(ret > 0, ret, "MediaLibraryPhotoOperations::Create failed");
+    dto.fileId = ret;
+    dto.outUri = cmd.GetResult();
     return E_OK;
 }
 } // namespace OHOS::Media

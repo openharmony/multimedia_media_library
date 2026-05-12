@@ -45,7 +45,7 @@ public:
     static ani_object NewMovingPhotoAni(ani_env *env, const std::string& photoUri, SourceMode sourceMode,
         MovingPhotoParam &movingPhotoParam);
     static void SubRequestContent(int32_t fd, MovingPhotoAsyncContext* context);
-    static void RequestCloudContentArrayBuffer(int32_t fd, MovingPhotoAsyncContext* context);
+    static void RequestLivePhotoContentArrayBuffer(int32_t fd, MovingPhotoAsyncContext* context);
     std::string GetUriInner();
     SourceMode GetSourceMode();
     static int32_t GetFdFromUri(const std::string &uri);

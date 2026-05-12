@@ -85,6 +85,19 @@ const std::unordered_map<int, int> trans2JsError = {
     { -ENOMEM,                JS_ERR_NO_MEM },
 };
 
+const std::unordered_map<int, int> transMove2JsError = {
+    { E_PERMISSION_DENIED,    JS_ERR_PERMISSION_DENIED },
+    { E_FAIL,                 JS_INNER_FAIL },
+    { E_RENAME,               JS_E_PARAM_INVALID},
+    { E_PATH_NOT_SUPPORT,     JS_E_PARAM_INVALID},
+    { E_FILE_NOT_EXIST,       JS_E_PARAM_INVALID},
+    { E_INVALID_PARAM,        JS_E_PARAM_INVALID},
+    { E_MEDIA_TYPE,           JS_E_PARAM_INVALID},
+    { E_CANCEL_TASK,          JS_E_PARAM_INVALID},
+    { E_RDB,                  JS_E_INNER_FAIL},
+    { E_ERR,                  JS_E_INNER_FAIL},
+};
+
 const std::unordered_map<int, std::string> jsErrMap = {
     { JS_ERR_PERMISSION_DENIED, "without medialibrary permission" },
     { JS_INNER_FAIL,            "medialibrary inner fail" },

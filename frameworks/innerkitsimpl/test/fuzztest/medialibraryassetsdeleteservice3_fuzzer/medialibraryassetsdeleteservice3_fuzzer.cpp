@@ -165,6 +165,7 @@ static void BuildMediaFilePathFuzzer()
     MEDIA_INFO_LOG("BuildMediaFilePathFuzzer end");
 }
 
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
 static void BuildLakeFilePathFuzzer()
 {
     MEDIA_INFO_LOG("BuildLakeFilePathFuzzer start");
@@ -174,6 +175,7 @@ static void BuildLakeFilePathFuzzer()
     deleteService.BuildLakeFilePath(photoInfo, targetPath);
     MEDIA_INFO_LOG("BuildLakeFilePathFuzzer end");
 }
+#endif
 
 static void CopyAndMoveLocalAssetToTrashFuzzer()
 {
@@ -285,7 +287,9 @@ static void MediaAssetsDeleteServiceFuzzer()
     MEDIA_INFO_LOG("MediaAssetsDeleteServiceFuzzer start");
     ResetNullableFieldsFuzzer();
     BuildMediaFilePathFuzzer();
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
     BuildLakeFilePathFuzzer();
+#endif
     BatchCopyAndMoveCloudAssetToTrashFuzzer();
     CopyAndMoveLocalAssetToTrashFuzzer();
     CreateLocalTrashedPhotosPoFuzzer();

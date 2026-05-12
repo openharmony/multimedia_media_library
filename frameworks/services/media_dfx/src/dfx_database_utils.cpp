@@ -17,7 +17,9 @@
 #include "dfx_database_utils.h"
 
 #include "dfx_utils.h"
-#include "lake_const.h"
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+#include "file_const.h"
+#endif
 #include "dfx_reporter.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_tracer.h"

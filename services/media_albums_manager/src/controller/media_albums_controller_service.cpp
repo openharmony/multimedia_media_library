@@ -73,6 +73,8 @@
 #include "medialibrary_client_errno.h"
 #include "analysis_album_get_attribute_vo.h"
 #include "analysis_album_get_attribute_dto.h"
+#include "album_change_set_hidden_attribute_vo.h"
+#include "album_change_set_album_name_by_file_vo.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -252,6 +254,14 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::ANALYSIS_ALBUM_GET_ATTRIBUTE),
         &MediaAlbumsControllerService::GetAnalysisAlbumAttribute
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_CHANGE_SET_HIDDEN_ATTRIBUTE),
+        &MediaAlbumsControllerService::AlbumChangeSetHiddenAttribute
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_CHANGE_SET_ALBUM_NAME_BY_FILE),
+        &MediaAlbumsControllerService::AlbumChangeSetAlbumNameByFile
     },
 };
 
@@ -1099,5 +1109,51 @@ int32_t MediaAlbumsControllerService::NotifyDbAvailability(MessageParcel &data, 
     DfxTimer dfxTimer(operationCode, timeout, true);
     MediaAlbumsService::GetInstance().ReportCloneDbStatus();
     return IPC::UserDefineIPC().WriteResponseBody(reply);
+}
+
+int32_t MediaAlbumsControllerService::AlbumChangeSetHiddenAttribute(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter AlbumChangeSetHiddenAttribute");
+    AlbumChangeSetHiddenAttributeReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("AlbumChangeSetHiddenAttribute Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    if (reqBody.albumId <= 0) {
+        MEDIA_ERR_LOG("albumId is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_PARAM_CONVERT_FORMAT);
+    }
+
+    AlbumChangeSetHiddenAttributeDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAlbumsService::GetInstance().AlbumChangeSetHiddenAttribute(dto);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAlbumsControllerService::AlbumChangeSetAlbumNameByFile(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter AlbumChangeSetAlbumNameByFile");
+    AlbumChangeSetAlbumNameByFileReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("AlbumChangeSetAlbumNameByFile Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    if (reqBody.albumId <= 0) {
+        MEDIA_ERR_LOG("albumId is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_PARAM_CONVERT_FORMAT);
+    }
+    if (MediaFileUtils::CheckAlbumName(reqBody.albumName, true) != E_OK) {
+        MEDIA_ERR_LOG("albumName is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_PARAM_CONVERT_FORMAT);
+    }
+
+    AlbumChangeSetAlbumNameByFileDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAlbumsService::GetInstance().AlbumChangeSetAlbumNameByFile(dto);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 } // namespace OHOS::Media
