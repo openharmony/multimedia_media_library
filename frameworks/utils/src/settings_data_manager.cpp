@@ -43,8 +43,7 @@ inline static const std::string PHOTOS_SYNC_SWITCH_USER_KEY = "photos_sync_optio
 inline static const std::string ALL_PHOTOS_ALBUM_UPLOAD_USER = "photos_all_album_upload_user";
 inline static const std::string ALL_PHOTOS_ALBUM_UPLOAD = "photos_all_album_upload";
 inline static const std::string ALL_PHOTOS_ALBUM_UPLOAD_OFF = "0";
-
-static constexpr int32_t BASE_USER_RANGE = 200000;
+inline static const std::string PHOTOS_ALL_ALBUM_UPLOAD_COMFIRMED = "photos_all_album_upload_comfirmed";
 constexpr int PHOTOS_STORAGE_MANAGER_ID = 5003;
 
 inline static const std::string CLONE_SEARCH_STATUS = "clone_search_status";
@@ -95,6 +94,7 @@ private:
 static int32_t GetUserId()
 {
     int32_t uid = static_cast<int32_t>(getuid());
+    constexpr uint32_t BASE_USER_RANGE = 200000;
     return uid / BASE_USER_RANGE;
 }
 
@@ -412,4 +412,21 @@ int32_t SettingsDataManager::UpdateOrInsertCloneSearchStatus()
     }
     return UpdateParamInSettingData(CLONE_SEARCH_STATUS, CLONE_SEARCH_INDEXING);
 }
+
+void SettingsDataManager::ComfirmUploadStatus()
+{
+    // check has second comfirmed
+    std::string value;
+    QueryParamInSettingData(PHOTOS_ALL_ALBUM_UPLOAD_COMFIRMED, value);
+    AlbumUploadSwitchStatus comfirmStatus = StringToAlbumUploadSwitchStatus(value);
+    if (comfirmStatus == AlbumUploadSwitchStatus::OPEN) {
+        return;
+    }
+    AlbumUploadSwitchStatus uploadStatus = GetAllAlbumUploadStatus();
+    // swtich upload status
+    if (uploadStatus == AlbumUploadSwitchStatus::OPEN) {
+        MEDIA_INFO_LOG("Off upload switch");
+        UpdateOrInsertAllPhotosAlbumUpload();
+    }
 }
+} // namespace OHOS::Media

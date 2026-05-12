@@ -57,6 +57,8 @@
 #include "get_albumid_by_lpath_vo.h"
 #include "create_analysis_album_dto.h"
 #include "analysis_album_get_attribute_dto.h"
+#include "album_change_set_hidden_attribute_dto.h"
+#include "album_change_set_album_name_by_file_dto.h"
 
 namespace OHOS::Media {
 class MediaAlbumsService {
@@ -97,6 +99,8 @@ public:
         std::vector<std::unordered_map<std::string, std::string>> &queryResults);
     void ReportFirstDbStatus();
     void ReportCloneDbStatus();
+    int32_t AlbumChangeSetHiddenAttribute(const AlbumChangeSetHiddenAttributeDto &dto);
+    int32_t AlbumChangeSetAlbumNameByFile(const AlbumChangeSetAlbumNameByFileDto &dto);
 
 private:
     int32_t SetPortraitAlbumName(const ChangeRequestSetAlbumNameDto& dto);

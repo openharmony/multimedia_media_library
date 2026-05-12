@@ -91,6 +91,9 @@ public:
     EXPORT int32_t CreateAstcOnlyDownloadThm(const std::string &id, bool isCloudInsertTaskPriorityHigh);
     EXPORT int32_t RegenerateAstcBackground();
     EXPORT int32_t SyncRegenerateAstcWithLocal(const std::string &id);
+    // FileManager缩略图生成接口
+    EXPORT int32_t CreateThumbnailForFileManager(const std::string &fileId, const std::string &path);
+    EXPORT void RestoreFileManagerThumbnailTasks();
 private:
     EXPORT ThumbnailService();
     bool CheckSizeValid();

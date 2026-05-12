@@ -181,6 +181,9 @@ public:
     EXPORT bool IsHidden() const;
     EXPORT void SetHidden(bool isHidden);
 
+    EXPORT bool IsFileHidden() const;
+    EXPORT void SetFileHidden(bool isFileHidden);
+
     EXPORT void SetOpenStatus(int32_t fd, int32_t openStatus);
     EXPORT void RemoveOpenStatus(int32_t fd);
     EXPORT int32_t GetOpenStatus(int32_t fd);

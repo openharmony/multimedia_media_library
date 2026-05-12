@@ -42,15 +42,20 @@
 #include "photo_video_mode_operation.h"
 #include "metadata_extractor.h"
 #include "medialibrary_unistore_manager.h"
-#include "lake_file_utils.h"
 #include "medialibrary_photo_operations.h"
 #include "result_set_utils.h"
 #include "media_edit_utils.h"
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+#include "file_scan_utils.h"
+#endif
 #include "photo_attachment_dto.h"
 #include "userfile_manager_types.h"
 #include "lcd_aging_dao.h"
 #include "lcd_aging_utils.h"
 #include "media_file_utils.h"
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+#include "media_file_access_utils.h"
+#endif
 
 // LCOV_EXCL_START
 namespace OHOS::Media::CloudSync {
@@ -472,7 +477,8 @@ void CloudMediaDownloadService::UpdateVideoMode(std::vector<PhotosPo> &photosPoV
         CHECK_AND_CONTINUE_INFO_LOG(videoMode == static_cast<int32_t>(VideoMode::DEFAULT), "photosPo has scannered");
         string logVideoPath = photosPo.data.value_or("");
         unique_ptr<Metadata> videoModeData = make_unique<Metadata>();
-        string realPath = LakeFileUtils::GetAssetRealPath(logVideoPath);
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+        string realPath = MediaFileAccessUtils::GetAssetRealPath(logVideoPath);
         string absVideoPath;
         if (!PathToRealPath(realPath, absVideoPath)) {
             MEDIA_ERR_LOG(
@@ -480,6 +486,9 @@ void CloudMediaDownloadService::UpdateVideoMode(std::vector<PhotosPo> &photosPoV
             continue;
         }
         videoModeData->SetFilePath(realPath);
+#else
+        videoModeData->SetFilePath(logVideoPath);
+#endif
         int32_t err = MetadataExtractor::ExtractAVMetadata(videoModeData);
         CHECK_AND_CONTINUE_INFO_LOG(err == E_OK, "Failed to extract metadata for photosPo: %{public}s",
             DfxUtils::GetSafePath(logVideoPath).c_str());

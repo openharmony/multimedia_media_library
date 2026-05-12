@@ -40,8 +40,6 @@ public:
 
 private:
     int32_t RequestContentToSandbox();
-    int32_t WriteToSandboxUri(int32_t srcFd, std::string& sandboxUri);
-    int32_t CopyFileFromMediaLibrary(int32_t srcFd, int32_t destFd);
     int32_t OpenReadOnlyFile(const std::string& uri, bool isReadImage);
     bool HandleFd(int32_t& fd);
     int32_t OpenReadOnlyImage(const std::string& imageUri, bool isMediaLibUri);

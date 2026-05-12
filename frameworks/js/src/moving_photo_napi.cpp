@@ -55,8 +55,8 @@ static const string TYPE_PHOTOS = "1";
 thread_local napi_ref MovingPhotoNapi::constructor_ = nullptr;
 enum class MovingPhotoResourceType : int32_t {
     DEFAULT = 0,
-    CLOUD_IMAGE,
-    CLOUD_VIDEO,
+    CLOUD_IMAGE_OR_LIVEPHOTO,
+    CLOUD_VIDEO_OR_LIVEPHOTO,
     CLOUD_LIVE_PHOTO,
     CLOUD_METADATA,
 };
@@ -333,9 +333,9 @@ static int32_t WriteToSandboxUri(int32_t srcFd, const string& sandboxUri,
         return E_HAS_FS_ERROR;
     }
 
-    if (type == MovingPhotoResourceType::CLOUD_IMAGE) {
+    if (type == MovingPhotoResourceType::CLOUD_IMAGE_OR_LIVEPHOTO) {
         return MovingPhotoFileUtils::ConvertToMovingPhoto(srcFd, destPath, "", "");
-    } else if (type == MovingPhotoResourceType::CLOUD_VIDEO) {
+    } else if (type == MovingPhotoResourceType::CLOUD_VIDEO_OR_LIVEPHOTO) {
         return MovingPhotoFileUtils::ConvertToMovingPhoto(srcFd, "", destPath, "");
     }
 
@@ -374,8 +374,10 @@ static int32_t RequestContentToSandbox(napi_env env, MovingPhotoAsyncContext* co
     if (!context->destImageUri.empty()) {
         int32_t imageFd = MovingPhotoNapi::OpenReadOnlyFile(movingPhotoUri, true, context->position);
         CHECK_COND_RET(HandleFd(imageFd), imageFd, "Open source image file failed");
-        MovingPhotoResourceType resourceType = context->position == static_cast<int32_t>(PhotoPositionType::CLOUD)
-                            ? MovingPhotoResourceType::CLOUD_IMAGE
+        bool needConvert = context->position == static_cast<int32_t>(PhotoPositionType::CLOUD)
+            || MovingPhotoFileUtils::IsLivePhoto(imageFd);
+        MovingPhotoResourceType resourceType = needConvert
+                            ? MovingPhotoResourceType::CLOUD_IMAGE_OR_LIVEPHOTO
                             : MovingPhotoResourceType::DEFAULT;
         int32_t ret = WriteToSandboxUri(imageFd, context->destImageUri, resourceType);
         CHECK_COND_RET(ret == E_OK, ret, "Write image to sandbox failed");
@@ -388,8 +390,10 @@ static int32_t RequestContentToSandbox(napi_env env, MovingPhotoAsyncContext* co
             int32_t ret = MovingPhotoNapi::DoMovingPhotoTranscode(env, videoFd, context);
             CHECK_COND_RET(ret == E_OK, ret, "moving video transcode failed");
         } else {
-            MovingPhotoResourceType resourceType = context->position == static_cast<int32_t>(PhotoPositionType::CLOUD)
-                                ? MovingPhotoResourceType::CLOUD_VIDEO
+            bool needConvert = context->position == static_cast<int32_t>(PhotoPositionType::CLOUD)
+                || MovingPhotoFileUtils::IsLivePhoto(videoFd);
+            MovingPhotoResourceType resourceType = needConvert
+                                ? MovingPhotoResourceType::CLOUD_VIDEO_OR_LIVEPHOTO
                                 : MovingPhotoResourceType::DEFAULT;
             int32_t ret = WriteToSandboxUri(videoFd, context->destVideoUri, resourceType);
             CHECK_COND_RET(ret == E_OK, ret, "Write video to sandbox failed");
@@ -470,7 +474,8 @@ static int32_t ArrayBufferToTranscode(napi_env env, MovingPhotoAsyncContext* con
     int64_t offset = 0;
     int64_t videoSize = 0;
     int64_t extraDataSize = 0;
-    if (context->position == static_cast<int32_t>(PhotoPositionType::CLOUD)) {
+    if (context->position == static_cast<int32_t>(PhotoPositionType::CLOUD)
+        || MovingPhotoFileUtils::IsLivePhoto(uniqueFd.Get())) {
         int32_t ret = MovingPhotoFileUtils::GetMovingPhotoDetailedSize(uniqueFd.Get(), offset, videoSize,
             extraDataSize);
         if (ret != E_OK) {
@@ -848,7 +853,8 @@ int32_t MovingPhotoNapi::DoMovingPhotoTranscode(napi_env env, int32_t &videoFd, 
     UniqueFd uniqueVideoFd(videoFd);
     int64_t videoSize = 0;
     int64_t extraDataSize = 0;
-    if (context->position == static_cast<int32_t>(PhotoPositionType::CLOUD)) {
+    if (context->position == static_cast<int32_t>(PhotoPositionType::CLOUD)
+        || MovingPhotoFileUtils::IsLivePhoto(uniqueVideoFd.Get())) {
         int32_t ret = MovingPhotoFileUtils::GetMovingPhotoDetailedSize(uniqueVideoFd.Get(), offset, videoSize,
             extraDataSize);
         CHECK_COND_RET(ret == E_OK, E_ERR, "get moving photo detailed size fail");
@@ -918,55 +924,6 @@ static int32_t AllocateAndConvertResource(int32_t fd, size_t fileSize, MovingPho
     return E_OK;
 }
 
-void MovingPhotoNapi::RequestCloudContentArrayBuffer(int32_t fd, MovingPhotoAsyncContext* context)
-{
-    if (context->position != static_cast<int32_t>(PhotoPositionType::CLOUD)) {
-        NAPI_ERR_LOG("Failed to check postion: %{public}d", context->position);
-        context->arrayBufferData = nullptr;
-        context->error = JS_INNER_FAIL;
-        return;
-    }
-
-    int64_t imageSize = 0;
-    int64_t videoSize = 0;
-    int64_t extraDataSize = 0;
-    int32_t err = MovingPhotoFileUtils::GetMovingPhotoDetailedSize(fd, imageSize, videoSize, extraDataSize);
-    if (err != E_OK) {
-        NAPI_ERR_LOG("Failed to get detailed size of moving photo");
-        context->arrayBufferData = nullptr;
-        context->SaveError(E_HAS_FS_ERROR);
-        return;
-    }
-
-    int32_t ret = E_FAIL;
-    size_t fileSize = 0;
-    switch (context->resourceType) {
-        case ResourceType::IMAGE_RESOURCE:
-            fileSize = static_cast<size_t>(imageSize);
-            ret = AllocateAndConvertResource(fd, fileSize, context);
-            break;
-        case ResourceType::VIDEO_RESOURCE:
-            fileSize = static_cast<size_t>(videoSize);
-            ret = AllocateAndConvertResource(fd, fileSize, context);
-            break;
-        default:
-            NAPI_ERR_LOG("Invalid resource type: %{public}d", static_cast<int32_t>(context->resourceType));
-            break;
-    }
-
-    if (!context->arrayBufferData || ret != E_OK) {
-        if (context->arrayBufferData) {
-            free(context->arrayBufferData);
-            context->arrayBufferData = nullptr;
-        }
-        NAPI_ERR_LOG(
-            "Failed to get arraybuffer, resource type is %{public}d", static_cast<int32_t>(context->resourceType));
-        context->error = JS_INNER_FAIL;
-        return;
-    }
-    context->arrayBufferLength = fileSize;
-}
-
 void BufferTranscodeRequestContent(int32_t fd, MovingPhotoAsyncContext* context)
 {
     off_t fileLen = lseek(fd, 0, SEEK_END);
@@ -1004,10 +961,65 @@ void BufferTranscodeRequestContent(int32_t fd, MovingPhotoAsyncContext* context)
     return;
 }
 
+void MovingPhotoNapi::RequestLivePhotoContentArrayBuffer(int32_t fd, MovingPhotoAsyncContext* context)
+{
+    if (context->position != static_cast<int32_t>(PhotoPositionType::CLOUD) && !MovingPhotoFileUtils::IsLivePhoto(fd)) {
+        NAPI_ERR_LOG("Failed to check postion: %{public}d", context->position);
+        context->arrayBufferData = nullptr;
+        context->error = JS_INNER_FAIL;
+        return;
+    }
+
+    int64_t imageSize = 0;
+    int64_t videoSize = 0;
+    int64_t extraDataSize = 0;
+    int32_t err = MovingPhotoFileUtils::GetMovingPhotoDetailedSize(fd, imageSize, videoSize, extraDataSize);
+    if (err != E_OK) {
+        NAPI_ERR_LOG("Failed to get detailed size of moving photo");
+        context->arrayBufferData = nullptr;
+        context->SaveError(E_HAS_FS_ERROR);
+        return;
+    }
+
+    int32_t ret = E_FAIL;
+    size_t fileSize = 0;
+    switch (context->resourceType) {
+        case ResourceType::IMAGE_RESOURCE:
+            fileSize = static_cast<size_t>(imageSize);
+            ret = AllocateAndConvertResource(fd, fileSize, context);
+            break;
+        case ResourceType::VIDEO_RESOURCE:
+            fileSize = static_cast<size_t>(videoSize);
+            ret = AllocateAndConvertResource(fd, fileSize, context);
+            break;
+        case ResourceType::PRIVATE_MOVING_PHOTO_RESOURCE:
+            fileSize = static_cast<size_t>(imageSize + videoSize + extraDataSize);
+            BufferTranscodeRequestContent(fd, context);
+            CHECK_AND_EXECUTE(context->error != E_OK, ret = E_OK);
+            break;
+        default:
+            NAPI_ERR_LOG("Invalid resource type: %{public}d", static_cast<int32_t>(context->resourceType));
+            break;
+    }
+
+    if (!context->arrayBufferData || ret != E_OK) {
+        if (context->arrayBufferData) {
+            free(context->arrayBufferData);
+            context->arrayBufferData = nullptr;
+        }
+        NAPI_ERR_LOG(
+            "Failed to get arraybuffer, resource type is %{public}d", static_cast<int32_t>(context->resourceType));
+        context->error = JS_INNER_FAIL;
+        return;
+    }
+    context->arrayBufferLength = fileSize;
+}
+
 void MovingPhotoNapi::SubRequestContent(int32_t fd, MovingPhotoAsyncContext* context)
 {
-    if (context->position == static_cast<int32_t>(PhotoPositionType::CLOUD)) {
-        return RequestCloudContentArrayBuffer(fd, context);
+    if (context->position == static_cast<int32_t>(PhotoPositionType::CLOUD)
+        || MovingPhotoFileUtils::IsLivePhoto(fd)) {
+        return RequestLivePhotoContentArrayBuffer(fd, context);
     }
     BufferTranscodeRequestContent(fd, context);
 }

@@ -46,10 +46,35 @@ static const string EDIT_DATA_VALUE = "{\"imageEffect\":{\"filters\":[{\"name\":
 
 FuzzedDataProvider* FDP;
 shared_ptr<MediaAssetsControllerService> mediaAssetsControllerService = nullptr;
+static const int32_t NUM_BYTES = 1;
 
 static inline std::vector<std::string> FuzzVector()
 {
     return {FDP->ConsumeBytesAsString(FORM_INFO_NUM_BYTES)};
+}
+
+static void AssetChangeSetHiddenAttributeFuzzer()
+{
+    AssetChangeReqBody reqBody;
+    reqBody.uri = "file://media/Photo/" + to_string(FDP->ConsumeIntegral<int32_t>());
+    reqBody.fileHidden = FDP->ConsumeBool();
+
+    MessageParcel data;
+    MessageParcel reply;
+    reqBody.Marshalling(data);
+    mediaAssetsControllerService->AssetChangeSetHiddenAttribute(data, reply);
+}
+
+static void AssetChangeSetDisplayNameByFileFuzzer()
+{
+    AssetChangeReqBody reqBody;
+    reqBody.uri = "file://media/Photo/" + to_string(FDP->ConsumeIntegral<int32_t>());
+    reqBody.displayName = FDP->ConsumeBytesAsString(NUM_BYTES);
+
+    MessageParcel data;
+    MessageParcel reply;
+    reqBody.Marshalling(data);
+    mediaAssetsControllerService->AssetChangeSetDisplayNameByFile(data, reply);
 }
 
 static void FormInfoFuzzer()
@@ -218,6 +243,8 @@ static void AssetChangeCreateAssetFuzzer()
 
 static void MediaAssetsControllerServiceFirstFuzzer()
 {
+    AssetChangeSetHiddenAttributeFuzzer();
+    AssetChangeSetDisplayNameByFileFuzzer();
     FormInfoFuzzer();
     CommitEditedAssetFuzzer();
     SysTrashPhotosFuzzer();

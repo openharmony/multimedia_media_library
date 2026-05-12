@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <cstdint>
 #define MLOG_TAG "FileUtils"
 
 #include "media_file_utils.h"
@@ -106,10 +107,14 @@ const int32_t ASPECT_RATIO_UNSUPPORT = -1;
 const int32_t ASPECT_RATIO_MAX = 1000;
 const double ASPECT_RATIO_MIN = 0.001;
 const double ASPECT_RATIO_PRECISION = 1000.0;
+const size_t BUFFER_SIZE = 4 * 1024 * 1024;
+const size_t MAX_SENDFILE_SIZE = 0x7FFFF000;
 
 const UChar MASK = 0x002A;  // '*'
 const UChar DOT = 0x002E;   // '.'
 
+std::mutex MediaFileUtils::cancelMutex_;
+std::unordered_set<std::string> MediaFileUtils::requestIdSet_ = {};
 static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_EXTRA_MIME_TYPE_MAP = {
     { "audio/3gpp", { "3gpp" } },
     { "audio/midi", { "mid", "midi", "kar" } },
@@ -607,6 +612,118 @@ bool MediaFileUtils::MoveFile(const string &oldPath, const string &newPath, bool
     return errRet;
 }
 
+int32_t MediaFileUtils::CloneToAlbumCancel(const std::string &requestId)
+{
+    MEDIA_INFO_LOG("CloneToAlbumCancel start, requestId=%{public}s", requestId.c_str());
+    std::lock_guard<std::mutex> lock(cancelMutex_);
+    requestIdSet_.insert(requestId);
+    return E_OK;
+}
+
+static int32_t CheckFilePathAndGetFd(const string &filePath)
+{
+    int32_t errCode = -1;
+    if (filePath.size() >= PATH_MAX) {
+        MEDIA_ERR_LOG("File path too long %{public}d", static_cast<int>(filePath.size()));
+        return errCode;
+    }
+    string absFilePath;
+    if (!PathToRealPath(filePath, absFilePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{public}s",
+            MediaFileUtils::DesensitizePath(filePath).c_str());
+        return errCode;
+    }
+    if (absFilePath.empty()) {
+        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path:%{public}s %{public}d",
+            MediaFileUtils::DesensitizePath(filePath).c_str(), errno);
+        return errCode;
+    }
+    return open(absFilePath.c_str(), O_RDONLY);
+}
+
+bool MediaFileUtils::CheckCancelCopy(const std::string &requestId)
+{
+    std::lock_guard<std::mutex> lock(cancelMutex_);
+    if (requestIdSet_.count(requestId) > 0) {
+        MEDIA_ERR_LOG("sendfile cancel");
+        requestIdSet_.erase(requestId);
+        return true;
+    }
+    return false;
+}
+
+int32_t MediaFileUtils::SegmentedCopyFileUtile(const string &filePath, const string &newPath,
+    std::function<void(uint64_t)> progressCallback, const std::string &requestId)
+{
+    MEDIA_INFO_LOG("SegmentedCopyFileUtile requestId:%{public}s", requestId.c_str());
+    struct stat fst{};
+    int32_t errCode = E_INNER_FAIL;
+    int32_t source = CheckFilePathAndGetFd(filePath);
+    CHECK_AND_RETURN_RET_LOG(source != -1, errCode, "Open failed:%{public}d", errno);
+    int32_t dest = open(newPath.c_str(), O_WRONLY | O_CREAT, CHOWN_RO_USR_GRP);
+    if (dest == -1) {
+        MEDIA_ERR_LOG("Open failed for destination file %{public}d", errno);
+        close(source);
+        return errCode;
+    }
+    if (fstat(source, &fst) == E_SUCCESS) {
+        off_t offset = 0;
+        int64_t size = static_cast<int64_t>(fst.st_size);
+        size_t sent = 0;
+        while (size >= 0) {
+            sent = sendfile(dest, source, &offset, BUFFER_SIZE);
+            if (sent == -1) {
+                MEDIA_ERR_LOG("sendfile failed, errno: %{public}d", errno);
+                break;
+            }
+            if (MediaFileUtils::CheckCancelCopy(requestId)) {
+                MEDIA_ERR_LOG("sendfile need cancel newPath:%{public}s", newPath.c_str());
+                CHECK_AND_PRINT_LOG(DeleteFile(newPath), "delete newPath:%{private}s failed", newPath.c_str());
+                close(source);
+                close(dest);
+                return E_SCENE_HAS_CANCEL;
+            }
+            size -= static_cast<int64_t>(sent);
+            if (progressCallback) {
+                progressCallback(sent);
+            }
+            if (sent == 0) {
+                break;
+            }
+        }
+
+        if (size == 0) {
+            // Copy ownership and mode of source file
+            if (fchown(dest, fst.st_uid, fst.st_gid) == E_SUCCESS &&
+                fchmod(dest, fst.st_mode) == E_SUCCESS) {
+                errCode = E_OK;
+            }
+        }
+    }
+    close(source);
+    close(dest);
+    return errCode;
+}
+
+static bool SendFileWithRetry(int32_t dest, int32_t source, off_t totalSize, off_t &copied)
+{
+    while (copied < totalSize) {
+        off_t leftSize = totalSize - copied;
+        const off_t maxSendfileSize = static_cast<off_t>(MAX_SENDFILE_SIZE);
+        size_t sendSize = static_cast<size_t>(leftSize > maxSendfileSize ? maxSendfileSize : leftSize);
+        ssize_t ret = sendfile(dest, source, &copied, sendSize);
+        if (ret == E_ERR) {
+            CHECK_AND_CONTINUE(errno != EINTR);
+            MEDIA_ERR_LOG("Failed to sendfile, errno: %{public}d", errno);
+            return false;
+        }
+        CHECK_AND_RETURN_RET_LOG(ret != 0, false,
+            "sendfile returned 0 before copy finished, copied: %{public}lld, total: %{public}lld",
+            static_cast<long long>(copied), static_cast<long long>(totalSize));
+    }
+    return true;
+}
+
 bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
 {
     struct stat fst{};
@@ -629,31 +746,27 @@ bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
     }
 
     int32_t source = open(absFilePath.c_str(), O_RDONLY);
-    if (source == -1) {
-        MEDIA_ERR_LOG("Open failed for source file, errno: %{public}d", errno);
-        return errCode;
-    }
+    UniqueFd srcFd(source);
+    CHECK_AND_RETURN_RET_LOG(srcFd.Get() != -1, errCode, "Open failed for source file, errno: %{public}d", errno);
 
-    int32_t dest = open(newPath.c_str(), O_WRONLY | O_CREAT, CHOWN_RO_USR_GRP);
-    if (dest == -1) {
-        MEDIA_ERR_LOG("Open failed for destination file %{public}d", errno);
-        close(source);
-        return errCode;
-    }
+    int32_t dest = open(newPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, CHOWN_RO_USR_GRP);
+    UniqueFd destFd(dest);
+    CHECK_AND_RETURN_RET_LOG(destFd.Get() != -1, errCode, "Open failed for destination file %{public}d", errno);
 
-    if (fstat(source, &fst) == E_SUCCESS) {
-        // Copy file content
-        if (sendfile(dest, source, nullptr, fst.st_size) != E_ERR) {
-            // Copy ownership and mode of source file
-            if (fchown(dest, fst.st_uid, fst.st_gid) == E_SUCCESS &&
-                fchmod(dest, fst.st_mode) == E_SUCCESS) {
-                errCode = true;
-            }
+    CHECK_AND_RETURN_RET_LOG(fstat(srcFd.Get(), &fst) == E_SUCCESS, errCode,
+        "Failed to fstat source file, errno: %{public}d", errno);
+
+    off_t total_size = fst.st_size;
+    off_t copied = 0;
+    CHECK_AND_RETURN_RET_LOG(SendFileWithRetry(destFd.Get(), srcFd.Get(), total_size, copied), errCode,
+        "Failed to copy content by sendfile");
+
+    if (copied == total_size) {
+        if (fchown(destFd.Get(), fst.st_uid, fst.st_gid) == E_SUCCESS &&
+            fchmod(destFd.Get(), fst.st_mode) == E_SUCCESS) {
+            errCode = true;
         }
     }
-
-    close(source);
-    close(dest);
 
     return errCode;
 }
@@ -1081,14 +1194,22 @@ std::string MediaFileUtils::GetFileAssetUri(const std::string &fileAssetData, co
     return baseUri + "/Photo/" + std::to_string(fileId) + "/" + fileNameInData + "/" + displayName;
 }
 
-int32_t MediaFileUtils::CheckDisplayName(const string &displayName, const bool compatibleCheckTitle)
+int32_t MediaFileUtils::CheckDisplayName(const string &displayName, const bool compatibleCheckTitle,
+    const bool useDotCompatibleRule)
 {
     int err = CheckStringSize(displayName, DISPLAYNAME_MAX);
     if (err < 0) {
         return err;
     }
-    if (displayName.at(0) == '.') {
-        return -EINVAL;
+    if (useDotCompatibleRule) {
+        if (displayName.find("..") != string::npos) {
+            MEDIA_ERR_LOG("Failed to check displayname dot rules: %{private}s", displayName.c_str());
+            return -EINVAL;
+        }
+    } else {
+        if (displayName.at(0) == '.') {
+            return -EINVAL;
+        }
     }
     string title = GetTitleFromDisplayName(displayName);
     if (title.empty()) {
@@ -1239,14 +1360,33 @@ void MediaFileUtils::GetRootDirFromRelativePath(const string &relativePath, stri
     }
 }
 
-int32_t MediaFileUtils::CheckAlbumName(const string &albumName)
+int32_t MediaFileUtils::CheckAlbumName(const string &albumName, bool useDotCompatibleRule)
 {
     int err = CheckStringSize(albumName, DISPLAYNAME_MAX);
     if (err < 0) {
         MEDIA_ERR_LOG("Album name string size check failed: %{public}d, size is %{public}zu", err, albumName.length());
         return err;
     }
-    return CheckAlbumNameCharacter(albumName);
+
+    const string albumNameRegex =
+        useDotCompatibleRule ? R"([\\/:*?"'`<>|{}\[\]])" : R"([\.\\/:*?"'`<>|{}\[\]])";
+    if (RegexCheck(albumName, albumNameRegex)) {
+        MEDIA_ERR_LOG("Failed to check album name regex: %{private}s", albumName.c_str());
+        return -EINVAL;
+    }
+
+    if (useDotCompatibleRule) {
+        if (albumName == "." || albumName == "..") {
+            MEDIA_ERR_LOG("Failed to check album name dot rules: %{private}s", albumName.c_str());
+            return -EINVAL;
+        }
+
+        if (albumName.find("..") != string::npos) {
+            MEDIA_ERR_LOG("Failed to check album name dot rules: %{private}s", albumName.c_str());
+            return -EINVAL;
+        }
+    }
+    return E_OK;
 }
 
 int32_t MediaFileUtils::CheckAppLink(const string &link)
@@ -1274,12 +1414,12 @@ int32_t MediaFileUtils::CheckHighlightSubtitle(const string &highlightSubtitle)
     size_t size = highlightSubtitle.length();
     CHECK_AND_RETURN_RET_LOG(size <= DISPLAYNAME_MAX, -ENAMETOOLONG,
         "Highlight subtitle string size check failed: size is %{public}zu", highlightSubtitle.length());
-    return CheckAlbumNameCharacter(highlightSubtitle);
+    return CheckAlbumNameCharacter(highlightSubtitle, ALBUM_NAME_REGEX);
 }
 
-int32_t MediaFileUtils::CheckAlbumNameCharacter(const string &albumName)
+int32_t MediaFileUtils::CheckAlbumNameCharacter(const string &albumName, const string &regexRule)
 {
-    CHECK_AND_RETURN_RET_LOG(!RegexCheck(albumName, ALBUM_NAME_REGEX), -EINVAL,
+    CHECK_AND_RETURN_RET_LOG(!RegexCheck(albumName, regexRule), -EINVAL,
         "Failed to check album name regex: %{private}s", albumName.c_str());
     return E_OK;
 }

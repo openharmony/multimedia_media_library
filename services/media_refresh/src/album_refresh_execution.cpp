@@ -271,7 +271,8 @@ int32_t AlbumRefreshExecution::GetUpdateValues(ValuesBucket &values, const Album
     data.coverUriSource = albumInfo.coverUriSource_;
     data.hiddenCoverDateTime = albumInfo.hiddenCoverDateTime_;
     if (!isHidden && (subtype == PhotoAlbumSubType::USER_GENERIC ||
-        subtype == PhotoAlbumSubType::SOURCE_GENERIC) && isRefreshWithDateModified_) {
+        (subtype >= PhotoAlbumSubType::SOURCE_START && subtype <= PhotoAlbumSubType::SOURCE_END))
+        && isRefreshWithDateModified_) {
         data.shouldUpdateDateModified = true; // 非隐藏全量刷新时，说明相册封面有变化，需要设置
     }
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();

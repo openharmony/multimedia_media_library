@@ -66,6 +66,8 @@
 #include "create_analysis_album_vo.h"
 #include "analysis_album_attribute_request_utils.h"
 #include "media_change_request_utils.h"
+#include "album_change_set_hidden_attribute_vo.h"
+#include "album_change_set_album_name_by_file_vo.h"
 
 using namespace std;
 using namespace OHOS::Security::AccessToken;
@@ -114,6 +116,8 @@ napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("setIsMe", JSSetIsMe),
             DECLARE_NAPI_FUNCTION("dismiss", JSDismiss),
             DECLARE_NAPI_FUNCTION("operateAttribute", JSOperateAttribute),
+            DECLARE_NAPI_FUNCTION("setHiddenAttribute", JSSetHiddenAttribute),
+            DECLARE_NAPI_FUNCTION("setAlbumNameByFile", JSSetAlbumNameByFile),
             DECLARE_NAPI_STATIC_FUNCTION("setUploadStatus", JSSetUploadStatus),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -2558,6 +2562,108 @@ static bool CreateAnalysisAlbumExecute(MediaAlbumChangeRequestAsyncContext& cont
     return true;
 }
 
+napi_value MediaAlbumChangeRequestNapi::JSSetHiddenAttribute(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "Called by non-system application.");
+        return nullptr;
+    }
+
+    auto asyncContext = std::make_unique<MediaAlbumChangeRequestAsyncContext>();
+    napi_status status = MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_TWO);
+    CHECK_COND_WITH_ERR_MESSAGE(env, status == napi_ok, JS_E_PARAM_INVALID, "Scene parameters validate failed.");
+
+    bool hiddenState = false;
+    bool inherited = false;
+    CHECK_COND_WITH_ERR_MESSAGE(env,
+        MediaLibraryNapiUtils::GetParamBool(env, asyncContext->argv[0], hiddenState) == napi_ok &&
+        MediaLibraryNapiUtils::GetParamBool(env, asyncContext->argv[1], inherited) == napi_ok,
+        JS_E_PARAM_INVALID, "Scene parameters validate failed.");
+
+    auto changeRequest = asyncContext->objectInfo;
+    CHECK_COND(env, changeRequest != nullptr && changeRequest->GetPhotoAlbumInstance() != nullptr, JS_E_PARAM_INVALID);
+
+    changeRequest->GetPhotoAlbumInstance()->SetFileHidden(hiddenState);
+    changeRequest->hiddenInherited_ = inherited;
+    changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::SET_HIDDEN_ATTRIBUTE);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
+static bool SetHiddenAttributeExecute(MediaAlbumChangeRequestAsyncContext& context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetHiddenAttributeExecute");
+
+    auto changeRequest = context.objectInfo;
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, false, "Target album does not exist.");
+
+    AlbumChangeSetHiddenAttributeReqBody reqBody;
+    reqBody.albumId = photoAlbum->GetAlbumId();
+    reqBody.fileHidden = photoAlbum->IsFileHidden();
+    reqBody.inherited = changeRequest->hiddenInherited_;
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_CHANGE_SET_HIDDEN_ATTRIBUTE);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        int32_t errCode = MediaLibraryNapiUtils::TransErrorCode("SetHiddenAttributeExecute", changedRows);
+        context.SaveError(errCode);
+        NAPI_ERR_LOG("SetHiddenAttributeExecute failed, err: %{public}d", errCode);
+        return false;
+    }
+    return true;
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSSetAlbumNameByFile(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "Called by non-system application.");
+        return nullptr;
+    }
+
+    auto asyncContext = std::make_unique<MediaAlbumChangeRequestAsyncContext>();
+    std::string albumName;
+    napi_status status = MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, albumName);
+    CHECK_COND_WITH_ERR_MESSAGE(env, status == napi_ok && asyncContext->argc == 1,
+        JS_E_PARAM_INVALID, "Scene parameters validate failed.");
+
+    auto changeRequest = asyncContext->objectInfo;
+    CHECK_COND(env, changeRequest != nullptr && changeRequest->GetPhotoAlbumInstance() != nullptr, JS_E_PARAM_INVALID);
+
+    CHECK_COND_WITH_ERR_MESSAGE(env, MediaFileUtils::CheckAlbumName(albumName, true) == E_OK,
+        JS_E_PARAM_INVALID, "Invalid album name.");
+
+    changeRequest->GetPhotoAlbumInstance()->SetAlbumName(albumName);
+    changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::SET_ALBUM_NAME_BY_FILE);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
+static bool SetAlbumNameByFileExecute(MediaAlbumChangeRequestAsyncContext& context)
+{
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
+
+    AlbumChangeSetAlbumNameByFileReqBody reqBody;
+    reqBody.albumId = photoAlbum->GetAlbumId();
+    reqBody.albumName = photoAlbum->GetAlbumName();
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_CHANGE_SET_ALBUM_NAME_BY_FILE);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        int32_t errCode = MediaLibraryNapiUtils::TransErrorCode("SetAlbumNameByFileExecute", changedRows);
+        context.SaveError(errCode);
+        NAPI_ERR_LOG("SetAlbumNameByFileExecute failed, err: %{public}d", errCode);
+        return false;
+    }
+    return true;
+}
+
 static const unordered_map<AlbumChangeOperation, bool (*)(MediaAlbumChangeRequestAsyncContext&)> EXECUTE_MAP = {
     { AlbumChangeOperation::CREATE_ALBUM, CreateAlbumExecute },
     { AlbumChangeOperation::ADD_ASSETS, AddAssetsExecute },
@@ -2576,6 +2682,8 @@ static const unordered_map<AlbumChangeOperation, bool (*)(MediaAlbumChangeReques
     { AlbumChangeOperation::SET_HIGHLIGHT_ATTRIBUTE, SetHighlightAttributeExecute },
     { AlbumChangeOperation::SMART_MOVE_ASSETS, SmartMoveAssetsExecute },
     { AlbumChangeOperation::CREATE_ANALYSIS_ALBUM, CreateAnalysisAlbumExecute },
+    { AlbumChangeOperation::SET_HIDDEN_ATTRIBUTE, SetHiddenAttributeExecute },
+    { AlbumChangeOperation::SET_ALBUM_NAME_BY_FILE, SetAlbumNameByFileExecute },
 };
 
 static void ApplyAlbumChangeRequestExecute(napi_env env, void* data)

@@ -78,6 +78,7 @@ group("test") {
     "unittest/media_library_lcd_aging_test:unittest",
     "unittest/medialibrary_backup_test:unittest",
     "unittest/media_assets_controller_service_test:unittest",
+    "unittest/media_file_manager_test:unittest",
   ]
 
   deps_cloud_sync_unittest = [
@@ -106,6 +107,18 @@ group("test") {
   } else {
     deps_cloud_sync_unittest = []
   }
+
+  if (media_library_lake_enable) {
+    deps += [
+      "unittest/media_lake_file_monitor_test:unittest",
+      "unittest/media_lake_load_test:unittest",
+    ]
+  }
+  if (media_library_file_manager_enable || media_library_lake_enable) {
+    deps += [
+      "unittest/media_file_access_load_test:unittest",
+    ]
+  }  
 
   if (media_library_feature_cloud_download) {
     deps += [
@@ -180,8 +193,7 @@ group("test") {
       "unittest/media_notification_test:unittest",
       "unittest/picture_handle_service_test:unittest",
       "unittest/medialibrary_graph_db_ipc_test:unittest",
-      "unittest/media_lake_file_monitor_test:unittest",
-      "unittest/media_lake_load_test:unittest",
+      "unittest/media_file_manager_test:unittest",
       "unittest/medialibrary_analysis_progress_test:unittest",
       "unittest/white_list_check_utils_test:unittest",
       "unittest/media_library_related_system_state_test:unittest",

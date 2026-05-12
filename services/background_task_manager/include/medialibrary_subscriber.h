@@ -151,10 +151,12 @@ private:
     void UpdateCloudMediaAssetDownloadStatus(const AAFwk::Want &want, const StatusEventType statusEventType);
     void UpdateCurrentStatus();
     void UpdateThumbnailBgGenerationStatus();
+    void UpdateFileManagerThumbnailTaskStatus();
 #ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE
     bool UpdateCheckCriticalTypeStatus();
 #endif
     void UpdateMediaInLakeCheckStatus();
+    void UpdateConsistencyCheckStatus();
     void DoFillUUIDOfPhotoAndAlbums();
     void CheckHalfDayMissions();
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD

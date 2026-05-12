@@ -894,62 +894,6 @@ static bool QueryPhotoThumbnailVolumn(int32_t photoId, size_t& queryResult)
     return true;
 }
 
-static int32_t CreateAlbum()
-{
-    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("uniStore is nullptr!");
-        return 0;
-    }
-    std::string insertSql = "INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
-        PhotoAlbumColumns::ALBUM_TYPE +", " + PhotoAlbumColumns::ALBUM_SUBTYPE + ", " +
-        PhotoAlbumColumns::ALBUM_NAME + ", " + PhotoAlbumColumns::ALBUM_LPATH +
-        ") VALUES (0, 1, '新建相册001', '/Pictures/Users/新建相册001')";
-    auto ret = uniStore->ExecuteSql(insertSql);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("create album failed");
-        return 0;
-    }
-
-    const string sql = "SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE +
-        " ORDER BY " + PhotoAlbumColumns::ALBUM_ID + " DESC LIMIT 1";
-    auto resultSet = uniStore->QuerySql(sql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("resultSet is null!");
-        return 0;
-    }
-    int32_t albumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID,
-        resultSet, TYPE_INT32));
-    if (albumId < 0) {
-        MEDIA_ERR_LOG("Invalid albumId from database: %{public}d", albumId);
-        return 0;
-    }
-    return albumId;
-}
-
-static int64_t QueryAlbumDateModifiedById(int32_t albumId)
-{
-    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("uniStore is nullptr!");
-        return 0;
-    }
-
-    const string sql = "SELECT " + PhotoAlbumColumns::ALBUM_DATE_MODIFIED + " FROM " + PhotoAlbumColumns::TABLE +
-        " WHERE " + PhotoAlbumColumns::ALBUM_ID + " = " + to_string(albumId);
-    auto resultSet = uniStore->QuerySql(sql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("resultSet is null!");
-        return 0;
-    }
-    int64_t datemodified = GetInt64Val(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, resultSet);
-    if (datemodified < 0) {
-        MEDIA_ERR_LOG("Invalid datemodified from database: %{public}" PRId64, datemodified);
-        return 0;
-    }
-    return datemodified;
-}
-
 static void InsertAsset()
 {
     std::string insertSql = R"S(INSERT INTO Photos(data, size, title, display_name, media_type, position, is_temp,
@@ -1025,6 +969,36 @@ const string CHAR256_ENGLISH =
 const string CHAR256_CHINESE =
     "中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中"
     "中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中";
+
+static int32_t CreateSourceAlbumForFileManager(const string &albumName, const string &albumLPath)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr!");
+        return 0;
+    }
+
+    std::string insertSql = "INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
+        PhotoAlbumColumns::ALBUM_TYPE + ", " + PhotoAlbumColumns::ALBUM_SUBTYPE + ", " +
+        PhotoAlbumColumns::ALBUM_NAME + ", " + PhotoAlbumColumns::ALBUM_LPATH +
+        ") VALUES (" + to_string(PhotoAlbumType::SOURCE) + ", " +
+        to_string(PhotoAlbumSubType::SOURCE_GENERIC_FROM_FILEMANAGER) + ", '" + albumName + "', '" +
+        albumLPath + "')";
+    auto ret = uniStore->ExecuteSql(insertSql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("create source album failed");
+        return 0;
+    }
+
+    const string sql = "SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE +
+        " ORDER BY " + PhotoAlbumColumns::ALBUM_ID + " DESC LIMIT 1";
+    auto resultSet = uniStore->QuerySql(sql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("resultSet is null!");
+        return 0;
+    }
+    return get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID, resultSet, TYPE_INT32));
+}
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_001, TestSize.Level2)
 {
@@ -1792,54 +1766,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_006, Test
     TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
         { { PhotoColumn::PHOTO_WIDTH, "12345"} });
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_006");
-}
-
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_007, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_007");
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
-    ValuesBucket values1;
-    string name = "moving_photo_effect_mode.jpg";
-    values1.PutString(PhotoColumn::MEDIA_NAME, name);
-    values1.PutInt(PhotoColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
-    values1.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int>(PhotoSubType::MOVING_PHOTO));
-    cmd.SetValueBucket(values1);
-    MediaLibraryPhotoOperations::Create(cmd);
-    int32_t fileId = QueryPhotoIdByDisplayName("moving_photo_effect_mode.jpg");
-    ASSERT_GE(fileId, 0);
-
-    DataSharePredicates predicates;
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
-    DataShareValuesBucket values2;
-    values2.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, 1);
-    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
-    int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(updateCmd, values2, predicates);
-    EXPECT_EQ(changedRows, 1);
-    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_007");
-}
-
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_008, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_008");
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
-    ValuesBucket values1;
-    string name = "moving_photo_effect_mode_image_only.jpg";
-    values1.PutString(PhotoColumn::MEDIA_NAME, name);
-    values1.PutInt(PhotoColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
-    values1.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int>(PhotoSubType::MOVING_PHOTO));
-    cmd.SetValueBucket(values1);
-    MediaLibraryPhotoOperations::Create(cmd);
-    int32_t fileId = QueryPhotoIdByDisplayName("moving_photo_effect_mode_image_only.jpg");
-    ASSERT_GE(fileId, 0);
-
-    DataSharePredicates predicates;
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
-    DataShareValuesBucket values2;
-    values2.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, 10);
-    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
-    int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(updateCmd, values2, predicates);
-    EXPECT_EQ(changedRows, 1);
-    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_008");
 }
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_009, TestSize.Level2)
@@ -2769,49 +2695,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, multistages_capture_test_001, TestSize
     EXPECT_EQ(deferredProcType, 0);
 
     MEDIA_INFO_LOG("end tdd multistages_capture_test_001");
-}
-
-HWTEST_F(MediaLibraryPhotoOperationsTest, multistages_capture_test_002, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("start tdd multistages_capture_test_002");
-
-    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "MultiStagesCaptureTest001.jpg");
-    EXPECT_GT(fileId, E_OK);
-
-    // Update
-    MediaLibraryCommand cmd_u(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE,
-        MediaLibraryApi::API_10);
-    ValuesBucket values;
-    values.Put(PhotoColumn::PHOTO_QUALITY, 1);
-    values.Put(PhotoColumn::PHOTO_ID, "20231031001");
-    values.Put(PhotoColumn::PHOTO_FIRST_VISIT_TIME, 20231031002);
-    values.Put(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, 1);
-    cmd_u.SetValueBucket(values);
-    cmd_u.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
-    EXPECT_GT(MediaLibraryPhotoOperations::Update(cmd_u), E_OK);
-
-    // check update result
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
-    DataSharePredicates predicates;
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
-    cmd.SetDataSharePred(predicates);
-    vector<string> columns { MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_QUALITY,
-        PhotoColumn::PHOTO_FIRST_VISIT_TIME, PhotoColumn::PHOTO_DEFERRED_PROC_TYPE };
-    auto resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
-    ASSERT_NE(resultSet, nullptr);
-    EXPECT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
-    string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
-    EXPECT_EQ(name, "MultiStagesCaptureTest001.jpg");
-    int photoQuality = GetInt32Val(PhotoColumn::PHOTO_QUALITY, resultSet);
-    EXPECT_EQ(photoQuality, 1);
-    string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
-    EXPECT_EQ(photoId, "20231031001");
-    int64_t firstVisitTime = GetInt64Val(PhotoColumn::PHOTO_FIRST_VISIT_TIME, resultSet);
-    EXPECT_EQ(firstVisitTime, 20231031002);
-    int deferredProcType = GetInt32Val(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, resultSet);
-    EXPECT_EQ(deferredProcType, 1);
-
-    MEDIA_INFO_LOG("end tdd multistages_capture_test_002");
 }
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_001, TestSize.Level2)
@@ -4096,32 +3979,41 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_read_moving_photo_metadata_
     MEDIA_INFO_LOG("end tdd photo_oprn_read_moving_photo_metadata_test");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_date_modified_001, TestSize.Level2)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_revert_edit_insert_test_003, TestSize.Level2)
 {
-    MEDIA_INFO_LOG("start tdd photo_oprn_update_date_modified_001");
-    int32_t albumId = CreateAlbum();
-    EXPECT_GT(albumId, 0);
-    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    EXPECT_GE(fileId, 0);
-
-    unordered_map<string, string> updateMap1 = {{ PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId) }};
-    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId), updateMap1, [] (int32_t result) {
-        EXPECT_GE(result, E_OK);
-    });
-
-    std::string newDisplayName = "photo_oprn_update_date_modified_001.jpg";
-    unordered_map<string, string> updateMap2 = {
-        { PhotoColumn::MEDIA_NAME, newDisplayName },
-        { PhotoColumn::MEDIA_TITLE, MediaFileUtils::GetTitleFromDisplayName(newDisplayName) }
-    };
-    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId), updateMap2, [] (int32_t result) {
-        EXPECT_GE(result, E_OK);
-    });
-
-    int64_t datemodified = QueryAlbumDateModifiedById(albumId);
-    EXPECT_GT(datemodified, 0);
-
-    MEDIA_INFO_LOG("end tdd photo_oprn_update_date_modified_001");
+    MEDIA_INFO_LOG("start tdd photo_revert_edit_insert_test_003");
+    int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "moving_photo.jpg", true);
+    ASSERT_GT(fileId, 0);
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::REVERT_EDIT,
+        MediaLibraryApi::API_10);
+    ValuesBucket values;
+    values.PutInt(PhotoColumn::MEDIA_ID, fileId);
+    int32_t ret = SetPendingOnly(0, fileId);
+    MEDIA_INFO_LOG("here1");
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("here2");
+    cmd.SetValueBucket(values);
+    EXPECT_EQ(MediaLibraryPhotoOperations::RevertToOrigin(cmd), E_OK);
+    MEDIA_INFO_LOG("here3");
+    string fileName;
+    int32_t fd = OpenCacheFile(false, fileName);
+    EXPECT_GE(fd, 0);
+    MEDIA_INFO_LOG("here4");
+    string videoFileName;
+    int32_t videoFd = OpenCacheFile(false, videoFileName);
+    EXPECT_GE(videoFd, 0);
+    MEDIA_INFO_LOG("here5");
+    ret = MovingPhotoEditByCache(fileId, fileName, videoFileName);
+    EXPECT_EQ(ret, E_FILE_OPER_FAIL);
+    MEDIA_INFO_LOG("here6");
+    UpdateEditTime(fileId, MediaFileUtils::UTCTimeSeconds());
+    EXPECT_EQ(MediaLibraryPhotoOperations::RevertToOrigin(cmd), E_OK);
+    MEDIA_INFO_LOG("here7");
+    ret = MovingPhotoEditByCache(fileId, fileName, videoFileName, true);
+    EXPECT_EQ(ret, fileId);
+    MEDIA_INFO_LOG("here8");
+    EXPECT_EQ(MediaLibraryPhotoOperations::RevertToOrigin(cmd), E_OK);
+    MEDIA_INFO_LOG("end tdd photo_revert_edit_insert_test_003");
 }
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, cinematic_video_oprn_open_api10_test_001, TestSize.Level2)
@@ -5566,6 +5458,40 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, SetLivePhoto4dStatus_test_009, TestSiz
 
     MEDIA_INFO_LOG("SetLivePhoto4dStatus_test_009 end, ret1: %{public}d, ret2: %{public}d, dbStatus: %{public}d",
         ret1, ret2, dbStatus2);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_file_manager_album_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("start tdd asset_oprn_create_api10_file_manager_album_test_001");
+    const string albumName = "TddFileManagerAlbum";
+    const string albumLPath = "/FromDocs/Download/TddFileManagerAlbum";
+    int32_t albumId = CreateSourceAlbumForFileManager(albumName, albumLPath);
+    ASSERT_GT(albumId, 0);
+
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    ValuesBucket values;
+    values.PutString(MediaColumn::MEDIA_NAME, "file_manager_asset.jpg");
+    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    values.PutString(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
+    cmd.SetValueBucket(values);
+
+    int32_t fileId = MediaLibraryPhotoOperations::Create(cmd);
+    ASSERT_GT(fileId, 0);
+
+    unordered_map<string, string> verifyMap = {
+        { PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId) },
+        { PhotoColumn::PHOTO_STORAGE_PATH,
+            "/storage/media/local/files/Docs/Download/TddFileManagerAlbum/file_manager_asset.jpg" },
+        { PhotoColumn::PHOTO_FILE_SOURCE_TYPE, to_string(static_cast<int32_t>(FileSourceType::FILE_MANAGER)) },
+    };
+    EXPECT_TRUE(QueryAndVerifyPhotoAsset(PhotoColumn::MEDIA_ID, to_string(fileId), verifyMap));
+
+    AbsRdbPredicates rbdPredicates(PhotoColumn::PHOTOS_TABLE);
+    rbdPredicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
+    int32_t ret = MediaLibraryAssetOperations::DeletePermanently(rbdPredicates, true);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("end tdd asset_oprn_create_api10_file_manager_album_test_001");
 }
 } // namespace Media
 } // namespace OHOS

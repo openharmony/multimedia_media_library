@@ -61,6 +61,22 @@ struct SetCoverUriAlbumInfo {
     int32_t dirty;
 };
 
+struct RenameAlbumInput {
+    std::shared_ptr<MediaLibraryRdbStore> rdbStore;
+    int32_t oldAlbumId;
+    int32_t oldAlbumType;
+    const std::string& newAlbumName;
+    std::vector<std::string>& fileIdsInAlbum;
+    std::shared_ptr<TransactionOperations> trans;
+    std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh;
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh;
+};
+
+struct RenameAlbumOutput {
+    int64_t newAlbumId = -1;
+    bool argInvalid = false;
+};
+
 class MediaLibraryAlbumOperations {
 public:
     static int32_t CreateAlbumOperation(MediaLibraryCommand &cmd);
@@ -97,7 +113,7 @@ public:
     static int32_t SetHighlightAlbumName(const NativeRdb::ValuesBucket &values,
         const DataShare::DataSharePredicates &predicates);
     static int32_t HandleSetAlbumNameRequest(const NativeRdb::ValuesBucket &values,
-        const DataShare::DataSharePredicates &predicates);
+        const DataShare::DataSharePredicates &predicates, bool useDotCompatibleRule = false);
     static int32_t SetCoverUri(const NativeRdb::ValuesBucket &values,
         const DataShare::DataSharePredicates &predicates);
     static int32_t SetHighlightCoverUri(const NativeRdb::ValuesBucket &values,
@@ -131,6 +147,7 @@ public:
         const vector<NativeRdb::RdbPredicates> &predicatesArray);
     static int32_t CreatePortraitAlbum(const string &albumName);
     static int32_t GetPortraitAlbumExtraInfo(const int32_t &albumId, string &extraInfo);
+    static int32_t AlbumChangeSetHiddenAttribute(int32_t albumId, bool fileHidden, bool inherited);
     // ReuseId: if > 0, try to reuse the deleted album id; Otherwise query for an existing id;
     // Gatekeep that no duplicate lpath will be created.
     // Returns the created album id, or negative value if failed.

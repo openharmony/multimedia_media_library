@@ -22,6 +22,7 @@
 #include "user_define_ipc.h"
 #include "medialibrary_errno.h"
 #include "media_assets_delete_service.h"
+#include "clone_to_album_service.h"
 
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -39,6 +40,8 @@ public:
     EXPORT int32_t DeletePhotosCompleted(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t AssetChangeSetFavorite(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t AssetChangeSetHidden(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t AssetChangeSetHiddenAttribute(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t AssetChangeSetDisplayNameByFile(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t AssetChangeSetUserComment(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t AssetChangeSetLocation(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t AssetChangeSetTitle(MessageParcel &data, MessageParcel &reply);
@@ -150,6 +153,15 @@ public:
     EXPORT int32_t GetCompatibleInfo(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t SetMovingPhotoVersion(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetTranscodeCheckInfo(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t ConvertToAsset(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t CloneToAlbum(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t CloneToDir(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t CloneAssetByPath(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t CloneToAlbumCancel(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t CancelTask(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t MoveAssetsToDir(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t MoveAssetsByPath(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t CreateFileManagerAsset(MessageParcel &data, MessageParcel &reply);
     
 public:
     virtual ~MediaAssetsControllerService() = default;
@@ -161,6 +173,7 @@ public:
 
 private:
     Common::MediaAssetsDeleteService mediaAssetsDeleteService_;
+    CloneToAlbumService cloneToAlbumService_;
 };
 } // namespace OHOS::Media
 #endif  // OHOS_MEDIA_ASSETS_CONTROLLER_SERVICE_H

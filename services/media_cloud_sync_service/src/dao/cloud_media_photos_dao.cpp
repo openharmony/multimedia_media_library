@@ -37,9 +37,14 @@
 #include "photos_field_iterator.h"
 #include "hi_audit.h"
 #include "photo_owner_album_id_operation.h"
-#include "lake_file_utils.h"
 #include "photo_album_upload_status_operation.h"
 #include "media_string_utils.h"
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+#include "file_scan_utils.h"
+#endif
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+#include "media_file_access_utils.h"
+#endif
 
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
@@ -2044,7 +2049,10 @@ void CloudMediaPhotosDao::UpdateMediaAnalysisHdcData()
 
 bool CloudMediaPhotosDao::IsLocalFileExists(const PhotosDto &record)
 {
-    std::string cloudFilePath = LakeFileUtils::GetAssetRealPath(record.path);
+    std::string cloudFilePath = record.path;
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+    cloudFilePath = MediaFileAccessUtils::GetAssetRealPath(record.path);
+#endif
     bool isValid = !cloudFilePath.empty();
     CHECK_AND_RETURN_RET_LOG(isValid, false, "cloudFilePath empty, record: %{public}s", record.ToString().c_str());
     std::string localFilePath = CloudMediaSyncUtils::GetLocalPath(cloudFilePath);

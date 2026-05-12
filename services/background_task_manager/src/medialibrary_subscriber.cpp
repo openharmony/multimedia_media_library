@@ -32,6 +32,12 @@
 #include "common_event_utils.h"
 #include "dfx_cloud_manager.h"
 #include "dfx_moving_photo.h"
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+#include "global_scanner.h"
+#include "media_lake_check_manager.h"
+#include "media_lake_clone_event_manager.h"
+#include "product_info.h"
+#endif
 
 #include "post_event_utils.h"
 #ifdef HAS_POWER_MANAGER_PART
@@ -84,12 +90,17 @@
 #include "database_adapter.h"
 #include "product_info.h"
 #include "permission_whitelist_utils.h"
+#include "thumbnail_service.h"
 #include "cloud_media_retain_smart_data.h"
 #include "power_mgr_client.h"
 #include "power_mode_info.h"
 #include "lcd_aging_manager.h"
 #include "lcd_aging_worker.h"
 #include "lcd_download_task.h"
+#include "consistency_check_manager.h"
+#ifdef MEDIALIBRARY_FILE_MGR_SUPPORT
+#include "media_fileinterwork_scanner.h"
+#endif
 
 using namespace OHOS::AAFwk;
 using namespace OHOS::NetManagerStandard;
@@ -529,11 +540,12 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
     UpdateCheckCriticalTypeStatus();
 #endif
     UpdateThumbnailBgGenerationStatus();
-    UpdateMediaInLakeCheckStatus();
+    UpdateFileManagerThumbnailTaskStatus();
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_DOWNLOAD
     UpdateBackgroundTimer();
 #endif
     DealWithEventsAfterUpdateStatus(statusEventType);
+    UpdateConsistencyCheckStatus();
 }
 
 void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadStatus(const AAFwk::Want &want,
@@ -1059,6 +1071,19 @@ void MedialibrarySubscriber::UpdateMediaInLakeCheckStatus()
     }
 }
 
+void MedialibrarySubscriber::UpdateConsistencyCheckStatus()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    ConsistencyCheck::DeviceStatus deviceStatus = {
+        .isScreenOff = isScreenOff_,
+        .isCharging = isCharging_,
+        .isBackgroundTaskAllowed = isBackgroundTaskAllowed_,
+        .batteryCapacity = batteryCapacity_,
+        .temperature = newTemperatureLevel_
+    };
+    ConsistencyCheckManager::GetInstance().OnDeviceStatusChanged(deviceStatus);
+}
+
 void MedialibrarySubscriber::DoFillUUIDOfPhotoAndAlbums()
 {
     MEDIA_INFO_LOG("Begin DoFillUUIDOfPhotoAndAlbums");
@@ -1164,6 +1189,9 @@ void MedialibrarySubscriber::DoBackgroundOperationStepTwo()
     DfxManager::GetInstance()->HandleOneWeekMissions();
     PhotoDayMonthYearOperation::RepairDateTime();
     MediaLibraryAspectRatioOperation::UpdateAspectRatioValue();
+#ifdef MEDIALIBRARY_FILE_MGR_SUPPORT
+    MediaFileInterworkScanner::GetInstance()->ScanFileManager();
+#endif
     backgroundTaskFactory_.Execute();
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     CloudEnhancementChecker::RecognizeCloudEnhancementPhotosByDisplayName();
@@ -1247,6 +1275,19 @@ void MedialibrarySubscriber::UpdateThumbnailBgGenerationStatus()
             newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_40);
         StopThumbnailBgOperation();
     }
+}
+
+// 更新FileManager缩略图任务状态，温度电量恢复时触发任务恢复
+void MedialibrarySubscriber::UpdateFileManagerThumbnailTaskStatus()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    MEDIA_DEBUG_LOG("Temperature or battery changed, check restore condition. "
+        "Temperature: %{public}d, Battery: %{public}d%%",
+        newTemperatureLevel_, batteryCapacity_);
+
+    // 调用ThumbnailService的恢复接口（内部会检查温度电量恢复条件）
+    ThumbnailService::GetInstance()->RestoreFileManagerThumbnailTasks();
 }
 
 #ifdef MEDIALIBRARY_SECURE_ALBUM_ENABLE

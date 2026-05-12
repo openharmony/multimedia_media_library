@@ -32,7 +32,9 @@
 #include "ffrt_inner.h"
 #include "directory_ex.h"
 #include "ithumbnail_helper.h"
-#include "lake_file_utils.h"
+#ifdef MEDIALIBRARY_LAKE_SUPPORT
+#include "file_scan_utils.h"
+#endif
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
@@ -55,6 +57,7 @@
 #ifdef MEDIALIBRARY_FEATURE_ANALYSIS_DATA
 #include "analysis_data_vision_dao.h"
 #endif
+#include "media_file_access_utils.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -972,15 +975,17 @@ void RepairExifRotateBackgroundTask(std::shared_ptr<ThumbnailTaskData> &data)
     thumbnailData.loaderOpts.loadingStates = SourceLoader::UPGRADE_SOURCE_LOADING_STATES;
     ThumbnailUtils::RecordStartGenerateStats(thumbnailData.stats, GenerateScene::REPAIR,
         LoadSourceType::LOCAL_PHOTO);
+    string realPath = thumbnailData.path;
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+    realPath = MediaFileAccessUtils::GetAssetRealPath(thumbnailData.path);
+#endif
     if (thumbnailData.mediaType == MediaType::MEDIA_TYPE_IMAGE) {
-        MediaImageFrameWorkUtils::GetExifRotate(LakeFileUtils::GetAssetRealPath(thumbnailData.path),
-            thumbnailData.exifRotate);
+        MediaImageFrameWorkUtils::GetExifRotate(realPath, thumbnailData.exifRotate);
         if (thumbnailData.exifRotate != static_cast<int32_t>(ExifRotateType::TOP_LEFT)) {
             needRegenerateThumbnail = true;
         }
     } else {
-        MediaPlayerFrameWorkUtils::GetExifRotate(LakeFileUtils::GetAssetRealPath(thumbnailData.path),
-            thumbnailData.exifRotate);
+        MediaImageFrameWorkUtils::GetExifRotate(realPath, thumbnailData.exifRotate);
         if (ExifRotateUtils::IsExifRotateWithFlip(thumbnailData.exifRotate)) {
             needRegenerateThumbnail = true;
             dirtyType = DirtyType::TYPE_FDIRTY;

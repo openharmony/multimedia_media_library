@@ -263,7 +263,7 @@ HWTEST_F(GetAssetsTest, GetAssets_Test_002, TestSize.Level0)
 
     ASSERT_NE(resultSet, nullptr);
     ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
-    ASSERT_NE(GetInt32Val(MediaColumn::MEDIA_ID, resultSet), fileId);
+    ASSERT_EQ(GetInt32Val(MediaColumn::MEDIA_ID, resultSet), fileId);
 }
 
 HWTEST_F(GetAssetsTest, GetAssets_Test_003, TestSize.Level0)
@@ -292,7 +292,7 @@ HWTEST_F(GetAssetsTest, GetAssets_Test_004, TestSize.Level0)
 
     ASSERT_NE(resultSet, nullptr);
     ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
-    ASSERT_NE(GetInt32Val(MediaColumn::MEDIA_ID, resultSet), fileId);
+    ASSERT_EQ(GetInt32Val(MediaColumn::MEDIA_ID, resultSet), fileId);
 }
 
 HWTEST_F(GetAssetsTest, GetAssets_Test_005, TestSize.Level0)
@@ -394,7 +394,7 @@ HWTEST_F(GetAssetsTest, GetAssets_CloudFilter_Test_002, TestSize.Level0)
     ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
 
     int32_t position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
-    EXPECT_NE(position, static_cast<int32_t>(PhotoPositionType::LOCAL));
+    EXPECT_EQ(position, static_cast<int32_t>(PhotoPositionType::LOCAL));
 }
 
 HWTEST_F(GetAssetsTest, GetBurstAssets_CloudFilter_Test_001, TestSize.Level0)
@@ -416,13 +416,9 @@ HWTEST_F(GetAssetsTest, GetBurstAssets_CloudFilter_Test_001, TestSize.Level0)
     ASSERT_NE(resultSet, nullptr);
 
     int32_t count = 0;
-    if (resultSet->GoToFirstRow() == E_OK) {
-        do {
-            int32_t position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
-            EXPECT_NE(position, static_cast<int32_t>(PhotoPositionType::CLOUD));
-            count++;
-        } while (resultSet->GoToNextRow() == E_OK);
-    }
+    auto ret = resultSet->GetRowCount(count);
+    ASSERT_EQ(ret, NativeRdb::E_OK);
+    EXPECT_EQ(count, 2);
     MEDIA_INFO_LOG("GetBurstAssets_CloudFilter_Test_001 result count: %{public}d", count);
 }
 
@@ -440,6 +436,6 @@ HWTEST_F(GetAssetsTest, GetBurstAssets_CloudFilter_Test_002, TestSize.Level0)
     int32_t result = GetBurstAssets(burstKey, resultSet);
     ASSERT_EQ(result, 0);
     ASSERT_NE(resultSet, nullptr);
-    ASSERT_NE(resultSet->GoToFirstRow(), E_OK);
+    ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
 }
 }  // namespace OHOS::Media

@@ -18,6 +18,9 @@
 #include "media_albums_service.h"
 
 #include <string>
+#include <map>
+#include <sys/stat.h>
+
 #include "analysis_album_attribute_dispatcher.h"
 #include "analysis_album_attribute_request_utils.h"
 #include "medialibrary_album_operations.h"
@@ -1054,4 +1057,31 @@ void MediaAlbumsService::ReportCloneDbStatus()
     }
 }
 
+int32_t MediaAlbumsService::AlbumChangeSetHiddenAttribute(const AlbumChangeSetHiddenAttributeDto &dto)
+{
+    bool valid =
+        (dto.albumType == PhotoAlbumType::USER && dto.albumSubType == PhotoAlbumSubType::USER_GENERIC) ||
+        (dto.albumType == PhotoAlbumType::SOURCE && dto.albumSubType == PhotoAlbumSubType::SOURCE_GENERIC) ||
+        (dto.albumType == PhotoAlbumType::SOURCE &&
+            dto.albumSubType == PhotoAlbumSubType::SOURCE_GENERIC_FROM_FILEMANAGER);
+    CHECK_AND_RETURN_RET_LOG(valid, E_INVALID_VALUES, "Invalid albumType or albumSubType");
+    return MediaLibraryAlbumOperations::AlbumChangeSetHiddenAttribute(dto.albumId, dto.fileHidden, dto.inherited);
+}
+
+int32_t MediaAlbumsService::AlbumChangeSetAlbumNameByFile(const AlbumChangeSetAlbumNameByFileDto &dto)
+{
+    bool valid =
+        (dto.albumType == PhotoAlbumType::USER && dto.albumSubType == PhotoAlbumSubType::USER_GENERIC) ||
+        (dto.albumType == PhotoAlbumType::SOURCE && dto.albumSubType == PhotoAlbumSubType::SOURCE_GENERIC) ||
+        (dto.albumType == PhotoAlbumType::SOURCE &&
+            dto.albumSubType == PhotoAlbumSubType::SOURCE_GENERIC_FROM_FILEMANAGER);
+    CHECK_AND_RETURN_RET_LOG(valid, E_INVALID_VALUES, "Invalid albumType or albumSubType");
+
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, dto.albumId);
+    values.Put(PhotoAlbumColumns::ALBUM_NAME, dto.albumName);
+    return MediaLibraryAlbumOperations::HandleSetAlbumNameRequest(values, predicates, true);
+    return E_OK;
+}
 } // namespace OHOS::Media

@@ -30,6 +30,8 @@ enum class NotifyForUserDefineType {
     UNDEFINED = 0,
     MULTISTAGES_CAPTURE = 1,
     LOW_QUALITY_MEMORY = 2,
+    MOVE_ASSETS_TO_DIR_PROGRESS = 3,  // 移动资产进度通知（合并大小和数量进度）
+    MOVE_ASSETS_BY_PATH_PROGRESS = 4,
 };
  
 class EXPORT UserDefineNotifyBase : public Parcelable {
@@ -61,6 +63,13 @@ public:
 public:
     NotifyUriType notifyUri_{NotifyUriType::USER_DEFINE_NOTIFY_URI};
     NotifyForUserDefineType notifyUserDefineType_{NotifyForUserDefineType::UNDEFINED};
+    
+    // 进度通知相关字段
+    std::string requestId;          // 请求ID，用于标识本次操作
+    int64_t currentSize = 0;        // 当前已移动大小（字节）
+    int64_t totalSize = 0;          // 总大小（字节）
+    int32_t currentCount = 0;       // 当前已移动数量
+    int32_t totalCount = 0;         // 总数量
 
 private:
     std::shared_ptr<UserDefineNotifyBase> notifyBody_;

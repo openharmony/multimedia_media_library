@@ -960,6 +960,14 @@ static int32_t TransCommonErrorCode(int error)
         case E_PARAM_CONVERT_FORMAT:
         case E_ACQ_BETA_TASK_FAIL:
         case E_MAX_ON_SINGLE_NUM:
+        case E_SCENE_PARAM_INVALID:
+        case E_SCENE_HAS_DELETED:
+        case E_SCENE_IS_HIDDEN:
+        case E_SCENE_IS_CLOUD:
+        case E_SCENE_ALBUM_NOT_EXIST:
+        case E_SCENE_NO_ENOUGH_SPACE:
+        case E_SCENE_HAS_RENAMED:
+        case E_SCENE_HAS_CANCEL:
             return JS_E_PARAM_INVALID;
 
         case E_INNER_CONVERT_FORMAT:
@@ -997,6 +1005,19 @@ int MediaLibraryNapiUtils::TransErrorCode(const string &Name, int error)
         return OHOS_PERMISSION_DENIED_CODE;
     } else if (trans2JsError.count(error)) {
         return trans2JsError.at(error);
+    }
+    return error;
+}
+
+int MediaLibraryNapiUtils::TransMoveErrorCode(const string &Name, int error)
+{
+    NAPI_ERR_LOG("interface: %{public}s, server errcode:%{public}d ", Name.c_str(), error);
+    if (error <= E_COMMON_START && error >= E_COMMON_END) {
+        return TransCommonErrorCode(error);
+    } else if (error == E_PERMISSION_DENIED) {
+        return OHOS_PERMISSION_DENIED_CODE;
+    } else if (transMove2JsError.count(error)) {
+        return transMove2JsError.at(error);
     }
     return error;
 }

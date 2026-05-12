@@ -261,10 +261,52 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_006, T
     EXPECT_EQ(MediaFileUtils::CheckDisplayName(displayName), 0);
 }
 
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_007, TestSize.Level1)
+{
+    string displayName = ".hidden.jpg";
+    EXPECT_EQ(MediaFileUtils::CheckDisplayName(displayName, false, true), E_OK);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_008, TestSize.Level1)
+{
+    string displayName = "test..jpg";
+    EXPECT_LT(MediaFileUtils::CheckDisplayName(displayName, false, true), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_009, TestSize.Level1)
+{
+    string displayName = "test.test.jpg";
+    EXPECT_LT(MediaFileUtils::CheckDisplayName(displayName, true, false), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_010, TestSize.Level1)
+{
+    string displayName = "test_test.jpg";
+    EXPECT_EQ(MediaFileUtils::CheckDisplayName(displayName, true, false), E_OK);
+}
+
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckFileDisplayName_Test_001, TestSize.Level1)
 {
     string displayName = "test.test.jpg";
     EXPECT_EQ(MediaFileUtils::CheckFileDisplayName(displayName), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckAlbumName_Test_001, TestSize.Level1)
+{
+    EXPECT_LT(MediaFileUtils::CheckAlbumName(".", true), 0);
+    EXPECT_LT(MediaFileUtils::CheckAlbumName("..", true), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckAlbumName_Test_002, TestSize.Level1)
+{
+    EXPECT_LT(MediaFileUtils::CheckAlbumName("..jpg", true), 0);
+    EXPECT_LT(MediaFileUtils::CheckAlbumName("...jpg", true), 0);
+    EXPECT_LT(MediaFileUtils::CheckAlbumName("good..jpg", true), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckAlbumName_Test_003, TestSize.Level1)
+{
+    EXPECT_EQ(MediaFileUtils::CheckAlbumName("good.good.jpg", true), E_OK);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetAlbumDateModified_Test_001, TestSize.Level1)

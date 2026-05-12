@@ -209,6 +209,7 @@ string PhotoAssetChangeInfo::ToString(bool isDetail) const
         ss << ", mimeType_: " << mimeType_ << ", shootingMode_: " << shootingMode_;
         ss << ", frontCamera_: " << frontCamera_ << ", movingPhotoEffectMode_: " << movingPhotoEffectMode_;
         ss << ", livephoto4dStatus_: " << livephoto4dStatus_ << ", dateModifiedMs_: " << dateModifiedMs_;
+        ss << ", file_source_type: " << fileSourceType_;
         AlbumChangeInfosToString(ss, albumChangeInfos_);
     } else {
         ss << "fileId_: " << fileId_ << ", ownerAlbumId_: " << ownerAlbumId_;
@@ -263,6 +264,7 @@ bool PhotoAssetChangeInfo::Marshalling(Parcel &parcel, bool isSystem) const
         ret = ret && parcel.WriteInt64(size_);
         ret = ret && MarshallingAlbumChangeInfos(parcel);
         ret = ret && parcel.WriteInt32(livephoto4dStatus_);
+        ret = ret && parcel.WriteInt32(fileSourceType_);
     }
     return ret;
 }
@@ -315,6 +317,7 @@ bool PhotoAssetChangeInfo::ReadFromParcel(Parcel &parcel)
         ret = ret && parcel.ReadInt64(size_);
         ret = ret && ReadAlbumChangeInfos(parcel);
         ret = ret && parcel.ReadInt32(livephoto4dStatus_);
+        ret = ret && parcel.ReadInt32(fileSourceType_);
     }
     return ret;
 }
@@ -364,6 +367,7 @@ PhotoAssetChangeInfo& PhotoAssetChangeInfo::operator=(const PhotoAssetChangeInfo
         frontCamera_ = info.frontCamera_;
         albumChangeInfos_ = info.albumChangeInfos_;
         livephoto4dStatus_ = info.livephoto4dStatus_;
+        fileSourceType_ = info.fileSourceType_;
     }
     return *this;
 }
@@ -402,7 +406,8 @@ bool PhotoAssetChangeInfo::operator==(const PhotoAssetChangeInfo &info) const
         movingPhotoEffectMode_ == info.movingPhotoEffectMode_ &&
         frontCamera_ == info.frontCamera_ &&
         livephoto4dStatus_ == info.livephoto4dStatus_ &&
-        albumChangeInfos_ == info.albumChangeInfos_;
+        albumChangeInfos_ == info.albumChangeInfos_ &&
+        fileSourceType_ == info.fileSourceType_;
 }
 
 bool PhotoAssetChangeInfo::operator!=(const PhotoAssetChangeInfo &info) const
@@ -454,11 +459,11 @@ string PhotoAssetChangeInfo::GetAssetDiff(const PhotoAssetChangeInfo &asset, con
     GET_ASSET_DIFF(position_);
     GET_ASSET_DIFF(size_);
     GET_ASSET_DIFF(livephoto4dStatus_);
+    GET_ASSET_DIFF(fileSourceType_);
     if (asset.displayName_ != compare.displayName_) {
         ss << "displayName_: " << MediaFileUtils::DesensitizeName(asset.displayName_) << " -> ";
         ss << MediaFileUtils::DesensitizeName(compare.displayName_) << ", ";
     }
-
     if (asset.path_ != compare.path_) {
         ss << "path_: " << MediaFileUtils::DesensitizePath(asset.path_) << " -> ";
         ss << MediaFileUtils::DesensitizePath(compare.path_);
