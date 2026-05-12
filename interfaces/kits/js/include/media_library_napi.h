@@ -297,6 +297,7 @@ private:
     EXPORT static napi_value CreatePhotoRiskStatusEnum(napi_env env);
     EXPORT static napi_value CreateAppLinkStateEnum(napi_env env);
     EXPORT static napi_value CreateLivePhoto4dStatusEnum(napi_env env);
+    EXPORT static napi_value CreateAvailabilityStatusEnum(napi_env env);
 
     EXPORT static napi_value CreatePhotoKeysEnum(napi_env env);
     EXPORT static napi_value CreateHiddenPhotosDisplayModeEnum(napi_env env);
@@ -565,6 +566,7 @@ private:
     static thread_local napi_ref sVideoModeRef_;
     static thread_local napi_ref sAppLinkStateRef_;
     static thread_local napi_ref sLivePhoto4dStatusEnumRef_;
+    static thread_local napi_ref sAvailabilityStatusEnumRef_;
 
     static std::mutex sOnOffMutex_;
     static std::mutex thumbnailMutex_;
