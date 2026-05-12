@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <unordered_set>
 
 #include "backup_database_utils.h"
 #include "rdb_store.h"
@@ -352,5 +353,89 @@ std::unordered_set<std::string> PhotosDao::GetExistingData(const std::vector<std
     }
     resultSet->Close();
     return existingData;
+}
+
+std::shared_ptr<NativeRdb::ResultSet> PhotosDao::QueryCloneFileInfo(const std::vector<int32_t> &fileSourceTypes)
+{
+    CHECK_AND_RETURN_RET(mediaLibraryRdb_ != nullptr, nullptr);
+
+    std::string selection;
+    for (const auto &fileSourceType : fileSourceTypes) {
+        BackupDatabaseUtils::UpdateSelection(selection, std::to_string(fileSourceType), true);
+    }
+    std::string querySql =  MediaStringUtils::FillParams(SQL_GET_CLONE_FILE_INFO, { selection });
+    return BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, querySql);
+}
+
+static void BatchInsertCloneFileInfo(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string tableName,
+    std::vector<NativeRdb::ValuesBucket> &values, int64_t &totalFailCount)
+{
+    CHECK_AND_RETURN_LOG(!values.empty(), "input ValuesBucket is empty");
+    int64_t rowNum = 0;
+    int32_t ret = BackupDatabaseUtils::BatchInsert(rdbStore, tableName, values, rowNum);
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "LakeClone: BatchInsert file info fail, ret = %{public}d", ret);
+    if (rowNum != static_cast<int64_t>(values.size())) {
+        totalFailCount += static_cast<int64_t>(values.size()) - rowNum;
+    }
+}
+    
+int32_t PhotosDao::InsertCloneFileInfo(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+    std::shared_ptr<NativeRdb::ResultSet> resultSet, AncoFileListClone ancoFileListClone,
+    FileManagerFileListClone fileManagerFileListClone)
+{
+    CHECK_AND_RETURN_RET(rdbStore != nullptr, NativeRdb::E_ERROR);
+    CHECK_AND_RETURN_RET(resultSet != nullptr, NativeRdb::E_ERROR);
+
+    std::vector<NativeRdb::ValuesBucket> lakeValues;
+    std::vector<NativeRdb::ValuesBucket> fileManagerValues;
+    int32_t unexpectedCount = 0;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        NativeRdb::ValuesBucket value;
+        value.PutInt(MediaColumn::MEDIA_ID, GetInt32Val(MediaColumn::MEDIA_ID, resultSet));
+        value.PutString(PhotoColumn::CLONE_FILE_INFO_PATH, GetStringVal(PhotoColumn::PHOTO_STORAGE_PATH, resultSet));
+        value.PutString(MediaColumn::MEDIA_NAME, GetStringVal(MediaColumn::MEDIA_NAME, resultSet));
+        value.PutInt(MediaColumn::MEDIA_TYPE, GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet));
+        value.PutLong(MediaColumn::MEDIA_SIZE, GetInt64Val(MediaColumn::MEDIA_SIZE, resultSet));
+        value.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet));
+        int32_t fileSourceType = GetInt32Val(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, resultSet);
+        if (fileSourceType == FileSourceType::MEDIA_HO_LAKE &&
+                ancoFileListClone == AncoFileListClone::ANCO_FILE_LIST_CLONE_SUPPORTED) {
+            lakeValues.push_back(value);
+        } else if (fileSourceType == FileSourceType::FILE_MANAGER &&
+            fileManagerFileListClone == FileManagerFileListClone::FILE_MANAGER_FILE_LIST_CLONE_SUPPORTED) {
+            fileManagerValues.push_back(value);
+        } else {
+            MEDIA_WARN_LOG("Unexpected file source: %{public}d", fileSourceType);
+            unexpectedCount++;
+        }
+    }
+    resultSet->Close();
+    int64_t totalFailCount = 0;
+    BatchInsertCloneFileInfo(rdbStore, LAKE_FILE_INFO_TABLE, lakeValues, totalFailCount);
+    BatchInsertCloneFileInfo(rdbStore, FILE_MANAGER_INFO_TABLE, fileManagerValues, totalFailCount);
+    MEDIA_INFO_LOG("LakeClone: InsertCloneFileInfo finished, lake: %{public}zu, fileManager: %{public}zu, "
+        "unexpectedCount: %{public}d, failed: %{public}" PRId64, lakeValues.size(), fileManagerValues.size(),
+        unexpectedCount, totalFailCount);
+    return NativeRdb::E_OK;
+}
+
+int32_t PhotosDao::GetCloneFileInfo(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+    AncoFileListClone ancoFileListClone, FileManagerFileListClone fileManagerFileListClone)
+{
+    CHECK_AND_RETURN_RET(rdbStore != nullptr, NativeRdb::E_ERROR);
+
+    std::vector<int32_t> fileSourceTypes;
+    if (ancoFileListClone == AncoFileListClone::ANCO_FILE_LIST_CLONE_SUPPORTED) {
+        fileSourceTypes.push_back(FileSourceType::MEDIA_HO_LAKE);
+    }
+    if (fileManagerFileListClone == FileManagerFileListClone::FILE_MANAGER_FILE_LIST_CLONE_SUPPORTED) {
+        fileSourceTypes.push_back(FileSourceType::FILE_MANAGER);
+    }
+    CHECK_AND_RETURN_RET(!fileSourceTypes.empty(), NativeRdb::E_OK);
+
+    auto resultSet = QueryCloneFileInfo(fileSourceTypes);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, NativeRdb::E_ERROR, "PhotosDao::GetCloneFileInfo fail");
+
+    return InsertCloneFileInfo(rdbStore, resultSet, ancoFileListClone, fileManagerFileListClone);
 }
 }  // namespace OHOS::Media

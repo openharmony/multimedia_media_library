@@ -18,7 +18,9 @@
 #include <string>
 #include <vector>
 
+#include "backup_const.h"
 #include "photos_dao.h"
+#include "rdb_open_callback.h"
 
 namespace OHOS::Media {
 class PhotosBackup {
@@ -31,10 +33,15 @@ public:
         int32_t cloudVideoCount {0};
         int32_t audioCount {0};
         size_t totalSize {0};
+        int32_t lakePhotoCount{0};
+        int32_t lakeVideoCount{0};
+        size_t lakeTotalSize{0};
         std::string ToString() const;
     };
 
     PhotosBackup(int32_t sceneCode, const std::string &taskId, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+    int32_t CreateCloneFileInfoDb(AncoFileListClone ancoFileListClone,
+        FileManagerFileListClone fileManagerFileListClone);
     std::string GetBackupInfo();
 
 private:

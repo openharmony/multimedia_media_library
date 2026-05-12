@@ -24,6 +24,7 @@ namespace OHOS::Media {
 class FileAdapter {
 public:
     static bool IsLakeFile(const FileInfo &fileInfo);
+    static bool IsFileManagerFile(const FileInfo &fileInfo);
     static std::string GetOriginalFilePath(const FileInfo &fileInfo);
 };
 }  // namespace OHOS::Media

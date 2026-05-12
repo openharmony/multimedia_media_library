@@ -1609,5 +1609,36 @@ void BackupDatabaseUtils::UpdateVideoTotalFaceId(
     CHECK_AND_RETURN_LOG(errCode >= 0, "execute UpdateVideoTotalFaceId failed, ret=%{public}d", errCode);
     MEDIA_DEBUG_LOG("succeed to UpdateVideoTotalFaceId");
 }
+
+int32_t CloneFileInfoRestoreDbCallBack::OnCreate(NativeRdb::RdbStore &rdbStore)
+{
+    MEDIA_INFO_LOG("CloneFileInfoRestoreDbCallBack::OnCreate database should already exist, not create new");
+    return NativeRdb::E_OK;
+}
+
+int32_t CloneFileInfoDbCallBack::OnCreate(NativeRdb::RdbStore &rdbStore)
+{
+    MEDIA_INFO_LOG("CloneFileInfoDbCallBack::OnCreate ancoFileListClone: %{public}d, fileManagerFileListClone: "
+        "%{public}d", static_cast<int32_t>(ancoFileListClone_), static_cast<int32_t>(fileManagerFileListClone_));
+
+    std::vector<std::string> tablesToCreate;
+    if (ancoFileListClone_ == AncoFileListClone::ANCO_FILE_LIST_CLONE_SUPPORTED) {
+        tablesToCreate.push_back(LAKE_FILE_INFO_TABLE);
+    }
+    if (fileManagerFileListClone_ != FileManagerFileListClone::FILE_MANAGER_FILE_LIST_CLONE_NONE) {
+        tablesToCreate.push_back(FILE_MANAGER_INFO_TABLE);
+    }
+    for (const auto &tableName : tablesToCreate) {
+        std::string createTableSql = MediaStringUtils::FillParams(SQL_CREATE_FILE_INFO_TABLE_FOR_CLONE, { tableName });
+        int32_t ret = rdbStore.ExecuteSql(createTableSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("LakeClone: Failed to create %{public}s table, ret: %{public}d", tableName.c_str(), ret);
+            return ret;
+        }
+        MEDIA_INFO_LOG("LakeClone: Create %{public}s table success", tableName.c_str());
+    }
+    MEDIA_INFO_LOG("LakeClone: Create cloneFileInfoDB success");
+    return NativeRdb::E_OK;
+}
 } // namespace Media
 } // namespace OHOS

@@ -443,6 +443,77 @@ void CloneRestore::ParseDstDeviceBackupInfo()
     MEDIA_INFO_LOG("dstDeviceBackupInfo_.hdcEnabled: %{public}d", dstDeviceBackupInfo_.hdcEnabled);
 }
 
+void CloneRestore::ParseSrcDevFileListCloneConfig()
+{
+    MEDIA_INFO_LOG("ParseSrcDevFileListCloneConfig, restoreInfo_:%{public}s", restoreInfo_.c_str());
+    srcDevFileListCloneConfig_.ancoFileListClone = AncoFileListClone::ANCO_FILE_LIST_CLONE_NONE;
+    srcDevFileListCloneConfig_.fileManagerFileListClone = FileManagerFileListClone::FILE_MANAGER_FILE_LIST_CLONE_NONE;
+
+    CHECK_AND_RETURN_WARN_LOG(!restoreInfo_.empty(), "restoreInfo_ is empty");
+
+    nlohmann::json jsonArray = nlohmann::json::parse(restoreInfo_, nullptr, false);
+    CHECK_AND_RETURN_LOG(!jsonArray.is_discarded(), "ParseSrcDevFileListCloneConfig parse restoreInfo_ failed");
+    CHECK_AND_RETURN_LOG(jsonArray.is_array(), "restoreInfo_ jsonArray not array");
+
+    for (const auto& item : jsonArray) {
+        bool cond = (!item.contains("type") || !item.contains("detail"));
+        CHECK_AND_CONTINUE(!cond);
+        cond = (!item["type"].is_string() || !item["detail"].is_string());
+        CHECK_AND_CONTINUE(!cond);
+        std::string isSupportClone;
+        if (item["type"] == BACKUP_SRC_DEV_ANCO_FILE_LIST_CLONE_KEY) {
+            isSupportClone = item["detail"].get<std::string>();
+            CHECK_AND_CONTINUE_ERR_LOG(MediaLibraryDataManagerUtils::IsNumber(isSupportClone),
+                "input anco_file_list_clone value not number");
+            srcDevFileListCloneConfig_.ancoFileListClone =
+                static_cast<AncoFileListClone>(std::stoi(isSupportClone));
+        } else if (item["type"] == BACKUP_SRC_DEV_FILE_MANAGER_FILE_LIST_CLONE_KEY) {
+            isSupportClone = item["detail"].get<std::string>();
+            CHECK_AND_CONTINUE_ERR_LOG(MediaLibraryDataManagerUtils::IsNumber(isSupportClone),
+                "input file_manager_file_list_clone value not number");
+            srcDevFileListCloneConfig_.fileManagerFileListClone =
+                static_cast<FileManagerFileListClone>(std::stoi(isSupportClone));
+        }
+    }
+    MEDIA_INFO_LOG("LakeClone: ancoFileListClone: %{public}d, fileManagerFileListClone: %{public}d",
+        static_cast<int32_t>(srcDevFileListCloneConfig_.ancoFileListClone),
+        static_cast<int32_t>(srcDevFileListCloneConfig_.fileManagerFileListClone));
+    UpgradeRestoreTaskReport(sceneCode_, taskId_)
+        .ReportFileListCloneConfig(srcDevFileListCloneConfig_.ancoFileListClone,
+            srcDevFileListCloneConfig_.fileManagerFileListClone);
+}
+
+void CloneRestore::ParseDstDevFileTransferConfig()
+{
+    MEDIA_INFO_LOG("LakeClone: ParseDstDevFileTransferConfig, restoreInfo_:%{public}s", restoreInfo_.c_str());
+    dstDevFileTransferConfig_.ancoFileTransfer = AncoFileTransfer::ANCO_FILE_TRANSFER_NONE;
+
+    CHECK_AND_RETURN_WARN_LOG(!restoreInfo_.empty(), "restoreInfo_ is empty");
+
+    nlohmann::json jsonArray = nlohmann::json::parse(restoreInfo_, nullptr, false);
+    CHECK_AND_RETURN_LOG(!jsonArray.is_discarded(), "ParseDstDevFileTransferConfig parse restoreInfo_ failed");
+    CHECK_AND_RETURN_LOG(jsonArray.is_array(), "restoreInfo_ jsonArray not array");
+
+    for (const auto& item : jsonArray) {
+        bool cond = (!item.contains("type") || !item.contains("detail"));
+        CHECK_AND_CONTINUE(!cond);
+        cond = (!item["type"].is_string() || !item["detail"].is_string());
+        CHECK_AND_CONTINUE(!cond);
+        if (item["type"] == BACKUP_DST_DEV_ANCO_FILE_TRANSFER_KEY) {
+            std::string isSupportTransfer = item["detail"].get<std::string>();
+            CHECK_AND_CONTINUE_ERR_LOG(MediaLibraryDataManagerUtils::IsNumber(isSupportTransfer),
+                "LakeClone: input anco_file_transfer value not number");
+            dstDevFileTransferConfig_.ancoFileTransfer =
+                static_cast<AncoFileTransfer>(std::stoi(isSupportTransfer));
+            break;
+        }
+    }
+    MEDIA_INFO_LOG("LakeClone: ancoFileTransfer: %{public}d",
+        static_cast<int32_t>(dstDevFileTransferConfig_.ancoFileTransfer));
+    UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_)
+        .ReportFileTransferConfig(dstDevFileTransferConfig_.ancoFileTransfer);
+}
+
 bool CloneRestore::BackupPreprocess()
 {
     ParseDstDeviceBackupInfo();
@@ -633,9 +704,11 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
     srcCloneRestoreConfigInfo_ = GetCloneConfigInfoFromOriginDB();
     dstCloneRestoreConfigInfo_ = GetCurrentDeviceCloneConfigInfo();
     CheckSrcDstSwitchStatusMatch();
+    ParseDstDevFileTransferConfig();
     InitThumbnailStatus();
     this->photoAlbumClone_.OnStart(this->mediaRdb_, this->mediaLibraryRdb_, IsCloudRestoreSatisfied());
     this->photosClone_.OnStart(this->mediaLibraryRdb_, this->mediaRdb_);
+    this->photosClone_.SetRestoreInfo(this->sceneCode_, this->taskId_);
     cloneRestoreGeoDictionary_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
@@ -644,6 +717,7 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
 void CloneRestore::RestorePhoto()
 {
     MEDIA_INFO_LOG("Start clone restore: photos");
+    this->photosClone_.InitDeduplicationInfo();
     CHECK_AND_RETURN_LOG(IsReadyForRestore(PhotoColumn::PHOTOS_TABLE),
         "Column status is not ready for restore photo, quit");
     unordered_map<string, string> srcColumnInfoMap = BackupDatabaseUtils::GetColumnInfoMap(mediaRdb_,
@@ -903,8 +977,8 @@ void CloneRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fi
     SetVisiblePhoto(fileInfos);
     migrateFileNumber_ += fileMoveCount - lakeFileMoveCount;
     migrateVideoFileNumber_ += videoFileMoveCount - lakeVideoFileMoveCount;
-    migrateLakeFileNumber_ += lakeFileMoveCount;
-    migrateLakeVideoFileNumber_ += lakeVideoFileMoveCount;
+    migrateLakePhotoNumber_ += lakeFileMoveCount - lakeVideoFileMoveCount;
+    migrateLakeVideoNumber_ += lakeVideoFileMoveCount;
 }
 
 static void UpdateThumbnailStatusToFailed(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, std::string id,
@@ -1366,7 +1440,9 @@ vector<FileInfo> CloneRestore::QueryFileInfos(int32_t offset, int32_t isRelatedT
         CHECK_AND_EXECUTE(!ParseResultSet(resultSet, fileInfo), result.emplace_back(fileInfo));
     }
     resultSet->Close();
-    this->photosClone_.SetFilePath(result);
+    if (!isRelatedToPhotoMap) {
+        this->photosClone_.SetFilePath(result, dstDevFileTransferConfig_.ancoFileTransfer);
+    }
     return result;
 }
 
@@ -2666,8 +2742,8 @@ void CloneRestore::RestoreGallery()
         (long long)migrateDatabaseNumber_, (long long)migrateFileNumber_,
         (long long)(migrateFileNumber_ - migrateVideoFileNumber_), (long long)migrateVideoFileNumber_,
         (long long)migratePhotoDuplicateNumber_, (long long)migrateVideoDuplicateNumber_,
-        (long long)(migrateLakeFileNumber_),
-        (long long)(migrateLakeFileNumber_ - migrateLakeVideoFileNumber_), (long long)migrateLakeVideoFileNumber_,
+        (long long)(migrateLakePhotoNumber_ + migrateLakeVideoNumber_),
+        (long long)migrateLakePhotoNumber_, (long long)migrateLakeVideoNumber_,
         (long long)migrateLakePhotoDuplicateNumber_, (long long)migrateLakeVideoDuplicateNumber_,
         (long long)migrateDatabaseAlbumNumber_, (long long)migrateDatabaseMapNumber_);
     MEDIA_INFO_LOG("singlCloud Start update group tags");
@@ -2681,6 +2757,7 @@ void CloneRestore::RestoreGallery()
     RestoreAnalysisDupSim();
     // selection clone is dependent on dup_sim clone
     RestoreAnalysisSelection();
+    QueryAndSetLakeFileFailCount();
     ReportInvalidLocalFiles();
     ReportRestoreTaskofLakeFiles();
     InheritManualCover();
@@ -3249,6 +3326,31 @@ void CloneRestore::CloseAllKvStore()
     newYearKvStorePtr_ != nullptr && newYearKvStorePtr_->Close();
 }
 
+void CloneRestore::CreateCloneFileInfoDb()
+{
+    ParseSrcDevFileListCloneConfig();
+    if (srcDevFileListCloneConfig_.ancoFileListClone == AncoFileListClone::ANCO_FILE_LIST_CLONE_SUPPORTED ||
+        srcDevFileListCloneConfig_.fileManagerFileListClone ==
+        FileManagerFileListClone::FILE_MANAGER_FILE_LIST_CLONE_SUPPORTED) {
+        PhotosBackup photoBackup(sceneCode_, taskId_, mediaLibraryRdb_);
+        int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+        int32_t ret = photoBackup.CreateCloneFileInfoDb(
+            srcDevFileListCloneConfig_.ancoFileListClone,
+            srcDevFileListCloneConfig_.fileManagerFileListClone);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("LakeClone: Failed to create cloneFileInfoDb! ret: %{public}d", ret);
+            SetErrorCode(ret);
+            ErrorInfo errorInfo(ret, 1, std::to_string(ret), "Failed to create cloneFileInfoDb");
+            UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
+        }
+        int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+        MEDIA_INFO_LOG("LakeClone: CreateCloneFileInfoDb cost %{public}ld ms", (long)(end - start));
+    } else {
+        MEDIA_INFO_LOG("LakeClone: ancoFileListClone is %{public}d, not need to create CloneFileInfoDb",
+            static_cast<int32_t>(srcDevFileListCloneConfig_.ancoFileListClone));
+    }
+}
+
 void CloneRestore::StartBackup()
 {
     MEDIA_INFO_LOG("enter clone backup");
@@ -3276,6 +3378,7 @@ void CloneRestore::StartBackup()
     SetParameterForBackup();
     srcCloneRestoreConfigInfo_ = GetCurrentDeviceCloneConfigInfo();
     CHECK_AND_RETURN_LOG(BackupPreprocess(), "backup preprocess failed");
+    CreateCloneFileInfoDb();
     if (!UpdateConfigInfo()) {
         MEDIA_ERR_LOG("update configInfo failed when start backup");
         SetErrorCode(RestoreError::BACKUP_UPDATE_CONFIG_INFO_FAILED);
@@ -3425,7 +3528,7 @@ int32_t CloneRestore::CheckLcdVisitTime(const CloudPhotoFileExistFlag &cloudPhot
 
 void CloneRestore::SetRestoreFailedAndErrorCount(uint64_t &failed, uint64_t &error)
 {
-    uint64_t success = migrateFileNumber_ + migrateLakeFileNumber_;
+    uint64_t success = migrateFileNumber_ + migrateLakePhotoNumber_ + migrateLakeVideoNumber_;
     uint64_t duplicate = migratePhotoDuplicateNumber_ + migrateVideoDuplicateNumber_ +
         migrateLakePhotoDuplicateNumber_ + migrateLakeVideoDuplicateNumber_;
     failed = static_cast<uint64_t>(GetFailedFiles(STAT_TYPE_PHOTO).size() +
@@ -3754,18 +3857,49 @@ void CloneRestore::UpdateDuplicateNumber(const FileInfo &fileInfo)
     MEDIA_ERR_LOG("Unsupported file type: %{public}d", fileInfo.fileType);
 }
 
+void CloneRestore::QueryAndSetLakeFileFailCount()
+{
+    std::unordered_map<std::string, FailedFileInfo> lakePhotoFailedFiles;
+    std::unordered_map<std::string, FailedFileInfo> lakeVideoFailedFiles;
+    this->photosClone_.QueryLakeFileFailInfo(lakePhotoFailedFiles, lakeVideoFailedFiles);
+    
+    migrateLakePhotoFailNumber_ = static_cast<uint64_t>(lakePhotoFailedFiles.size());
+    migrateLakeVideoFailNumber_ = static_cast<uint64_t>(lakeVideoFailedFiles.size());
+    
+    {
+        std::lock_guard<mutex> lock(failedFilesMutex_);
+        for (const auto &pair : lakePhotoFailedFiles) {
+            failedFilesMap_[STAT_TYPE_LAKE_PHOTO].emplace(pair.first, pair.second);
+        }
+        for (const auto &pair : lakeVideoFailedFiles) {
+            failedFilesMap_[STAT_TYPE_LAKE_VIDEO].emplace(pair.first, pair.second);
+        }
+    }
+    
+    MEDIA_INFO_LOG("LakeClone: lakePhotoFailCount: %{public}zu, lakeVideoFailCount: %{public}zu",
+        lakePhotoFailedFiles.size(), lakeVideoFailedFiles.size());
+}
+
 void CloneRestore::ReportRestoreTaskofLakeFiles()
 {
+    auto lakePhotoFailedFiles = GetFailedFiles(STAT_TYPE_LAKE_PHOTO);
+    auto lakeVideoFailedFiles = GetFailedFiles(STAT_TYPE_LAKE_VIDEO);
+    uint64_t totalLakePhotoFailCount = lakePhotoFailedFiles.size();
+    uint64_t totalLakeVideoFailCount = lakeVideoFailedFiles.size();
+    
     RestoreTaskInfo info;
     info.type = "ANCO_CLONE";
     info.errorCode = std::to_string(E_OK);
-    info.errorInfo = "Success photo: " + std::to_string(migrateLakeFileNumber_ - migrateLakeVideoFileNumber_) +
-        ", video: " + std::to_string(migrateLakeVideoFileNumber_) +
+    info.errorInfo = "Success photo: " + std::to_string(migrateLakePhotoNumber_) +
+        ", video: " + std::to_string(migrateLakeVideoNumber_) +
         ", duplicate photo: " + std::to_string(migrateLakePhotoDuplicateNumber_) +
-        ", video: " + std::to_string(migrateLakeVideoDuplicateNumber_);
-    info.successCount = static_cast<int32_t>(migrateLakeFileNumber_);
-    info.duplicateCount = static_cast<int32_t>(migrateLakePhotoDuplicateNumber_) +
-        static_cast<int32_t>(migrateLakeVideoDuplicateNumber_);
+        ", video: " + std::to_string(migrateLakeVideoDuplicateNumber_) +
+        ", fail photo: " + std::to_string(totalLakePhotoFailCount) +
+        ", video: " + std::to_string(totalLakeVideoFailCount);
+    info.successCount = static_cast<int64_t>(migrateLakePhotoNumber_ + migrateLakeVideoNumber_);
+    info.duplicateCount = static_cast<int64_t>(migrateLakePhotoDuplicateNumber_) +
+        static_cast<int64_t>(migrateLakeVideoDuplicateNumber_);
+    info.failedCount = static_cast<int64_t>(totalLakePhotoFailCount + totalLakeVideoFailCount);
     UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).Report(info);
 }
 
