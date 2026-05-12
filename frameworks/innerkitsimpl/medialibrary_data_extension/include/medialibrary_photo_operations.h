@@ -91,6 +91,11 @@ struct DownloadThumbInfo {
     bool isDownloadLcd {false};
 };
 
+enum class ServiceShareType : int32_t {
+    ASSET_LEVEL = 0,
+    NON_ASSET_LEVEL,
+};
+
 class DownloadThumbData : public AsyncTaskData {
 public:
     DownloadThumbData(const std::vector<DownloadThumbInfo> &downloadThumbInfos)
@@ -198,6 +203,8 @@ public:
     EXPORT static int32_t ScanExistFileRecord(int32_t fileId, const std::string &path);
     EXPORT static void StoreThumbnailInfoAsync(const std::vector<DownloadThumbInfo> &downloadThumbInfos);
     EXPORT static std::string GetLivePhotoCachePathById(const std::string &fileId);
+    EXPORT static int32_t NotifyAssetSended(const std::string &uri,
+        ServiceShareType shareType = ServiceShareType::ASSET_LEVEL);
 private:
     static int32_t HandleAssetRenameAndMove(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset> fileAsset,
         bool isNameChanged, AccurateRefresh::AccurateRefreshBase &baseRefresh);

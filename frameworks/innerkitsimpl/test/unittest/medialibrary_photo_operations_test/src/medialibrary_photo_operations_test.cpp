@@ -5493,5 +5493,14 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_file_manager_a
     EXPECT_EQ(ret, 0);
     MEDIA_INFO_LOG("end tdd asset_oprn_create_api10_file_manager_album_test_001");
 }
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, NotifyAssetSended_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("NotifyAssetSended_test_001::Start");
+    string uri = "file://media/Photo/1";
+    int32_t ret = MediaLibraryPhotoOperations::NotifyAssetSended(uri);
+    EXPECT_GE(ret, 0);
+    MEDIA_INFO_LOG("NotifyAssetSended_test_001::End");
+}
 } // namespace Media
 } // namespace OHOS
