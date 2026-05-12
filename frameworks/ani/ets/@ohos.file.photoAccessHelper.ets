@@ -2687,6 +2687,8 @@ export namespace photoAccessHelper {
     setAssetCompatibleCapability(bundleName: string, config: AssetCompatibleCapability): Promise<void>;
     setAssetCompatibleCapability(config: AssetCompatibleCapability): Promise<void>;
     getAssetCompatibleCapability(bundleName: string): Promise<AssetCompatibleCapability>;
+    onMediaLibraryAvailability(callback: Callback<MediaLibraryAvailability>): void;
+    offMediaLibraryAvailability(callback?: Callback<MediaLibraryAvailability>): void;
     getAlbumIdByLpath(lpath: string): Promise<int>;
     getAlbumIdByBundleName(bundleName: string): Promise<int>;
     getAssetCompatibleUris(bundleName: string, assets: Array<PhotoAsset>, compatibleFlags?: int): Promise<string[]>;
@@ -4279,6 +4281,8 @@ export namespace photoAccessHelper {
     native setFileCompatibleConfigSysInner(bundleName: string, config: AssetCompatibleCapability): void;
     native setFileCompatibleConfigInner(config: AssetCompatibleCapability): void;
     native getAssetCompatibleConfigInner(bundleName: string): AssetCompatibleCapability;
+    native onMediaLibraryAvailability(callback: Callback<MediaLibraryAvailability>): void;
+    native offMediaLibraryAvailability(callback?: Callback<MediaLibraryAvailability>): void;
     native getAlbumIdByLpathInner(lpath: string): int;
     native getAlbumIdByBundleNameInner(bundleName: string): int;
     native getAssetCompatibleUrisInner(bundleName: string, assets: Array<PhotoAsset>, compatibleFlags?: int): string[];
@@ -5808,6 +5812,22 @@ export namespace photoAccessHelper {
     native getFileId(): int;
     native getShareCount(): int;
     native getLcdJumpCount(): int;
+  }
+
+  export interface MediaLibraryAvailability {
+    availabilityStatus: AvailabilityStatus;
+    unavailabilityReason: string;
+  }
+
+  class MediaLibraryAvailabilityHandle implements MediaLibraryAvailability {
+    constructor() {}
+    availabilityStatus: AvailabilityStatus;
+    unavailabilityReason: string;
+  }
+
+  export enum AvailabilityStatus {
+    AVAILABLE = 'available',
+    UNAVAILABLE = 'unavailable'
   }
 
   export class PhotoAssetCustomRecordManager {

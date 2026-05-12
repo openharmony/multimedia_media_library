@@ -385,6 +385,7 @@ thread_local napi_ref MediaLibraryNapi::sVideoModeRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sRiskStatusEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sAppLinkStateRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sLivePhoto4dStatusEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sAvailabilityStatusEnumRef_ = nullptr;
 
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
@@ -501,6 +502,7 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("PhotoRiskStatus", CreatePhotoRiskStatusEnum(env)),
         DECLARE_NAPI_PROPERTY("AppLinkState", CreateAppLinkStateEnum(env)),
         DECLARE_NAPI_PROPERTY("LivePhoto4dStatus", CreateLivePhoto4dStatusEnum(env)),
+        DECLARE_NAPI_PROPERTY("AvailabilityStatus", CreateAvailabilityStatusEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -589,8 +591,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("getAssetCompatibleCapability", PhotoAccessHelperGetAssetCompatibleConfig),
             DECLARE_NAPI_FUNCTION("setPreferredCompatibleMode", PhotoAccessHelperSetPreferredCompatibleMode),
             DECLARE_NAPI_FUNCTION("getPreferredCompatibleMode", PhotoAccessHelperGetPreferredCompatibleMode),
-            DECLARE_NAPI_FUNCTION("onMedialibraryAvailability", AvailabilityRegisterCallback),
-            DECLARE_NAPI_FUNCTION("offMedialibraryAvailability", AvailabilityUnregisterCallback),
+            DECLARE_NAPI_FUNCTION("onMediaLibraryAvailability", AvailabilityRegisterCallback),
+            DECLARE_NAPI_FUNCTION("offMediaLibraryAvailability", AvailabilityUnregisterCallback),
             DECLARE_NAPI_FUNCTION("getAssetCompatibleUris", GetAssetCompatibleUris),
             DECLARE_NAPI_FUNCTION("moveAssetsToDir", MoveAssetsToDir),
             DECLARE_NAPI_FUNCTION("moveAssetsByPath", MoveAssetsByPath),
@@ -9570,6 +9572,11 @@ napi_value MediaLibraryNapi::CreateCompositeDisplayModeEnum(napi_env env)
 napi_value MediaLibraryNapi::CreateLivePhoto4dStatusEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, livePhoto4dStatusTypeEnum, sLivePhoto4dStatusEnumRef_);
+}
+
+napi_value MediaLibraryNapi::CreateAvailabilityStatusEnum(napi_env env)
+{
+    return CreateStringEnumProperty(env, AVAILABILITY_STATUS_ENUM_PROPERTIES, sAvailabilityStatusEnumRef_);
 }
 
 static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info info,
