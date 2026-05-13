@@ -281,24 +281,24 @@ private:
     void CheckSrcDstSwitchStatusMatch();
     bool BackupPreprocess();
     void ParseDstDeviceBackupInfo();
+    void ParseSrcDevFileListCloneConfig();
+    void ParseDstDevFileTransferConfig();
     bool InvalidateHdcCloudData(std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     CloneRestoreConfigInfo GetCurrentDeviceCloneConfigInfo();
     CloneRestoreConfigInfo GetCloneConfigInfoFromOriginDB();
     bool CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus switchStatus);
     void GetLakeInfoInsertValue(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
     void UpdateDuplicateNumber(const FileInfo &fileInfo);
+    void QueryAndSetLakeFileFailCount();
     void ReportRestoreTaskofLakeFiles();
     bool CheckAlbumNameUnique(std::string albumName, const std::vector<string> &repetedAlbumName);
     void UpdateSourceAlbumName(bool &isUinque, vector<AlbumInfo> &albumInfos, vector<string> &repetedAlbumName,
         size_t index);
+    void CreateCloneFileInfoDb();
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};
     std::atomic<uint64_t> migrateDatabaseMapNumber_{0};
-    std::atomic<uint64_t> migrateLakeFileNumber_{0};
-    std::atomic<uint64_t> migrateLakeVideoFileNumber_{0};
-    std::atomic<uint64_t> migrateLakePhotoDuplicateNumber_{0};
-    std::atomic<uint64_t> migrateLakeVideoDuplicateNumber_{0};
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb_;
     std::string filePath_;
     std::string dbPath_;
@@ -335,6 +335,8 @@ private:
     CloneRestoreConfigInfo dstCloneRestoreConfigInfo_;
     CloneRestoreConfigInfo srcCloneRestoreConfigInfo_;
     DstDeviceBackupInfo dstDeviceBackupInfo_;
+    SrcDevFileListCloneConfig srcDevFileListCloneConfig_;
+    DstDevFileTransferConfig dstDevFileTransferConfig_;
     RestorePhotosAlbumHidden restorePhotosAlbumHidden_;
     std::unordered_map<int32_t, uint32_t> scoreMaskMap_;
 

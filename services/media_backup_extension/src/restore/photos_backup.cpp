@@ -14,11 +14,15 @@
  */
 #include "photos_backup.h"
 
+#include "rdb_store.h"
 #include "backup_const_column.h"
 #include "medialibrary_db_const.h"
 #include "media_file_utils.h"
 #include "nlohmann/json.hpp"
 #include "upgrade_restore_task_report.h"
+#include "medialibrary_rdbstore.h"
+#include "media_string_utils.h"
+#include "backup_database_utils.h"
 
 namespace OHOS::Media {
 std::string PhotosBackup::BackupInfo::ToString() const
@@ -47,6 +51,18 @@ std::string PhotosBackup::BackupInfo::ToString() const
         {
             {STAT_KEY_BACKUP_INFO, STAT_TYPE_CLOUD_VIDEO + suffix},
             {STAT_KEY_NUMBER, cloudVideoCount}
+        },
+        {
+            {STAT_KEY_BACKUP_INFO, STAT_TYPE_LAKE_PHOTO + suffix},
+            {STAT_KEY_NUMBER, lakePhotoCount}
+        },
+        {
+            {STAT_KEY_BACKUP_INFO, STAT_TYPE_LAKE_VIDEO + suffix},
+            {STAT_KEY_NUMBER, lakeVideoCount}
+        },
+        {
+            {STAT_KEY_BACKUP_INFO, STAT_TYPE_LAKE_TOTAL_SIZE + suffix},
+            {STAT_KEY_NUMBER, lakeTotalSize}
         }
     };
     return jsonObject.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
@@ -64,7 +80,6 @@ PhotosBackup::PhotosBackup(int32_t sceneCode, const std::string &taskId,
 std::string PhotosBackup::GetBackupInfo()
 {
     std::string backupInfoOfMediaFile = GetBackupInfoOfMediaFile();
-    std::string backupInfoOfLakeFile = GetBackupInfoOfLakeFile();
     return backupInfoOfMediaFile;
 }
 
@@ -83,7 +98,14 @@ std::string PhotosBackup::GetBackupInfoOfMediaFile()
         .cloudVideoCount = photosDao_.GetBackupMediaCount({MediaType::MEDIA_TYPE_VIDEO}, {FileSourceType::MEDIA},
             {static_cast<int32_t>(PhotoPositionType::CLOUD)}),
         .audioCount = photosDao_.GetBackupAudioCount({MediaType::MEDIA_TYPE_AUDIO}),
-        .totalSize = GetBackupTotalSizeOfMediaFile()
+        .totalSize = GetBackupTotalSizeOfMediaFile(),
+        .lakePhotoCount = photosDao_.GetBackupMediaCount({MediaType::MEDIA_TYPE_IMAGE}, {FileSourceType::MEDIA_HO_LAKE},
+            {static_cast<int32_t>(PhotoPositionType::LOCAL),
+             static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD)}),
+        .lakeVideoCount = photosDao_.GetBackupMediaCount({MediaType::MEDIA_TYPE_VIDEO}, {FileSourceType::MEDIA_HO_LAKE},
+            {static_cast<int32_t>(PhotoPositionType::LOCAL),
+             static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD)}),
+        .lakeTotalSize = GetBackupTotalSizeOfLakeFile()
     };
     UpgradeRestoreTaskReport(sceneCode_, taskId_).Report("BACKUP_INFO_MEDIA", "0", backupInfo.ToString());
     return backupInfo.ToString();
@@ -129,5 +151,45 @@ size_t PhotosBackup::GetBackupTotalSizeOfMediaFile()
 size_t PhotosBackup::GetBackupTotalSizeOfLakeFile()
 {
     return static_cast<size_t>(photosDao_.GetAssetTotalSizeByFileSourceType(FileSourceType::MEDIA_HO_LAKE));
+}
+
+static void DeleteCloneFileInfoDb(const std::string dbPath)
+{
+    MEDIA_WARN_LOG("LakeClone: DeleteRdbStore fail, need to delete db manually");
+    MediaFileUtils::DeleteFileOrFolder(dbPath, true);
+    const vector<std::string> fileExtension = {"-compare", "-dwr", "-shm", "-wal"};
+    for (const auto& ext : fileExtension) {
+        string tempFile = dbPath + ext;
+        MediaFileUtils::DeleteFileOrFolder(tempFile, true);
+    }
+}
+
+int32_t PhotosBackup::CreateCloneFileInfoDb(AncoFileListClone ancoFileListClone,
+    FileManagerFileListClone fileManagerFileListClone)
+{
+    std::string CLONE_FILE_INFO_DB_PATH = CLONE_RESTORE_BACKUP_DIR + CLONE_FILE_INFO_DB;
+    MEDIA_INFO_LOG("CreateCloneFileInfoDb start, dbPath: %{private}s", CLONE_FILE_INFO_DB_PATH.c_str());
+
+    if (MediaFileUtils::IsFileExists(CLONE_FILE_INFO_DB_PATH)) {
+        MEDIA_INFO_LOG("CloneFileInfoDb already exists, deleting old db");
+        int32_t deleteRet = NativeRdb::RdbHelper::DeleteRdbStore(CLONE_FILE_INFO_DB_PATH);
+        CHECK_AND_EXECUTE(deleteRet == NativeRdb::E_OK, DeleteCloneFileInfoDb(CLONE_FILE_INFO_DB_PATH));
+    }
+
+    CloneFileInfoDbCallBack rdbDataCallBack(ancoFileListClone, fileManagerFileListClone);
+    NativeRdb::RdbStoreConfig config("");
+    config.SetName(CLONE_FILE_INFO_DB);
+    config.SetPath(CLONE_FILE_INFO_DB_PATH);
+    int32_t err = 0;
+    std::shared_ptr<NativeRdb::RdbStore> rdbStore = NativeRdb::RdbHelper::GetRdbStore(config, 1, rdbDataCallBack, err);
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, RestoreError::CREATE_CLONE_FILE_INFO_DB_FAILED,
+        "CreateCloneFileInfoDb failed, GetRdbStore return nullptr, err: %{public}d", err);
+
+    int32_t ret = photosDao_.GetCloneFileInfo(rdbStore, ancoFileListClone, fileManagerFileListClone);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, RestoreError::GET_CLONE_FILE_INFO_FAILED,
+        "CreateCloneFileInfoDb failed, GetCloneFileInfo return %{public}d", ret);
+
+    MEDIA_INFO_LOG("CreateCloneFileInfoDb success");
+    return NativeRdb::E_OK;
 }
 }

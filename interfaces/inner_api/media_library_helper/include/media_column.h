@@ -301,6 +301,10 @@ public:
 
     // for cloud sync
     static const std::string LCD_ASPECT_RATIO EXPORT;
+
+    // clone file info db
+    static const std::string CLONE_FILE_INFO_PATH EXPORT;
+    static const std::string CLONE_FILE_INFO_NEW_PATH EXPORT;
 };
 
 class PhotoExtColumn {

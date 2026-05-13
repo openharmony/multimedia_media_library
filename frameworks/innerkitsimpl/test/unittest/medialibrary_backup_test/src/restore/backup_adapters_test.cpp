@@ -175,4 +175,65 @@ HWTEST_F(BackupAdaptersTest, FileAdapter_GetOriginalFilePath_Test_006, TestSize.
     EXPECT_EQ(result, fileInfo.cloudPath);
     MEDIA_INFO_LOG("FileAdapter_GetOriginalFilePath_Test_006 end");
 }
+
+HWTEST_F(BackupAdaptersTest, FileAdapter_IsFileManagerFile_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FileAdapter_IsFileManagerFile_Test_001 start");
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::FILE_MANAGER;
+    fileInfo.storagePath = "/storage/emulated/0/Documents/test.pdf";
+    
+    bool result = FileAdapter::IsFileManagerFile(fileInfo);
+    EXPECT_TRUE(result);
+    MEDIA_INFO_LOG("FileAdapter_IsFileManagerFile_Test_001 end");
+}
+
+HWTEST_F(BackupAdaptersTest, FileAdapter_IsFileManagerFile_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FileAdapter_IsFileManagerFile_Test_002 start");
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::MEDIA;
+    fileInfo.storagePath = "/storage/emulated/0/Pictures/test.jpg";
+    
+    bool result = FileAdapter::IsFileManagerFile(fileInfo);
+    EXPECT_FALSE(result);
+    MEDIA_INFO_LOG("FileAdapter_IsFileManagerFile_Test_002 end");
+}
+
+HWTEST_F(BackupAdaptersTest, FileAdapter_IsFileManagerFile_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FileAdapter_IsFileManagerFile_Test_003 start");
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::FILE_MANAGER;
+    fileInfo.storagePath = "";
+    
+    bool result = FileAdapter::IsFileManagerFile(fileInfo);
+    EXPECT_FALSE(result);
+    MEDIA_INFO_LOG("FileAdapter_IsFileManagerFile_Test_003 end");
+}
+
+HWTEST_F(BackupAdaptersTest, FileAdapter_IsFileManagerFile_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FileAdapter_IsFileManagerFile_Test_004 start");
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::FILE_MANAGER;
+    fileInfo.storagePath = "/storage/emulated/0/Documents/test.pdf";
+    fileInfo.hidden = 1;
+    
+    bool result = FileAdapter::IsFileManagerFile(fileInfo);
+    EXPECT_TRUE(result);
+    MEDIA_INFO_LOG("FileAdapter_IsFileManagerFile_Test_004 end");
+}
+
+HWTEST_F(BackupAdaptersTest, FileAdapter_IsFileManagerFile_Test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FileAdapter_IsFileManagerFile_Test_005 start");
+    FileInfo fileInfo;
+    fileInfo.fileSourceType = FileSourceType::MEDIA_HO_LAKE;
+    fileInfo.storagePath = "/storage/emulated/0/Pictures/test.jpg";
+    
+    bool result = FileAdapter::IsFileManagerFile(fileInfo);
+    EXPECT_FALSE(result);
+    MEDIA_INFO_LOG("FileAdapter_IsFileManagerFile_Test_005 end");
+}
 }  // namespace OHOS::Media

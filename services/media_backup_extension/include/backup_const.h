@@ -69,6 +69,30 @@ constexpr int32_t RECYCLE_FLAG_SYNCED = 1;
 constexpr int32_t RECYCLE_FLAG_DELETE_UNSYNCED = -2;
 constexpr int32_t RECYCLE_FLAG_HARD_DELETE_UNSYNCED = -4;
 
+enum AncoFileListClone {
+    ANCO_FILE_LIST_CLONE_NONE = 0,
+    ANCO_FILE_LIST_CLONE_SUPPORTED = 1,
+};
+
+enum FileManagerFileListClone {
+    FILE_MANAGER_FILE_LIST_CLONE_NONE = 0,
+    FILE_MANAGER_FILE_LIST_CLONE_SUPPORTED = 1,
+};
+
+enum AncoFileTransfer {
+    ANCO_FILE_TRANSFER_NONE = 0,
+    ANCO_FILE_TRANSFER_SUPPORTED = 1,
+};
+
+struct SrcDevFileListCloneConfig {
+    AncoFileListClone ancoFileListClone = AncoFileListClone::ANCO_FILE_LIST_CLONE_NONE;
+    FileManagerFileListClone fileManagerFileListClone = FileManagerFileListClone::FILE_MANAGER_FILE_LIST_CLONE_NONE;
+};
+
+struct DstDevFileTransferConfig {
+    AncoFileTransfer ancoFileTransfer = AncoFileTransfer::ANCO_FILE_TRANSFER_NONE;
+};
+
 const std::string RESTORE_FILES_CLOUD_DIR = "/storage/cloud/files/";
 const std::string RESTORE_FILES_LOCAL_DIR = "/storage/media/local/files/";
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
@@ -90,6 +114,7 @@ const std::string GALLERY_EXTERNAL_ROOT_PATH = "/storage/";
 const std::string RESTORE_FAILED_FILES_PATH = "/storage/media/local/files/Docs/Documents/restore_failed_files";
 const std::string PHOTO_FILTER_SELECTED_SIZE = "filter_selected_size";
 const std::string RESTORE_SANDBOX_DIR = "/data/storage/el2/base/.backup/restore";
+const std::string CLONE_RESTORE_BACKUP_DIR = "/storage/media/local/files/.backup/";
 
 // DB field for update scene
 const std::string GALLERY_ID = "_id";
@@ -172,6 +197,7 @@ const std::string STAT_KEY_DETAILS = "details";
 const std::string STAT_KEY_NUMBER = "number";
 const std::string STAT_KEY_PROGRESS_INFO = "progressInfo";
 const std::string STAT_KEY_NAME = "name";
+const std::string STAT_KEY_PATH = "path";
 const std::string STAT_KEY_PROCESSED = "processed";
 const std::string STAT_KEY_TOTAL = "total";
 const std::string STAT_KEY_IS_PERCENTAGE = "isPercentage";
@@ -190,7 +216,17 @@ const std::string STAT_TYPE_THUMBNAIL = "thumbnail";
 const std::string STAT_TYPE_OTHER = "other";
 const std::string STAT_TYPE_ONGOING = "ongoing";
 const std::string STAT_KEY_COMPATIBLE_DIR_MAPPING = "compatibleDirMapping";
-const std::vector<std::string> STAT_TYPES = { STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, STAT_TYPE_AUDIO };
+const std::string STAT_TYPE_LAKE_PHOTO = "ancoPhoto";
+const std::string STAT_TYPE_LAKE_VIDEO = "ancoVideo";
+const std::string STAT_TYPE_LAKE_TOTAL_SIZE = "ancoTotalSize";
+const std::string CLONE_FILE_INFO_DB = "clone_file_info.db";
+const std::string CLONE_FILE_INFO_RESTORE_DB = "clone_file_info_restore.db";
+const std::string LAKE_FILE_INFO_TABLE = "anco_file_info";
+const std::string LAKE_FILE_INFO_FAIL_TABLE = "anco_file_info_fail";
+const std::string LAKE_FILE_INFO_DEDUPLICATION_TABLE = "anco_file_info_deduplication";
+const std::string FILE_MANAGER_INFO_TABLE = "file_manager_file_info";
+const std::vector<std::string> STAT_TYPES = { STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, STAT_TYPE_AUDIO,
+    STAT_TYPE_LAKE_PHOTO, STAT_TYPE_LAKE_VIDEO };
 const std::vector<std::string> STAT_PROGRESS_TYPES = { STAT_TYPE_PHOTO_VIDEO, STAT_TYPE_AUDIO, STAT_TYPE_UPDATE,
     STAT_TYPE_THUMBNAIL, STAT_TYPE_OTHER, STAT_TYPE_ONGOING };
 
@@ -301,6 +337,12 @@ enum RestoreError {
     BACKUP_CLEAR_CONFIGINFO_FAILED,
     GALLERY_DATABASE_NOT_EXIST,
     BACKUP_RESTORE_DIRECTORY_IS_EMPTY,
+    CREATE_CLONE_FILE_INFO_DB_FAILED,
+    GET_CLONE_FILE_INFO_FAILED,
+    OPEN_CLONE_RESTORE_DATABASE_FAILED,
+    CLONE_RESTORE_DATABASE_CORRUPTION,
+    DEDUPLICATION_FILE_SIZE_MISMATCH,
+    ANCO_TRANSFER_FAILED,
 };
 
 enum class PhotoRelatedType {
@@ -356,6 +398,12 @@ const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
     { RestoreError::BACKUP_CLEAR_CONFIGINFO_FAILED, "BACKUP_CLEAR_CONFIGINFO_FAILED" },
     { RestoreError::GALLERY_DATABASE_NOT_EXIST, "GALLERY_DATABASE_NOT_EXIST" },
     { RestoreError::BACKUP_RESTORE_DIRECTORY_IS_EMPTY, "BACKUP_RESTORE_DIRECTORY_IS_EMPTY" },
+    { RestoreError::CREATE_CLONE_FILE_INFO_DB_FAILED, "CREATE_CLONE_FILE_INFO_DB_FAILED" },
+    { RestoreError::GET_CLONE_FILE_INFO_FAILED, "GET_CLONE_FILE_INFO_FAILED" },
+    { RestoreError::OPEN_CLONE_RESTORE_DATABASE_FAILED, "OPEN_CLONE_RESTORE_DATABASE_FAILED" },
+    { RestoreError::CLONE_RESTORE_DATABASE_CORRUPTION, "CLONE_RESTORE_DATABASE_CORRUPTION" },
+    { RestoreError::DEDUPLICATION_FILE_SIZE_MISMATCH, "DEDUPLICATION_FILE_SIZE_MISMATCH" },
+    { RestoreError::ANCO_TRANSFER_FAILED, "ANCO_TRANSFER_FAILED" },
 };
 
 const std::unordered_map<PrefixType, std::string> PREFIX_MAP = {
@@ -554,10 +602,16 @@ struct FailedFileInfo {
 struct SubCountInfo {
     uint64_t successCount {0};
     uint64_t duplicateCount {0};
+    uint64_t failCount {0};
     std::unordered_map<std::string, FailedFileInfo> failedFiles;
     SubCountInfo(int64_t successCount, int64_t duplicateCount,
         const std::unordered_map<std::string, FailedFileInfo> &failedFiles)
-        : successCount(successCount), duplicateCount(duplicateCount), failedFiles(failedFiles) {}
+        : successCount(successCount), duplicateCount(duplicateCount), failCount(failedFiles.size()),
+          failedFiles(failedFiles) {}
+    SubCountInfo(int64_t successCount, int64_t duplicateCount, int64_t failCount,
+        const std::unordered_map<std::string, FailedFileInfo> &failedFiles)
+        : successCount(successCount), duplicateCount(duplicateCount), failCount(failCount),
+          failedFiles(failedFiles) {}
 };
 
 struct SubProcessInfo {
@@ -844,6 +898,9 @@ constexpr size_t SQL_BATCH_SIZE = 1000;
 const std::string CONFIG_INFO_CLONE_PHOTO_SYNC_OPTION_KEY = "photo_sync_status";
 const std::string CONFIG_INFO_CLONE_HDC_DEVICE_ID_KEY = "hdc_device_id";
 const std::string BACKUP_DST_DEVICE_HDC_ENABLE_KEY = "backupHdcEnable";
+const std::string BACKUP_SRC_DEV_ANCO_FILE_LIST_CLONE_KEY = "anco_file_list_clone";
+const std::string BACKUP_SRC_DEV_FILE_MANAGER_FILE_LIST_CLONE_KEY = "file_manager_file_list_clone";
+const std::string BACKUP_DST_DEV_ANCO_FILE_TRANSFER_KEY = "anco_file_transfer";
 
 const std::string SQL_QUERY_PHOTO_UNIQUE_SOUTH_DEVICE_TYPE = "\
     SELECT DISTINCT south_device_type \

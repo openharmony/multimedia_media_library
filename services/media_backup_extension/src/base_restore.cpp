@@ -1713,10 +1713,10 @@ nlohmann::json BaseRestore::GetCountInfoJson(const std::vector<std::string> &cou
     size_t limit = MAX_FAILED_FILES_LIMIT;
     for (const auto &type : countInfoTypes) {
         SubCountInfo subCountInfo = GetSubCountInfo(type);
-        totalFailCount_ += subCountInfo.failedFiles.size();
-        MEDIA_INFO_LOG("SubCountInfo %{public}s success: %{public}lld, duplicate: %{public}lld, failed: %{public}zu",
+        totalFailCount_ += subCountInfo.failCount;
+        MEDIA_INFO_LOG("SubCountInfo %{public}s success: %{public}lld, duplicate: %{public}lld, failed: %{public}lld",
             type.c_str(), (long long)subCountInfo.successCount, (long long)subCountInfo.duplicateCount,
-            subCountInfo.failedFiles.size());
+            (long long)subCountInfo.failCount);
         countInfoJson[STAT_KEY_INFOS].push_back(GetSubCountInfoJson(type, subCountInfo, limit));
     }
     return countInfoJson;
@@ -1726,12 +1726,25 @@ SubCountInfo BaseRestore::GetSubCountInfo(const std::string &type)
 {
     std::unordered_map<std::string, FailedFileInfo> failedFiles = GetFailedFiles(type);
     if (type == STAT_TYPE_PHOTO) {
-        return SubCountInfo(migrateFileNumber_ - migrateVideoFileNumber_, migratePhotoDuplicateNumber_, failedFiles);
+        uint64_t photoSuccess = migrateFileNumber_ - migrateVideoFileNumber_;
+        uint64_t photoDuplicate = migratePhotoDuplicateNumber_;
+        return SubCountInfo(photoSuccess, photoDuplicate, failedFiles);
     }
     if (type == STAT_TYPE_VIDEO) {
-        return SubCountInfo(migrateVideoFileNumber_, migrateVideoDuplicateNumber_, failedFiles);
+        uint64_t videoSuccess = migrateVideoFileNumber_;
+        uint64_t videoDuplicate = migrateVideoDuplicateNumber_;
+        return SubCountInfo(videoSuccess, videoDuplicate, failedFiles);
     }
-    return SubCountInfo(migrateAudioFileNumber_, migrateAudioDuplicateNumber_, failedFiles);
+    if (type == STAT_TYPE_AUDIO) {
+        return SubCountInfo(migrateAudioFileNumber_, migrateAudioDuplicateNumber_, failedFiles);
+    }
+    if (type == STAT_TYPE_LAKE_PHOTO) {
+        return SubCountInfo(migrateLakePhotoNumber_, migrateLakePhotoDuplicateNumber_, failedFiles);
+    }
+    if (type == STAT_TYPE_LAKE_VIDEO) {
+        return SubCountInfo(migrateLakeVideoNumber_, migrateLakeVideoDuplicateNumber_, failedFiles);
+    }
+    return SubCountInfo(0, 0, failedFiles);
 }
 
 std::unordered_map<std::string, FailedFileInfo> BaseRestore::GetFailedFiles(const std::string &type)
@@ -1752,7 +1765,7 @@ nlohmann::json BaseRestore::GetSubCountInfoJson(const std::string &type, const S
     subCountInfoJson[STAT_KEY_BACKUP_INFO] = type;
     subCountInfoJson[STAT_KEY_SUCCESS_COUNT] = subCountInfo.successCount;
     subCountInfoJson[STAT_KEY_DUPLICATE_COUNT] = subCountInfo.duplicateCount;
-    subCountInfoJson[STAT_KEY_FAILED_COUNT] = subCountInfo.failedFiles.size();
+    subCountInfoJson[STAT_KEY_FAILED_COUNT] = subCountInfo.failCount;
     // update currentLimit = min(limit, failedFiles.size())
     size_t currentLimit = limit <= subCountInfo.failedFiles.size() ? limit : subCountInfo.failedFiles.size();
     std::string detailsPath;
@@ -1786,11 +1799,19 @@ void BaseRestore::UpdateFailedFileByFileType(int32_t fileType, const FileInfo &f
     std::lock_guard<mutex> lock(failedFilesMutex_);
     FailedFileInfo failedFileInfo(sceneCode_, fileInfo, errorCode);
     if (fileType == static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE)) {
-        failedFilesMap_[STAT_TYPE_PHOTO].emplace(fileInfo.oldPath, failedFileInfo);
+        if (FileAdapter::IsLakeFile(fileInfo)) {
+            failedFilesMap_[STAT_TYPE_LAKE_PHOTO].emplace(fileInfo.oldPath, failedFileInfo);
+        } else {
+            failedFilesMap_[STAT_TYPE_PHOTO].emplace(fileInfo.oldPath, failedFileInfo);
+        }
         return;
     }
     if (fileType == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
-        failedFilesMap_[STAT_TYPE_VIDEO].emplace(fileInfo.oldPath, failedFileInfo);
+        if (FileAdapter::IsLakeFile(fileInfo)) {
+            failedFilesMap_[STAT_TYPE_LAKE_VIDEO].emplace(fileInfo.oldPath, failedFileInfo);
+        } else {
+            failedFilesMap_[STAT_TYPE_VIDEO].emplace(fileInfo.oldPath, failedFileInfo);
+        }
         return;
     }
     if (fileType == static_cast<int32_t>(MediaType::MEDIA_TYPE_AUDIO)) {
@@ -2462,11 +2483,17 @@ nlohmann::json BaseRestore::GetBackupErrorInfoJson()
 {
     int32_t errorCode = errorCode_ == RestoreError::SUCCESS ? STAT_DEFAULT_ERROR_CODE_SUCCESS :
         STAT_DEFAULT_ERROR_CODE_FAILED;
+    std::string cloneFileInfoDbPath = CLONE_RESTORE_BACKUP_DIR + CLONE_FILE_INFO_DB;
+    if (errorCode_ == RestoreError::CREATE_CLONE_FILE_INFO_DB_FAILED ||
+        errorCode_ == RestoreError::GET_CLONE_FILE_INFO_FAILED) {
+        cloneFileInfoDbPath = "";
+    }
     nlohmann::json errorInfoJson = {
         { STAT_KEY_TYPE, STAT_VALUE_ERROR_INFO },
         { STAT_KEY_ERROR_CODE, std::to_string(errorCode) },
         { STAT_KEY_ERROR_INFO, errorInfo_ },
-        { STAT_KEY_COMPATIBLE_DIR_MAPPING, dirMappingList_ }
+        { STAT_KEY_COMPATIBLE_DIR_MAPPING, dirMappingList_ },
+        { STAT_KEY_PATH, cloneFileInfoDbPath },
     };
     return errorInfoJson;
 }

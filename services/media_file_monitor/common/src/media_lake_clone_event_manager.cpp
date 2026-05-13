@@ -152,7 +152,7 @@ void MediaLakeCloneEventManager::RegisterLakeFileMonitor()
 
 void MediaLakeCloneEventManager::RunGlobalScanner()
 {
-    CHECK_AND_RETURN(isExecuteGlobalScan_.load());
+    CHECK_AND_RETURN_INFO_LOG(isExecuteGlobalScan_.load(), "LakeClone: no need to run global scan");
     ScannerStatus scannerStatus = GlobalScanner::GetInstance().GetScannerStatus();
     CHECK_AND_RETURN_WARN_LOG(scannerStatus == ScannerStatus::IDLE,
         "LakeClone: Scanner is running, status: %{public}d", static_cast<int32_t>(scannerStatus));
