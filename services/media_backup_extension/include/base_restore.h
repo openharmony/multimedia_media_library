@@ -231,6 +231,12 @@ protected:
     std::atomic<uint64_t> migratePhotoDuplicateNumber_{0};
     std::atomic<uint64_t> migrateVideoDuplicateNumber_{0};
     std::atomic<uint64_t> migrateAudioDuplicateNumber_{0};
+    std::atomic<uint64_t> migrateLakePhotoNumber_{0};
+    std::atomic<uint64_t> migrateLakeVideoNumber_{0};
+    std::atomic<uint64_t> migrateLakePhotoDuplicateNumber_{0};
+    std::atomic<uint64_t> migrateLakeVideoDuplicateNumber_{0};
+    std::atomic<uint64_t> migrateLakePhotoFailNumber_{0};
+    std::atomic<uint64_t> migrateLakeVideoFailNumber_{0};
     std::atomic<uint64_t> migratePortraitPhotoNumber_{0};
     std::atomic<uint64_t> migratePortraitFaceNumber_{0};
     std::atomic<uint64_t> migratePortraitAlbumNumber_{0};

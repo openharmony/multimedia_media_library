@@ -18,9 +18,18 @@
 #include "media_log.h"
 
 namespace OHOS::Media {
+static bool IsSourceTypeValid(const FileInfo &fileInfo, FileSourceType expectedType)
+{
+    return fileInfo.fileSourceType == expectedType && !fileInfo.storagePath.empty();
+}
 bool FileAdapter::IsLakeFile(const FileInfo &fileInfo)
 {
-    return fileInfo.fileSourceType == FileSourceType::MEDIA_HO_LAKE && !fileInfo.storagePath.empty();
+    return IsSourceTypeValid(fileInfo, FileSourceType::MEDIA_HO_LAKE);
+}
+
+bool FileAdapter::IsFileManagerFile(const FileInfo &fileInfo)
+{
+    return IsSourceTypeValid(fileInfo, FileSourceType::FILE_MANAGER);
 }
 
 std::string FileAdapter::GetOriginalFilePath(const FileInfo &fileInfo)

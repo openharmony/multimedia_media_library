@@ -63,6 +63,7 @@ const std::string TEST_RELATIVE_PATH = "/Pictures/Test/test.jpg";
 const std::string TEST_CLOUD_PATH_PREFIX = "/storage/cloud/files/Photo/1/";
 const std::string TEST_FILE = "photoTest.mp4";
 const std::string TEST_DIR_PATH = "test";
+const std::string TEST_ROOT_LAKE_DIR = "/storage/media/local/files/Docs/HO_DATA_EXT_MISC/";
 
 const int EXPECTED_NUM = 34;
 const int EXPECTED_OREINTATION = 270;
@@ -5687,6 +5688,36 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_HasSameFileForDualClone_no
     EXPECT_EQ(result, false);
     MEDIA_INFO_LOG("HasSameFileForDualClone result: %{public}d", static_cast<int32_t>(result));
     MEDIA_INFO_LOG("medialib_backup_test_HasSameFileForDualClone_no_same end");
+}
+
+// 测试正常路径转换（图片）
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_ConvertToStoragePath_ValidPath_Image, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_ConvertToStoragePath_ValidPath_Image start");
+    std::string path = "/mnt/data/100/HO_MEDIA/Pictures/weibo/pic.jpg";
+    std::string result = BackupFileUtils::ConvertToStoragePath(path);
+    EXPECT_EQ(result, TEST_ROOT_LAKE_DIR + "Pictures/weibo/pic.jpg");
+    MEDIA_INFO_LOG("BackupFileUtils_ConvertToStoragePath_ValidPath_Image end");
+}
+
+// 测试 ConvertToStoragePath  不包含 HO_MEDIA 的路径
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_ConvertToStoragePath_NoMarker, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_ConvertToStoragePath_NoMarker start");
+    std::string path = "/mnt/data/100/Pictures/weibo/pic.jpg";
+    std::string result = BackupFileUtils::ConvertToStoragePath(path);
+    EXPECT_EQ(result, path);
+    MEDIA_INFO_LOG("BackupFileUtils_ConvertToStoragePath_NoMarker end");
+}
+
+// 测试 ConvertToStoragePath  空路径
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_ConvertToStoragePath_EmptyPath, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_ConvertToStoragePath_EmptyPath start");
+    std::string path = "";
+    std::string result = BackupFileUtils::ConvertToStoragePath(path);
+    EXPECT_EQ(result, path);
+    MEDIA_INFO_LOG("BackupFileUtils_ConvertToStoragePath_EmptyPath end");
 }
 } // namespace Media
 } // namespace OHOS
