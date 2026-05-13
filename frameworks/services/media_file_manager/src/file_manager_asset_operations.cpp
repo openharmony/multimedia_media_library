@@ -161,6 +161,7 @@ static int32_t UpdateFileManageAssetInfo(AccurateRefreshBase &refresh,
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     ValuesBucket values;
     values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, sourcePath);
+    values.PutString(PhotoColumn::PHOTO_STORAGE_PATH, sourcePath);
     values.PutString(MediaColumn::MEDIA_NAME, displayName);
     values.PutString(MediaColumn::MEDIA_TITLE, title);
     int32_t changedRows = -1;
@@ -246,6 +247,8 @@ static int32_t MoveAssetToFileManage(AccurateRefreshBase &refresh,
             UpdateFileManageAssetInfo(refresh, mediaId, tmpInnerFilePath, tmpDisplayName, tmpTitle);
         }
     }
+    //移动源文件前需要刷新数据库字段
+    UpdateFileManageAssetInfo(refresh, mediaId, tmpInnerFilePath, tmpDisplayName, tmpTitle);
     MoveAssetsToFileManagerUpdateData updateData;
     updateData.mediaId = mediaId;
     updateData.title = tmpTitle;

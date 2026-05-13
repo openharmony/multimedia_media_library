@@ -117,7 +117,7 @@ public:
     static ani_object SetFavorite(ani_env *env, ani_object object, ani_boolean favoriteState);
     static ani_object SetHidden(ani_env *env, ani_object object, ani_boolean hiddenState);
     static ani_object SetHiddenAttribute(ani_env *env, ani_object object, ani_boolean fileHiddenState);
-    static ani_object SetDisplayNameByFile(ani_env *env, ani_object object, ani_string name);
+    static ani_object SetTitleByFile(ani_env *env, ani_object object, ani_string name);
     static ani_object SetUserComment(ani_env *env, ani_object object, ani_string userComment);
     static ani_object SetLocation(ani_env *env, ani_object object, ani_double longitude, ani_double latitude);
     static ani_object SetTitle(ani_env *env, ani_object object, ani_string title);
