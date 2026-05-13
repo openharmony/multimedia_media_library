@@ -4025,6 +4025,14 @@ int32_t MediaLibraryAlbumOperations::AlbumChangeSetHiddenAttribute(int32_t album
         assetValues.PutInt(PhotoColumn::PHOTO_FILE_HIDDEN, fileHidden ? YES : NO);
         NativeRdb::RdbPredicates assetPred(PhotoColumn::PHOTOS_TABLE);
         assetPred.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, std::to_string(albumId));
+        assetPred.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+        assetPred.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS,
+            to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+        assetPred.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
+        assetPred.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+        assetPred.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(0));
+        assetPred.EqualTo(PhotoColumn::MEDIA_HIDDEN, to_string(0));
+        assetPred.NotEqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::CLOUD));
         int32_t assetChanged = 0;
         ret = rdbStore->Update(assetChanged, assetValues, assetPred);
         CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Failed to update asset hidden");

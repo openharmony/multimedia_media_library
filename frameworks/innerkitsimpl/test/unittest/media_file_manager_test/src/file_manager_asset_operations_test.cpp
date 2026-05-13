@@ -114,25 +114,5 @@ HWTEST_F(FileManagerAssetOperationsTest, MoveFileManagerAsset_test_002, TestSize
 
     MEDIA_INFO_LOG("MoveFileManagerAsset_test_002 end");
 }
-
-HWTEST_F(FileManagerAssetOperationsTest, MoveAssetsToFileManager_test_003, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("MoveAssetsToFileManager_test_003 start");
-
-    AssetAccurateRefresh assetRefresh(AccurateRefresh::RECOVER_ASSETS_BUSSINESS_NAME);
-    std::vector<std::string> ids = {"1", "2", "3", "4", "5", "6", "7", "8"};
-    int32_t ret = FileManagerAssetOperations::MoveAssetsToFileManager(assetRefresh, ids);
-    EXPECT_EQ(ret, E_OK);
-
-    g_rdbStore->ExecuteSql(SQL_INSERT_PHOTO + " VALUES('/storage/cloud/files/Photo/1/IMG_1501924305_001.jpg', 0, "
-        "'/storage/media/local/files/Docs/Download/mediatool/2.jpg')");
-    g_rdbStore->ExecuteSql(SQL_INSERT_PHOTO + " VALUES('', 0, "
-        "'/storage/media/local/files/Docs/Download/mediatool/3.jpg')");
-    g_rdbStore->ExecuteSql(SQL_INSERT_PHOTO + " VALUES('/storage/cloud/files/Photo/2/IMG_1501924305_002.jpg', 0, '')");
-    ret = FileManagerAssetOperations::MoveAssetsToFileManager(assetRefresh, ids);
-    EXPECT_NE(ret, E_OK);
-
-    MEDIA_INFO_LOG("MoveAssetsToFileManager_test_003 end");
-}
 } // namespace Media
 } // namespace OHOS

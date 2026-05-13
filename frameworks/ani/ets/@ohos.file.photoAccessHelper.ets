@@ -4569,7 +4569,7 @@ export namespace photoAccessHelper {
     native setLocation(longitude: double, latitude: double): void;
     native setTitle(title: string): void;
     native setHiddenAttribute(hiddenState: boolean): void;
-    native setDisplayNameByFile(name: string): void;
+    native setTitleByFile(name: string): void;
 
     native setEditData(editData: MediaAssetEditData): void;
 

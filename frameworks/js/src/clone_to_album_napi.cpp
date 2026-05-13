@@ -38,23 +38,34 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 
+static bool CheckPropertyListner(napi_env env, napi_value arg, const string &property, napi_value &listener)
+{
+    bool present = false;
+    napi_status result = napi_has_named_property(env, arg, property.c_str(), &present);
+    if (result == napi_ok && present &&
+        napi_get_named_property(env, arg, property.c_str(), &listener) == napi_ok) {
+        return true;
+    }
+    return false;
+}
+
 static void ParseProgressListener(napi_env env, napi_value options, MediaLibraryAsyncContext *ctx)
 {
     CHECK_NULL_PTR_RETURN_VOID(ctx, "Context is null");
-    napi_value coutListener = nullptr;
+    napi_value countListener = nullptr;
     napi_value sizeListener = nullptr;
     const int32_t refCount = 1;
-    if (napi_get_named_property(env, options, "sizeProgressListener", &sizeListener) == napi_ok) {
+    if (CheckPropertyListner(env, options, "sizeProgressListener", sizeListener)) {
         if (MediaLibraryNapiUtils::CheckJSArgsTypeAsFunc(env, sizeListener)) {
             CHECK_ARGS_RET_VOID(env,
                 napi_create_reference(env, sizeListener, refCount, &ctx->cloneCtx.sizeProgressListener),
                 JS_INNER_FAIL);
         }
     }
-    if (napi_get_named_property(env, options, "countProgressListener", &coutListener) == napi_ok) {
-        if (MediaLibraryNapiUtils::CheckJSArgsTypeAsFunc(env, coutListener)) {
+    if (CheckPropertyListner(env, options, "countProgressListener", countListener)) {
+        if (MediaLibraryNapiUtils::CheckJSArgsTypeAsFunc(env, countListener)) {
             CHECK_ARGS_RET_VOID(env,
-                napi_create_reference(env, coutListener, refCount, &ctx->cloneCtx.countProgressListener),
+                napi_create_reference(env, countListener, refCount, &ctx->cloneCtx.countProgressListener),
                 JS_INNER_FAIL);
         }
     }
@@ -63,6 +74,11 @@ static void ParseProgressListener(napi_env env, napi_value options, MediaLibrary
 static void ParseTaskSignalListener(napi_env env, napi_value options, MediaLibraryAsyncContext *ctx)
 {
     napi_value taskSignal = nullptr;
+    if (!CheckPropertyListner(env, options, "taskSignal", taskSignal)) {
+        NAPI_INFO_LOG("no taskSignal to parse");
+        return;
+    }
+
     ctx->cloneCtx.requestId = MediaLibraryNapi::AssignRequestId();
     ctx->cloneCtx.callback = new CloneToAlbumCallbackNapi(env,
         ctx->cloneCtx.sizeProgressListener, ctx->cloneCtx.countProgressListener, ctx->cloneCtx.resultListener);
@@ -74,7 +90,6 @@ static void ParseTaskSignalListener(napi_env env, napi_value options, MediaLibra
             ctx->cloneCtx.callback->SetCancelled(ctx->cloneCtx.requestId);
         }
     };
-    napi_get_named_property(env, options, "taskSignal", &taskSignal);
     if (taskSignal != nullptr) {
         napi_valuetype signalType = napi_undefined;
         napi_typeof(env, taskSignal, &signalType);
@@ -95,13 +110,14 @@ static void ParseOptions(napi_env env, napi_value arg, MediaLibraryAsyncContext 
     CHECK_NULL_PTR_RETURN_VOID(ctx, "Context is null");
     napi_valuetype type = napi_undefined;
     if (napi_typeof(env, arg, &type) != napi_ok || type != napi_object) {
+        NAPI_ERR_LOG("ParseOptions error");
         return;
     }
 
     ParseProgressListener(env, arg, ctx);
 
     napi_value resultListener = nullptr;
-    if (napi_get_named_property(env, arg, "resultListener", &resultListener) == napi_ok) {
+    if (CheckPropertyListner(env, arg, "resultListener", resultListener)) {
         if (MediaLibraryNapiUtils::CheckJSArgsTypeAsFunc(env, resultListener)) {
             CHECK_ARGS_RET_VOID(env, napi_create_reference(env, resultListener, 1, &ctx->cloneCtx.resultListener),
             JS_INNER_FAIL);
@@ -109,7 +125,7 @@ static void ParseOptions(napi_env env, napi_value arg, MediaLibraryAsyncContext 
     }
 
     napi_value modeValue = nullptr;
-    if (napi_get_named_property(env, arg, "mode", &modeValue) == napi_ok) {
+    if (CheckPropertyListner(env, arg, "mode", modeValue)) {
         CHECK_ARGS_RET_VOID(env, MediaLibraryNapiUtils::GetInt32(env, modeValue, ctx->cloneCtx.mode),
             JS_INNER_FAIL);
     }
@@ -147,7 +163,7 @@ static void ExecuteCloneToAlbum(napi_env env, void *data)
 
     if (ctx->cloneCtx.fileUris.empty()) {
         NAPI_ERR_LOG("assetUris is empty");
-        ctx->SaveSceneErr(E_INNER_FAIL);
+        ctx->SaveSceneErr(E_SCENE_PARAM_INVALID);
         return;
     }
 
@@ -289,7 +305,7 @@ napi_value MediaLibraryNapi::JSCloneToAlbum(napi_env env, napi_callback_info inf
     tracer.Start("JSCloneToAlbum");
 
     auto ctx = make_unique<MediaLibraryAsyncContext>();
-    napi_status status = MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, ctx, ARGS_THREE, ARGS_THREE);
+    napi_status status = MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, ctx, ARGS_TWO, ARGS_THREE);
     CHECK_COND_RET(status == napi_ok, nullptr, "Failed to get object info");
 
     std::vector<std::string> assetArray;
@@ -320,7 +336,7 @@ static void ExecuteCloneToDir(napi_env env, void *data)
 
     if (ctx->cloneCtx.fileUris.empty()) {
         NAPI_ERR_LOG("assetUris is empty");
-        ctx->SaveSceneErr(E_INNER_FAIL);
+        ctx->SaveSceneErr(E_SCENE_PARAM_INVALID);
         return;
     }
 
@@ -411,7 +427,7 @@ napi_value MediaLibraryNapi::JSCloneToDir(napi_env env, napi_callback_info info)
     tracer.Start("JSCloneToDir");
 
     auto ctx = make_unique<MediaLibraryAsyncContext>();
-    napi_status status = MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, ctx, ARGS_THREE, ARGS_THREE);
+    napi_status status = MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, ctx, ARGS_TWO, ARGS_THREE);
     CHECK_COND_RET(status == napi_ok, nullptr, "Failed to get object info");
 
     std::vector<std::string> assetArray;
@@ -439,7 +455,7 @@ static void ExecuteCloneAssetsByPath(napi_env env, void *data)
 
     if (ctx->cloneCtx.fileUris.empty()) {
         NAPI_ERR_LOG("assetUris is empty");
-        ctx->SaveSceneErr(E_INNER_FAIL);
+        ctx->SaveSceneErr(E_SCENE_PARAM_INVALID);
         return;
     }
 
@@ -530,7 +546,7 @@ napi_value MediaLibraryNapi::JSCloneAssetsByPath(napi_env env, napi_callback_inf
     tracer.Start("JSCloneAssetsByPath");
 
     auto ctx = make_unique<MediaLibraryAsyncContext>();
-    napi_status status = MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, ctx, ARGS_THREE, ARGS_THREE);
+    napi_status status = MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, ctx, ARGS_TWO, ARGS_THREE);
     CHECK_COND_RET(status == napi_ok, nullptr, "Failed to get object info");
 
     std::vector<std::string> assetArray;
