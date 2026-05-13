@@ -1670,9 +1670,18 @@ static int32_t SetPendingTime(const shared_ptr<FileAsset> &fileAsset, int64_t pe
 static int32_t CreateFileAndSetPending(const shared_ptr<FileAsset> &fileAsset,
     bool isMovingPhotoVideo, int64_t pendingTime)
 {
-    int32_t errCode = MediaFileUtils::CreateAsset(fileAsset->GetPath());
+    std::string path = fileAsset->GetPath();
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+    std::string realPath = MediaFileAccessUtils::GetAssetRealPath(path);
+    if (realPath.empty()) {
+        MEDIA_ERR_LOG("Get real path failed, use original path");
+    } else {
+        path = realPath;
+    }
+#endif
+    int32_t errCode = MediaFileUtils::CreateAsset(path);
     if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Create asset failed, path=%{private}s", fileAsset->GetPath().c_str());
+        MEDIA_ERR_LOG("Create asset failed, path=%{public}s", MediaFileUtils::DesensitizePath(path).c_str());
         return errCode;
     }
     if (isMovingPhotoVideo) {
