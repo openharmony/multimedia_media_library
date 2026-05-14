@@ -243,7 +243,7 @@ static void GetArryFileAssetObj(vector<unique_ptr<FileAsset>> &fileAssetArray,
         file = fetchResult->GetNextObject();
     }
     size_t fileAssetArraySize = fileAssetArray.size();
-    if (fileAssetArraySize <= 0) {
+    if (fileAssetArraySize == 0 || fileAssetArraySize > SIZE_MAX / sizeof(FetchResultObject)) {
         LOGE("fileAssetArray size error");
         errCode = JS_INNER_FAIL;
         return;
@@ -283,7 +283,7 @@ static void GetArryPhotoAlbumObj(vector<unique_ptr<PhotoAlbum>> &filePhotoAlbumA
         file = fetchResult->GetNextObject();
     }
     size_t filePhotoAlbumArraySize = filePhotoAlbumArray.size();
-    if (filePhotoAlbumArraySize < 0) {
+    if (filePhotoAlbumArraySize == 0 || filePhotoAlbumArraySize > SIZE_MAX / sizeof(FetchResultObject)) {
         LOGE("filePhotoAlbumArray size error");
         errCode = JS_INNER_FAIL;
         return;
