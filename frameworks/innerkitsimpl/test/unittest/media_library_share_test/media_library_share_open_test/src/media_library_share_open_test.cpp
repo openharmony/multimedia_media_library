@@ -793,7 +793,7 @@ HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_002, TestSize.Level
             << " path " << item.second;
     }
     
-    ret = dataManager->NotifyAssetSended(uri);
+    ret = MediaLibraryPhotoOperations::NotifyAssetSended(uri);
     EXPECT_EQ(ret, E_OK);
 }
 
@@ -818,7 +818,7 @@ HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_003, TestSize.Level
     UniqueFd srcFdGuard(fd);
     EXPECT_TRUE(MediaFileUtils::IsFileExists(OPEN_ORIGINAL_FILE));
 
-    ret = dataManager->NotifyAssetSended(uri);
+    ret = MediaLibraryPhotoOperations::NotifyAssetSended(uri);
     EXPECT_EQ(ret, E_OK);
 }
 
@@ -885,9 +885,7 @@ HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_006, TestSize.Level
     EXPECT_TRUE(MediaFileUtils::IsFileExists(cachePath));
     EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
 
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    ASSERT_NE(dataManager, nullptr);
-    int32_t ret = dataManager->NotifyAssetSended(uri, ServiceShareType::NON_ASSET_LEVEL);
+    int32_t ret = MediaLibraryPhotoOperations::NotifyAssetSended(uri, ServiceShareType::NON_ASSET_LEVEL);
     EXPECT_EQ(ret, E_OK);
     EXPECT_FALSE(MediaFileUtils::IsFileExists(cachePath));
     EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
@@ -909,9 +907,7 @@ HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_007, TestSize.Level
     ASSERT_FALSE(MediaFileUtils::IsFileExists(cachePath));
     EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
 
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    ASSERT_NE(dataManager, nullptr);
-    int32_t ret = dataManager->NotifyAssetSended(uri, ServiceShareType::NON_ASSET_LEVEL);
+    int32_t ret = MediaLibraryPhotoOperations::NotifyAssetSended(uri, ServiceShareType::NON_ASSET_LEVEL);
     EXPECT_EQ(ret, E_OK);
     EXPECT_FALSE(MediaFileUtils::IsFileExists(cachePath));
     EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
@@ -928,9 +924,7 @@ HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_008, TestSize.Level
     ASSERT_TRUE(GenerateCompressCache(uri, compressCachePath));
     EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
 
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    ASSERT_NE(dataManager, nullptr);
-    int32_t ret = dataManager->NotifyAssetSended(uri, ServiceShareType::NON_ASSET_LEVEL);
+    int32_t ret = MediaLibraryPhotoOperations::NotifyAssetSended(uri, ServiceShareType::NON_ASSET_LEVEL);
     EXPECT_EQ(ret, E_OK);
     EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
     CleanupTempFiles({compressCachePath});
@@ -951,9 +945,7 @@ HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_009, TestSize.Level
     EXPECT_TRUE(MediaFileUtils::IsFileExists(cachePath));
     EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
 
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    ASSERT_NE(dataManager, nullptr);
-    int32_t ret = dataManager->NotifyAssetSended("", ServiceShareType::NON_ASSET_LEVEL);
+    int32_t ret = MediaLibraryPhotoOperations::NotifyAssetSended("", ServiceShareType::NON_ASSET_LEVEL);
     EXPECT_EQ(ret, E_ERR);
     EXPECT_TRUE(MediaFileUtils::IsFileExists(cachePath));
     EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
@@ -987,9 +979,7 @@ HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_010, TestSize.Level
     EXPECT_FALSE(GenerateLivePhotoCache(uri));
     EXPECT_FALSE(MediaFileUtils::IsFileExists(cachePath));
 
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    ASSERT_NE(dataManager, nullptr);
-    int32_t ret = dataManager->NotifyAssetSended(uri, ServiceShareType::NON_ASSET_LEVEL);
+    int32_t ret = MediaLibraryPhotoOperations::NotifyAssetSended(uri, ServiceShareType::NON_ASSET_LEVEL);
     EXPECT_EQ(ret, E_OK);
     EXPECT_FALSE(MediaFileUtils::IsFileExists(cachePath));
     EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
@@ -1011,9 +1001,7 @@ HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_011, TestSize.Level
     EXPECT_TRUE(MediaFileUtils::IsFileExists(cachePath));
     EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
 
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    ASSERT_NE(dataManager, nullptr);
-    int32_t ret = dataManager->NotifyAssetSended(uri, static_cast<ServiceShareType>(-1));
+    int32_t ret = MediaLibraryPhotoOperations::NotifyAssetSended(uri, static_cast<ServiceShareType>(-1));
     EXPECT_EQ(ret, E_ERR);
     EXPECT_TRUE(MediaFileUtils::IsFileExists(cachePath));
     EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
@@ -1036,9 +1024,7 @@ HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_012, TestSize.Level
     EXPECT_TRUE(MediaFileUtils::IsFileExists(livePhotoCachePath));
     EXPECT_TRUE(MediaFileUtils::IsFileExists(compressCachePath));
 
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    ASSERT_NE(dataManager, nullptr);
-    int32_t ret = dataManager->NotifyAssetSended(uri, ServiceShareType::ASSET_LEVEL);
+    int32_t ret = MediaLibraryPhotoOperations::NotifyAssetSended(uri, ServiceShareType::ASSET_LEVEL);
     EXPECT_EQ(ret, E_OK);
     EXPECT_FALSE(MediaFileUtils::IsFileExists(compressCachePath));
     EXPECT_TRUE(MediaFileUtils::IsFileExists(livePhotoCachePath));
@@ -1061,9 +1047,7 @@ HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_013, TestSize.Level
     ASSERT_TRUE(expectedDigest.valid);
     ASSERT_GT(expectedDigest.size, 0);
 
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    ASSERT_NE(dataManager, nullptr);
-    int32_t ret = dataManager->NotifyAssetSended(uri, ServiceShareType::ASSET_LEVEL);
+    int32_t ret = MediaLibraryPhotoOperations::NotifyAssetSended(uri, ServiceShareType::ASSET_LEVEL);
     EXPECT_EQ(ret, E_OK);
     EXPECT_FALSE(MediaFileUtils::IsFileExists(compressCachePath));
 
@@ -1096,9 +1080,7 @@ HWTEST_F(MediaLibraryShareOpenTest, media_library_share_test_014, TestSize.Level
     ASSERT_TRUE(expectedDigest.valid);
     ASSERT_GT(expectedDigest.size, 0);
 
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    ASSERT_NE(dataManager, nullptr);
-    int32_t ret = dataManager->NotifyAssetSended(uri, ServiceShareType::NON_ASSET_LEVEL);
+    int32_t ret = MediaLibraryPhotoOperations::NotifyAssetSended(uri, ServiceShareType::NON_ASSET_LEVEL);
     EXPECT_EQ(ret, E_OK);
     EXPECT_FALSE(MediaFileUtils::IsFileExists(livePhotoCachePath));
 
@@ -1137,7 +1119,7 @@ HWTEST_F(MediaLibraryShareOpenTest, media_library_share_file_manager_test_001, T
     UniqueFd srcFdGuard(fd);
     EXPECT_TRUE(MediaFileUtils::IsFileExists(OPEN_ORIGINAL_FILE));
 
-    ret = dataManager->NotifyAssetSended(uri);
+    ret = MediaLibraryPhotoOperations::NotifyAssetSended(uri);
     EXPECT_EQ(ret, E_OK);
 }
 

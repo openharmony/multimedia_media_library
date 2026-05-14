@@ -2922,15 +2922,6 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, OpenAssetCompress_test_001, TestSize.L
     MEDIA_INFO_LOG("OpenAssetCompress_test_001::End");
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, NotifyAssetSended_test_001, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("NotifyAssetSended_test_001::Start");
-    string uri = "file://media/Photo/1";
-    int32_t ret = MediaLibraryDataManager::NotifyAssetSended(uri);
-    EXPECT_GE(ret, 0);
-    MEDIA_INFO_LOG("NotifyAssetSended_test_001::End");
-}
-
 HWTEST_F(MediaLibraryDataManagerUnitTest, GetAssetCompressVersion_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("GetAssetCompressVersion_test_001::Start");

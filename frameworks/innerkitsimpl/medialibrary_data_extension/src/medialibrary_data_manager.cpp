@@ -3954,52 +3954,6 @@ int32_t MediaLibraryDataManager::OpenAssetCompress(const std::string &uri, const
     return ret;
 }
 
-int32_t MediaLibraryDataManager::NotifyAssetSended(const std::string &uri, ServiceShareType type)
-{
-    CHECK_AND_RETURN_RET_LOG(!uri.empty(), E_ERR, "Invalid uri");
-    std::string id = MediaFileUtils::GetIdFromUri(uri);
-    MEDIA_INFO_LOG("NotifyAssetSended id: %{public}s", id.c_str());
-    switch (type) {
-        case ServiceShareType::ASSET_LEVEL:
-            ClearCompressCache(id);
-            break;
-        case ServiceShareType::NON_ASSET_LEVEL:
-            ClearLivePhotoCache(id);
-            break;
-        default:
-            MEDIA_ERR_LOG("Unsupported type: %{public}d", static_cast<int32_t>(type));
-            return E_ERR;
-    }
-    return E_OK;
-}
-
-void MediaLibraryDataManager::ClearCompressCache(const std::string &fileId)
-{
-    MEDIA_DEBUG_LOG("ClearCompressCache start");
-    std::string tempFilePath = MediaLibraryAssetOperations::GetAssetCompressCachePath(fileId);
-    if (MediaFileUtils::IsFileExists(tempFilePath)) {
-        CHECK_AND_RETURN_LOG(MediaFileUtils::DeleteFile(tempFilePath),
-            "Clear temp compress asset file failed, tempFilePath: %{public}s",
-            DfxUtils::GetSafePath(tempFilePath).c_str());
-        MEDIA_INFO_LOG("ClearCompressCache delete tempFilePath: %{public}s",
-            DfxUtils::GetSafePath(tempFilePath).c_str());
-    }
-}
-
-void MediaLibraryDataManager::ClearLivePhotoCache(const std::string &fileId)
-{
-    MEDIA_DEBUG_LOG("ClearLivePhotoCache start");
-    std::string tempFilePath = MediaLibraryPhotoOperations::GetLivePhotoCachePathById(fileId);
-    CHECK_AND_RETURN_LOG(!tempFilePath.empty(), "tempFilePath is empty for fileId: %{public}s", fileId.c_str());
-    if (MediaFileUtils::IsFileExists(tempFilePath)) {
-        CHECK_AND_RETURN_LOG(MediaFileUtils::DeleteFile(tempFilePath),
-            "Clear live photo cache file failed, tempFilePath: %{public}s",
-            DfxUtils::GetSafePath(tempFilePath).c_str());
-        MEDIA_INFO_LOG("ClearLivePhotoCache delete tempFilePath: %{public}s",
-            DfxUtils::GetSafePath(tempFilePath).c_str());
-    }
-}
-
 int32_t MediaLibraryDataManager::GetAssetCompressVersion()
 {
     int32_t compressVersion = AssetCompressVersionManager::GetAssetCompressVersion();
