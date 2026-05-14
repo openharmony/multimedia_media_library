@@ -59,6 +59,8 @@ ohos_shared_library("media_permission_helper") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/check_photo_uri_permission_inner_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/resume_photo_uri_permission_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/reserve_photo_uri_permission_vo.cpp", 
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_photo_uri_persist_permission_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/cancel_photo_uri_persist_permission_vo.cpp",
   ]
 
   public_configs = [ ":media_permission_helper_config" ]

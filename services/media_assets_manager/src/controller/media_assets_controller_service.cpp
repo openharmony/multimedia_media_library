@@ -108,6 +108,8 @@
 #include "open_asset_compress_vo.h"
 #include "open_asset_compress_dto.h"
 #include "get_compress_asset_size_vo.h"
+#include "get_photo_uri_persist_permission_vo.h"
+#include "cancel_photo_uri_persist_permission_vo.h"
 #include "query_media_data_status_vo.h"
 #include "check_single_photo_permission_vo.h"
 #include "convert_to_asset_vo.h"
@@ -643,6 +645,14 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_COMPRESS_ASSET_SIZE),
         &MediaAssetsControllerService::GetCompressAssetSize
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_PHOTO_URI_PERSIST_PERMISSION),
+        &MediaAssetsControllerService::GetPhotoUriPersistPermission
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CANCEL_PHOTO_URI_PERSIST_PERMISSION),
+        &MediaAssetsControllerService::CancelPhotoUriPersistPermission
     },
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::CHECK_SINGLE_PHOTO_CHANGE_PERMISSION),
@@ -3172,6 +3182,35 @@ int32_t MediaAssetsControllerService::GetCompressAssetSize(MessageParcel &data, 
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAssetsControllerService::GetPhotoUriPersistPermission(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter GetPhotoUriPersistPermission");
+    GetPhotoUriPersistPermissionReqBody reqBody;
+    GetPhotoUriPersistPermissionRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetPhotoUriPersistPermission Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+    }
+    ret = MediaAssetsService::GetInstance().GetPhotoUriPersistPermission(
+        static_cast<uint32_t>(reqBody.tokenId), respBody.permissionTypes);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+ 
+int32_t MediaAssetsControllerService::CancelPhotoUriPersistPermission(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter CancelPhotoUriPersistPermission");
+    CancelPhotoUriPersistPermissionReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CancelPhotoUriPersistPermission Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().CancelPhotoUriPersistPermission(
+        static_cast<uint32_t>(reqBody.tokenId));
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
 int32_t MediaAssetsControllerService::CheckSinglePhotoPermission(MessageParcel &data, MessageParcel &reply)

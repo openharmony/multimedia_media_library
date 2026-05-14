@@ -70,6 +70,8 @@ public:
     int32_t QueryPhotoAssetsReadState(const std::vector<std::string> &fileIds, std::vector<std::string> &validFileIds);
     int32_t GrantPhotoUrisPermissionInner(
         MediaLibraryCommand &cmd, const std::vector<DataShare::DataShareValuesBucket> &values);
+    int32_t GetPhotoUriPersistPermission(uint32_t tokenId, std::vector<int32_t> &permissionTypes);
+    int32_t CancelPhotoUriPersistPermission(uint32_t tokenId);
     int32_t UpdateTmpCompatibleDup(int32_t fileId, size_t size, bool validate = true);
     std::shared_ptr<DataShare::DataShareResultSet> GetUrisByOldUrisInner(MediaLibraryCommand &cmd,
         const DataShare::DataSharePredicates &predicates, const std::vector<std::string> &columns);

@@ -163,6 +163,24 @@ public:
     EXPORT int32_t ResumePhotoUriPermission(const string appIdentifier,
         const string bundleName, const uint32_t bundleIndex,
         uint32_t tokenId);
+    
+    /**
+     * @brief query persistent photo permission types by target token id
+     *
+     * @param tokenId target app token id
+     * @param photoPermissionList output persistent permission types for the app
+     * @return 0 for success and -1 for fail
+     */
+    EXPORT int32_t GetPhotoUriPersistPermission(uint32_t tokenId,
+        std::vector<PhotoPermissionType> &photoPermissionList);
+ 
+    /**
+     * @brief revoke all persistent photo permissions of target token id
+     *
+     * @param tokenId target app token id
+     * @return 0 for success and -1 for fail
+     */
+    EXPORT int32_t CancelPhotoUriPersistPermission(uint32_t tokenId);
 
 private:
     int32_t userId_{-1};
