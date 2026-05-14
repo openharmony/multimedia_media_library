@@ -275,6 +275,7 @@ int32_t TlvUtil::WriteDataValueToTlv(TlvFile tlvFile, TlvFile srcFile)
         ret = ProcessWriteAll(tlvFile, buffer, static_cast<size_t>(bytesRead));
         CHECK_AND_RETURN_RET_LOG(ret, E_ERR, "failed to write tlv file, errno: %{public}d", errno);
     }
+    CHECK_AND_RETURN_RET_LOG(bytesRead >= 0, E_ERR, "failed to write tlv file, errno: %{public}d", errno);
     return E_OK;
 }
 
