@@ -285,7 +285,9 @@ bool PhotoFileUtils::CheckSubDirForFileManager(const std::string &path, size_t s
     std::string subDirName = (pos == std::string::npos) ? path.substr(startPos)
         : path.substr(startPos, pos - startPos);
     CHECK_AND_RETURN_RET(!subDirName.empty(), true);
-    return FILE_MANAGER_EXCLUDED_DIR_NAMES.count(subDirName) == 0;
+    bool ret = FILE_MANAGER_EXCLUDED_DIR_NAMES.count(subDirName) == 0;
+    CHECK_AND_PRINT_LOG(ret, "sub dir not belong to file manager path");
+    return ret;
 }
 
 bool PhotoFileUtils::CheckFileManagerRealPath(const std::string &path)

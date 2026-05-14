@@ -2092,12 +2092,12 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
         int32_t ret = LakeFileOperations::MoveAssetsToLake(assetRefresh, predicates.GetWhereArgs());
         CHECK_AND_PRINT_LOG(ret == E_OK, "recover inner anco file error when cancel hide asset");
         ret = FileManagerAssetOperations::MoveAssetsToFileManager(assetRefresh, predicates.GetWhereArgs());
-        CHECK_AND_PRINT_LOG(ret == E_OK, "recover inner anco file error when cancel hide asset");
+        CHECK_AND_PRINT_LOG(ret == E_OK, "recover inner file manager error when cancel hide asset");
     } else {
         int32_t ret = LakeFileOperations::MoveAssetsFromLake(predicates.GetWhereArgs());
         CHECK_AND_PRINT_LOG(ret == E_OK, "hide photo inner anco file error");
         ret = FileManagerAssetOperations::MoveAssetsFromFileManager(predicates.GetWhereArgs());
-        CHECK_AND_PRINT_LOG(ret == E_OK, "hide photo inner anco file error");
+        CHECK_AND_PRINT_LOG(ret == E_OK, "hide photo inner file manager error");
     }
 #endif
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
@@ -3493,6 +3493,21 @@ int32_t MediaLibraryPhotoOperations::CommitEditOpen(MediaLibraryCommand &cmd)
     return fd;
 }
 
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+static int32_t HandleMoveFileManagerToSource(const std::string& realPath, const std::string& sourcePath)
+{
+    MEDIA_DEBUG_LOG("move start");
+    CHECK_AND_RETURN_RET_LOG(MediaFileAccessUtils::MoveFileInEditScene(realPath, sourcePath) == E_SUCCESS,
+        E_HAS_FS_ERROR, "Move file failed, srcPath:%{private}s, newPath:%{private}s", realPath.c_str(),
+        sourcePath.c_str());
+    if (!MediaFileUtils::IsFileExists(realPath)) {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateFile(realPath), E_HAS_FS_ERROR,
+            "Create file failed, path:%{private}s", realPath.c_str());
+    }
+    return E_SUCCESS;
+}
+#endif
+
 int32_t MediaLibraryPhotoOperations::CommitEditOpenExecute(const shared_ptr<FileAsset> &fileAsset)
 {
     int32_t err = CheckFileAssetStatus(fileAsset);
@@ -3511,10 +3526,15 @@ int32_t MediaLibraryPhotoOperations::CommitEditOpenExecute(const shared_ptr<File
 #if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
             realPath = MediaFileAccessUtils::GetAssetRealPath(path);
 #endif
-            if (realPath.find("HO_DATA_EXT_MISC") != std::string::npos ||
-                PhotoFileUtils::CheckFileManagerRealPath(realPath)) {
+            if (realPath.find("HO_DATA_EXT_MISC") != std::string::npos) {
                 CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileUtil(realPath, sourcePath), E_HAS_FS_ERROR,
                     "Move file failed, srcPath:%{private}s, newPath:%{private}s", realPath.c_str(), sourcePath.c_str());
+#if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
+            } else if (PhotoFileUtils::CheckFileManagerRealPath(realPath)) {
+                CHECK_AND_RETURN_RET_LOG(HandleMoveFileManagerToSource(realPath, sourcePath) == E_SUCCESS,
+                    E_HAS_FS_ERROR, "Move file failed, srcPath:%{private}s, newPath:%{private}s", realPath.c_str(),
+                    sourcePath.c_str());
+#endif
             } else {
                 CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(path, sourcePath) == E_SUCCESS, E_HAS_FS_ERROR,
                     "Move file failed, srcPath:%{private}s, newPath:%{private}s", path.c_str(), sourcePath.c_str());
@@ -4059,11 +4079,13 @@ int32_t MediaLibraryPhotoOperations::RevertFiltersWithoutEditData(const std::sha
     } else {
         if (!storagePath.empty() && MediaFileUtils::IsFileExists(storagePath)) {
 #if defined(MEDIALIBRARY_FILE_MGR_SUPPORT) || defined(MEDIALIBRARY_LAKE_SUPPORT)
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileUtil(sourcePath, storagePath), E_HAS_FS_ERROR,
-            "Can not cover %{private}s to %{private}s", sourcePath.c_str(), storagePath.c_str());
-        if (PhotoFileUtils::CheckFileManagerRealPath(storagePath)) {
-            CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(sourcePath), "delete sourcePath failed");
-        }
+            if (PhotoFileUtils::CheckFileManagerRealPath(storagePath)) {
+                CHECK_AND_RETURN_RET_LOG(MediaFileAccessUtils::MoveFileInEditScene(sourcePath, storagePath) == E_OK,
+                    E_HAS_FS_ERROR, "Can not move %{private}s to %{private}s", sourcePath.c_str(), storagePath.c_str());
+            } else {
+                CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileUtil(sourcePath, storagePath), E_HAS_FS_ERROR,
+                    "Can not cover %{private}s to %{private}s", sourcePath.c_str(), storagePath.c_str());
+            }
 #endif
         } else {
             CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(sourcePath, path) == E_OK, E_HAS_FS_ERROR,

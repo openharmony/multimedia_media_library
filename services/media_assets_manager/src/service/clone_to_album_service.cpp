@@ -84,14 +84,16 @@ int32_t CloneToAlbumService::ValidateRequest(CloneToAlbumReqBody &reqBody)
     }
 
     auto resultSet = QueryGetAlbumByAlbumId(reqBody.albumId);
-    int32_t count = 0;
-    if (resultSet != nullptr && resultSet->GetRowCount(count) == NativeRdb::E_OK && count > 0) {
-        resultSet->GoToFirstRow();
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_INNER_FAIL, "resultSet is nullptr");
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
         reqBody.albumLpath = GetStringVal(PhotoAlbumColumns::ALBUM_LPATH, resultSet);
         reqBody.albumSubType = GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet);
         reqBody.albumType = GetInt32Val(PhotoAlbumColumns::ALBUM_TYPE, resultSet);
+        resultSet->Close();
         return E_OK;
     }
+    resultSet->Close();
+    MEDIA_ERR_LOG("query album info failed");
     return E_ERR;
 }
 
@@ -287,8 +289,9 @@ int32_t CloneToAlbumService::CloneToAlbum(CloneToAlbumReqBody &reqBody)
         reqBody.assetsArray.size(), reqBody.albumId,  reqBody.requestId);
     int32_t ret = ValidateRequest(reqBody);
     if (ret != E_OK) {
+        CHECK_AND_RETURN_RET_LOG(ret != E_INNER_FAIL, E_INNER_FAIL, "validate request failed.");
         MEDIA_INFO_LOG("ValidateRequest error");
-        return ret;
+        return E_SCENE_PARAM_INVALID;
     }
 
     CloneTaskInfo cloneTaskInfo;
@@ -296,6 +299,7 @@ int32_t CloneToAlbumService::CloneToAlbum(CloneToAlbumReqBody &reqBody)
     uint64_t actualTotalSize = 0;
     ret = QueryAllAssetsInfo(reqBody, cloneTaskInfo, totalSize, actualTotalSize);
     if (ret != E_OK) {
+        CHECK_AND_RETURN_RET_LOG(ret != E_SCENE_HAS_RENAMED, E_SCENE_HAS_RENAMED, "not support rename");
         return E_SCENE_PARAM_INVALID;
     }
     if (!CheckFreeSpace(actualTotalSize)) {
@@ -355,14 +359,15 @@ int32_t InsertAlbumByLPath(const string &lpath)
 int32_t GetAlbumByLPath(CloneToAlbumReqBody &reqBody)
 {
     auto resultSet = QueryGetAlbumByLPath(reqBody.albumLpath);
-    int32_t count = 0;
-    if (resultSet != nullptr && resultSet->GetRowCount(count) == NativeRdb::E_OK && count > 0) {
-        resultSet->GoToFirstRow();
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_INNER_FAIL, "resultSet is nullptr.");
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
         reqBody.albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
         reqBody.albumSubType = GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet);
         reqBody.albumType = GetInt32Val(PhotoAlbumColumns::ALBUM_TYPE, resultSet);
+        resultSet->Close();
         return E_OK;
     }
+    resultSet->Close();
     auto ret = InsertAlbumByLPath(reqBody.albumLpath);
     if (ret <= 0) {
         MEDIA_ERR_LOG("album add err");
@@ -391,7 +396,7 @@ int32_t ValidateRequestForDir(CloneToAlbumReqBody &reqBody)
     reqBody.targetDir = TARGET_DIR + reqBody.targetDir;
     if (!MediaFileUtils::IsDirectory(reqBody.targetDir)) {
         MEDIA_ERR_LOG("targetDir is not directory");
-        return E_ERR;
+        return E_SCENE_ALBUM_NOT_EXIST;
     }
     if (!PhotoFileUtils::CheckFileManagerRealPath(reqBody.targetDir)) {
         MEDIA_ERR_LOG("targetDir is not file manager %{public}s", reqBody.targetDir.c_str());
@@ -401,7 +406,9 @@ int32_t ValidateRequestForDir(CloneToAlbumReqBody &reqBody)
         reqBody.albumLpath = DOCS_LPATH + reqBody.targetDir.substr(DOCS_DIR.length());
         MEDIA_INFO_LOG("albumLpath is %{public}s", reqBody.albumLpath.c_str());
     }
-    if (GetAlbumByLPath(reqBody)) {
+    int32_t ret = GetAlbumByLPath(reqBody);
+    if (ret != E_OK) {
+        CHECK_AND_RETURN_RET_LOG(ret != E_INNER_FAIL, E_INNER_FAIL, "GetAlbumByLPath inner fail");
         MEDIA_ERR_LOG("LPath is not file manager");
         return E_ERR;
     }
@@ -418,7 +425,9 @@ int32_t CloneToAlbumService::CloneToDir(CloneToAlbumReqBody &reqBody)
         reqBody.assetsArray.size());
     int32_t ret = ValidateRequestForDir(reqBody);
     if (ret != E_OK) {
-        return ret;
+        CHECK_AND_RETURN_RET_LOG(ret != E_INNER_FAIL, E_INNER_FAIL, "ValidateRequestForDir inner fail");
+        MEDIA_ERR_LOG("ValidateRequestForDir error");
+        return E_SCENE_PARAM_INVALID;
     }
 
     CloneTaskInfo cloneTaskInfo;
@@ -426,6 +435,7 @@ int32_t CloneToAlbumService::CloneToDir(CloneToAlbumReqBody &reqBody)
     uint64_t actualTotalSize = 0;
     ret = QueryAllAssetsInfo(reqBody, cloneTaskInfo, totalSize, actualTotalSize);
     if (ret != E_OK) {
+        CHECK_AND_RETURN_RET_LOG(ret != E_SCENE_HAS_RENAMED, E_SCENE_HAS_RENAMED, "not support rename");
         return E_SCENE_PARAM_INVALID;
     }
 
@@ -538,14 +548,16 @@ int32_t ValidateRequestByPath(CloneToAlbumReqBody &reqBody)
     reqBody.assetsArray = assetsUri;
 
     auto resultSet = QueryGetAlbumByAlbumId(reqBody.albumId);
-    int32_t count = 0;
-    if (resultSet != nullptr && resultSet->GetRowCount(count) == NativeRdb::E_OK && count > 0) {
-        resultSet->GoToFirstRow();
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_INNER_FAIL, "resultSet is nullptr");
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
         reqBody.albumLpath = GetStringVal(PhotoAlbumColumns::ALBUM_LPATH, resultSet);
         reqBody.albumSubType = GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet);
         reqBody.albumType = GetInt32Val(PhotoAlbumColumns::ALBUM_TYPE, resultSet);
+        resultSet->Close();
         return E_OK;
     }
+    resultSet->Close();
+    MEDIA_ERR_LOG("query album info failed");
     return E_ERR;
 }
 
@@ -554,8 +566,9 @@ int32_t CloneToAlbumService::CloneAssetByPath(CloneToAlbumReqBody &reqBody)
     MEDIA_INFO_LOG("CloneAssetByPath start");
     int32_t ret = ValidateRequestByPath(reqBody);
     if (ret != E_OK) {
-        MEDIA_INFO_LOG("ValidateRequest  error");
-        return ret;
+        CHECK_AND_RETURN_RET_LOG(ret != E_INNER_FAIL, E_INNER_FAIL, "ValidateRequestByPath inner error");
+        MEDIA_ERR_LOG("ValidateRequestByPath error");
+        return E_SCENE_PARAM_INVALID;
     }
 
     CloneTaskInfo cloneTaskInfo;
@@ -563,7 +576,9 @@ int32_t CloneToAlbumService::CloneAssetByPath(CloneToAlbumReqBody &reqBody)
     uint64_t actualTotalSize = 0;
     ret = QueryAllAssetsInfo(reqBody, cloneTaskInfo, totalSize, actualTotalSize);
     if (ret != E_OK) {
-        return E_INNER_FAIL;
+        CHECK_AND_RETURN_RET_LOG(ret != E_SCENE_HAS_RENAMED, E_SCENE_HAS_RENAMED, "not support rename");
+        MEDIA_ERR_LOG("QueryAllAssetsInfo error");
+        return E_SCENE_PARAM_INVALID;
     }
     if (!CheckFreeSpace(actualTotalSize)) {
         MEDIA_ERR_LOG("CheckFreeSpace FAIL");
@@ -573,7 +588,7 @@ int32_t CloneToAlbumService::CloneAssetByPath(CloneToAlbumReqBody &reqBody)
     uint32_t totalCount = static_cast<uint32_t>(cloneTaskInfo.cloneAssetInfo.size());
     if (cloneTaskInfo.cloneAssetInfo.size() != reqBody.assetsArray.size()) {
         MEDIA_INFO_LOG("size error");
-        return E_INNER_FAIL;
+        return E_SCENE_PARAM_INVALID;
     }
     cloneTaskInfo.progressCallback = reqBody.progressCallback;
     cloneTaskInfo.cloneCallbackType = CloneCallbackType::URI;

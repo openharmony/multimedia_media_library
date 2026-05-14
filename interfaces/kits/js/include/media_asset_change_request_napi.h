@@ -177,7 +177,7 @@ private:
     EXPORT static napi_value JSSetLivePhoto4dStatus(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetMovingPhotoVersion(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetHiddenAttribute(napi_env env, napi_callback_info info);
-    EXPORT static napi_value JSSetDisplayNameByFile(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetTitleByFile(napi_env env, napi_callback_info info);
 
     bool CheckChangeOperations(napi_env env);
     bool CheckMovingPhotoWriteOperation();
