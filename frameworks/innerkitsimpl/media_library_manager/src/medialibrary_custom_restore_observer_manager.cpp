@@ -22,7 +22,7 @@
 namespace OHOS::Media {
 void CustomRestoreNotifyObserver::OnChange(const ChangeInfo &changeInfo)
 {
-    MEDIA_DEBUG_LOG("CustomRestoreCallback OnChange");
+    MEDIA_INFO_LOG("CustomRestoreCallback OnChange");
     CHECK_AND_RETURN_LOG(customRestoreCallback_ != nullptr, "CustomRestoreCallback is nullptr");
     CHECK_AND_RETURN_LOG(!changeInfo.valueBuckets_.empty(), "changeInfo.valueBuckets_ is empty");
 
