@@ -123,6 +123,8 @@ std::unordered_set<uint32_t> PermissionCheck::grantOperationPermissionSet = {
     static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GRANT_PHOTO_URI_PERMISSION),
     static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CHECK_PHOTO_URI_PERMISSION),
     static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CHECK_AUDIO_URI_PERMISSION),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_PHOTO_URI_PERSIST_PERMISSION),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CANCEL_PHOTO_URI_PERSIST_PERMISSION),
 };
 // API whitelist for check media tool operation permission
 std::unordered_set<uint32_t> PermissionCheck::mediaToolOperationPermissionSet = {

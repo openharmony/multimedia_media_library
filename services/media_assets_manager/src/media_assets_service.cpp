@@ -807,6 +807,23 @@ static bool IsSupportHighResolution(const string& bundleName)
     return false;
 }
 
+int32_t MediaAssetsService::GetPhotoUriPersistPermission(uint32_t tokenId,
+    std::vector<int32_t> &permissionTypes)
+{
+    MEDIA_INFO_LOG("enter MediaAssetsService::GetPhotoUriPersistPermission");
+    int32_t errCode = this->rdbOperation_.GetPhotoUriPersistPermission(tokenId, permissionTypes);
+    MEDIA_INFO_LOG("MediaAssetsService::GetPhotoUriPersistPermission ret:%{public}d", errCode);
+    return errCode;
+}
+ 
+int32_t MediaAssetsService::CancelPhotoUriPersistPermission(uint32_t tokenId)
+{
+    MEDIA_INFO_LOG("enter MediaAssetsService::CancelPhotoUriPersistPermission");
+    int32_t errCode = this->rdbOperation_.CancelPhotoUriPersistPermission(tokenId);
+    MEDIA_INFO_LOG("MediaAssetsService::CancelPhotoUriPersistPermission ret:%{public}d", errCode);
+    return errCode;
+}
+
 std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetAssets(GetAssetsDto &dto, int32_t passCode)
 {
     MEDIA_INFO_LOG("MediaAssetsService::GetAssets enter");

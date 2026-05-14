@@ -175,6 +175,8 @@ public:
         GetResultSetFromPhotosExtendRespBody &resp);
     int32_t GetMovingPhotoDateModified(const std::string &fileId, GetMovingPhotoDateModifiedRespBody &resp);
     int32_t CancelPhotoUriPermissionInner(const CancelUriPermissionInnerDto& cancelUriPermissionInnerDto);
+    int32_t GetPhotoUriPersistPermission(uint32_t tokenId, std::vector<int32_t> &permissionTypes);
+    int32_t CancelPhotoUriPersistPermission(uint32_t tokenId);
     int32_t CheckPhotoUriPermissionInner(CheckUriPermissionInnerDto& checkUriPermissionInnerDto);
     int32_t CloseAsset(const CloseAssetReqBody &req);
     int32_t GetUrisByOldUrisInner(GetUrisByOldUrisInnerDto& getUrisByOldUrisInnerDto);

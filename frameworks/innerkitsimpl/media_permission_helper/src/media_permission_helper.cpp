@@ -36,6 +36,9 @@
 #include "check_photo_uri_permission_inner_vo.h"
 #include "reserve_photo_uri_permission_vo.h"
 #include "resume_photo_uri_permission_vo.h"
+#include "media_audio_column.h"
+#include "get_photo_uri_persist_permission_vo.h"
+#include "cancel_photo_uri_persist_permission_vo.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -717,6 +720,55 @@ int32_t MediaPermissionHelper::ResumePhotoUriPermission(const string appIdentifi
     }
     MEDIA_INFO_LOG("ResumePhotoUriPermission end, result: %{public}d", respBody.result);
     return respBody.result;
+}
+
+int32_t MediaPermissionHelper::GetPhotoUriPersistPermission(uint32_t tokenId,
+    std::vector<PhotoPermissionType> &photoPermissionList)
+{
+    MEDIA_INFO_LOG("GetPhotoUriPersistPermission begin, tokenId:%{public}u", tokenId);
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR, "dataShareHelper is null");
+ 
+    GetPhotoUriPersistPermissionReqBody reqBody;
+    reqBody.tokenId = static_cast<int64_t>(tokenId);
+    GetPhotoUriPersistPermissionRespBody respBody;
+    uint32_t businessCode =
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_PHOTO_URI_PERSIST_PERMISSION);
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, respBody);
+    if (errCode != E_SUCCESS && ForceReconnect()) {
+        MEDIA_WARN_LOG("GetPhotoUriPersistPermission failed, reconnect and retry");
+        errCode =
+            IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, respBody);
+    }
+    CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, E_ERR,
+        "GetPhotoUriPersistPermission failed, errCode: %{public}d", errCode);
+ 
+    photoPermissionList.clear();
+    for (int32_t permType : respBody.permissionTypes) {
+        photoPermissionList.emplace_back(static_cast<PhotoPermissionType>(permType));
+    }
+    return E_SUCCESS;
+}
+ 
+int32_t MediaPermissionHelper::CancelPhotoUriPersistPermission(uint32_t tokenId)
+{
+    MEDIA_INFO_LOG("CancelPhotoUriPersistPermission begin, tokenId:%{public}u", tokenId);
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR, "dataShareHelper is null");
+ 
+    CancelPhotoUriPersistPermissionReqBody reqBody;
+    reqBody.tokenId = static_cast<int64_t>(tokenId);
+    uint32_t businessCode =
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CANCEL_PHOTO_URI_PERSIST_PERMISSION);
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody);
+    if (errCode != E_SUCCESS && ForceReconnect()) {
+        MEDIA_WARN_LOG("CancelPhotoUriPersistPermission failed, reconnect and retry");
+        errCode =
+            IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody);
+    }
+    CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, E_ERR,
+        "CancelPhotoUriPersistPermission failed, errCode: %{public}d", errCode);
+    return E_SUCCESS;
 }
 
 } // namespace Media
