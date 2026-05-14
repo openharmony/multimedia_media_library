@@ -7276,6 +7276,33 @@ void MediaLibraryPhotoOperations::ProcessAlbumIdInCreate(FileAsset &fileAsset, M
         fileAsset.SetFileSourceType(static_cast<int32_t>(FileSourceType::FILE_MANAGER));
     }
 }
+
+int32_t MediaLibraryPhotoOperations::NotifyAssetSended(const std::string &uri, ServiceShareType type)
+{
+    CHECK_AND_RETURN_RET_LOG(!uri.empty(), E_ERR, "Invalid uri");
+    std::string id = MediaFileUtils::GetIdFromUri(uri);
+    MEDIA_INFO_LOG("NotifyAssetSended id: %{public}s", id.c_str());
+    std::string tempFilePath;
+    switch (type) {
+        case ServiceShareType::ASSET_LEVEL:
+            tempFilePath = MediaLibraryAssetOperations::GetAssetCompressCachePath(id);
+            break;
+        case ServiceShareType::NON_ASSET_LEVEL:
+            tempFilePath = MediaLibraryPhotoOperations::GetLivePhotoCachePathById(id);
+            break;
+        default:
+            MEDIA_ERR_LOG("Unsupported type: %{public}d", static_cast<int32_t>(type));
+            return E_ERR;
+    }
+    if (!tempFilePath.empty() && MediaFileUtils::IsFileExists(tempFilePath)) {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(tempFilePath), E_ERR,
+            "NotifyAssetSended delete file failed, tempFilePath: %{public}s",
+            DfxUtils::GetSafePath(tempFilePath).c_str());
+        MEDIA_DEBUG_LOG("NotifyAssetSended delete file success, tempFilePath: %{public}s",
+            DfxUtils::GetSafePath(tempFilePath).c_str());
+    }
+    return E_OK;
+}
 } // namespace Media
 } // namespace OHOS
 //LCOV_EXCL_STOP
