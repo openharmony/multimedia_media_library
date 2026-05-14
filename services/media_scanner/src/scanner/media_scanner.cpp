@@ -775,7 +775,7 @@ int32_t MediaScannerObj::InsertOrUpdateAlbumInfo(const string &albumPath, int32_
     int32_t albumId = UNKNOWN_ID;
     bool update = false;
 
-    if (stat(albumPath.c_str(), &statInfo)) {
+    if (stat(albumPath.c_str(), &statInfo) == -1) {
         MEDIA_ERR_LOG("stat dir error %{public}d", errno);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
             {KEY_OPT_FILE, albumPath}, {KEY_OPT_TYPE, OptType::SCAN}};
@@ -959,6 +959,7 @@ int32_t MediaScannerObj::ScanDirInternal()
      * 1. may query albums in batch for the big data case
      * 2. postpone this operation might avoid some conflicts
      */
+    CHECK_AND_RETURN_RET_LOG(mediaScannerDb_!= nullptr, E_ERR, "mediaScannerDb_ is nullptr");
     int32_t err = mediaScannerDb_->ReadAlbums(dir_, albumMap_);
     if (err != E_OK) {
         MEDIA_ERR_LOG("read albums err %{public}d", err);
