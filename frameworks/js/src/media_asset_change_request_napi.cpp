@@ -182,7 +182,7 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_STATIC_FUNCTION("deleteLocalAssetsWithUri", JSDeleteLocalAssetsWithUri),
             DECLARE_NAPI_STATIC_FUNCTION("deleteCloudAssetsWithUri", JSDeleteCloudAssetsWithUri),
             DECLARE_NAPI_FUNCTION("setHiddenAttribute", JSSetHiddenAttribute),
-            DECLARE_NAPI_FUNCTION("setDisplayNameByFile", JSSetDisplayNameByFile),
+            DECLARE_NAPI_FUNCTION("setTitleByFile", JSSetTitleByFile),
             DECLARE_NAPI_STATIC_FUNCTION("deleteAssetsPermanentlyWithUri", JSDeleteAssetsPermanentlyWithUri),
             DECLARE_NAPI_FUNCTION("setLivePhoto4dStatus", JSSetLivePhoto4dStatus),
             DECLARE_NAPI_FUNCTION("setMovingPhotoVersion", JSSetMovingPhotoVersion),
@@ -1232,7 +1232,7 @@ napi_value MediaAssetChangeRequestNapi::JSSetHiddenAttribute(napi_env env, napi_
     RETURN_NAPI_UNDEFINED(env);
 }
 
-napi_value MediaAssetChangeRequestNapi::JSSetDisplayNameByFile(napi_env env, napi_callback_info info)
+napi_value MediaAssetChangeRequestNapi::JSSetTitleByFile(napi_env env, napi_callback_info info)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
@@ -1240,17 +1240,18 @@ napi_value MediaAssetChangeRequestNapi::JSSetDisplayNameByFile(napi_env env, nap
     }
 
     auto asyncContext = std::make_unique<MediaAssetChangeRequestAsyncContext>();
-    std::string displayName;
-    napi_status status = MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, displayName);
+    std::string title;
+    napi_status status = MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, title);
     CHECK_COND_WITH_ERR_MESSAGE(env, status == napi_ok && asyncContext->argc == 1,
         JS_E_PARAM_INVALID, "Scene parameters validate failed.");
 
     auto changeRequest = asyncContext->objectInfo;
     CHECK_COND(env, changeRequest != nullptr && changeRequest->GetFileAssetInstance() != nullptr, JS_E_PARAM_INVALID);
 
+    std::string extension = MediaFileUtils::SplitByChar(changeRequest->GetFileAssetInstance()->GetDisplayName(), '.');
+    std::string displayName = title + "." + extension;
     CHECK_COND_WITH_ERR_MESSAGE(env, MediaFileUtils::CheckDisplayName(displayName, false, true) == E_OK,
         JS_E_PARAM_INVALID, "Invalid display name.");
-
     changeRequest->GetFileAssetInstance()->SetDisplayName(displayName);
     changeRequest->RecordChangeOperation(AssetChangeOperation::SET_DISPLAY_NAME_BY_FILE);
     RETURN_NAPI_UNDEFINED(env);

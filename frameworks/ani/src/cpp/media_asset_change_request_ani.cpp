@@ -106,8 +106,8 @@ const std::array mediaAssetChangeMethods = {
         reinterpret_cast<void *>(MediaAssetChangeRequestAni::GetWriteCacheHandler)},
     ani_native_function {"setHiddenAttribute", nullptr,
         reinterpret_cast<void *>(MediaAssetChangeRequestAni::SetHiddenAttribute)},
-    ani_native_function {"setDisplayNameByFile", nullptr,
-        reinterpret_cast<void *>(MediaAssetChangeRequestAni::SetDisplayNameByFile)},
+    ani_native_function {"setTitleByFile", nullptr,
+        reinterpret_cast<void *>(MediaAssetChangeRequestAni::SetTitleByFile)},
 };
 
 std::array staticMethods = {
@@ -3027,17 +3027,15 @@ ani_object MediaAssetChangeRequestAni::SetHiddenAttribute(ani_env *env, ani_obje
     return ReturnAniUndefined(env);
 }
 
-ani_object MediaAssetChangeRequestAni::SetDisplayNameByFile(ani_env *env, ani_object object, ani_string name)
+ani_object MediaAssetChangeRequestAni::SetTitleByFile(ani_env *env, ani_object object, ani_string name)
 {
     if (!MediaLibraryAniUtils::IsSystemApp()) {
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
     }
-    std::string displayName;
-    ani_status status = MediaLibraryAniUtils::GetParamStringPathMax(env, name, displayName);
+    std::string title;
+    ani_status status = MediaLibraryAniUtils::GetParamStringPathMax(env, name, title);
     CHECK_COND_RET(status == ANI_OK, nullptr, "Failed to parse args");
-    CHECK_COND_RET(MediaFileUtils::CheckDisplayName(displayName, false, true) == E_OK,
-        nullptr, "Invalid display name.");
 
     auto context = std::make_unique<MediaAssetChangeRequestAniContext>();
     CHECK_COND_WITH_MESSAGE(env, context != nullptr, "Failed to create asyncContext");
@@ -3045,6 +3043,11 @@ ani_object MediaAssetChangeRequestAni::SetDisplayNameByFile(ani_env *env, ani_ob
     auto changeRequest = context->objectInfo;
     CHECK_COND_RET(changeRequest != nullptr, nullptr, "changeRequest is nullptr");
     CHECK_COND_RET(changeRequest->GetFileAssetInstance() != nullptr, nullptr, "fileAsset is nullptr");
+
+    std::string extension = MediaFileUtils::SplitByChar(changeRequest->GetFileAssetInstance()->GetDisplayName(), '.');
+    std::string displayName = title + "." + extension;
+    CHECK_COND_RET(MediaFileUtils::CheckDisplayName(displayName, false, true) == E_OK,
+        nullptr, "Invalid display name.");
 
     changeRequest->GetFileAssetInstance()->SetDisplayName(displayName);
     changeRequest->RecordChangeOperation(AssetChangeOperation::SET_DISPLAY_NAME_BY_FILE);
