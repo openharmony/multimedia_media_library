@@ -215,13 +215,13 @@ int32_t LcdAgingManager::DeleteLocalFile(const std::string &localPath)
 {
     CHECK_AND_RETURN_RET_LOG(!localPath.empty(), E_ERR, "path is empty");
     if (!MediaFileUtils::IsFileExists(localPath)) {
-        MEDIA_WARN_LOG("localPath not exist, path: %{public}s", localPath.c_str());
+        MEDIA_WARN_LOG("localPath not exist, path: %{public}s", MediaFileUtils::DesensitizePath(localPath).c_str());
         return E_ERR;
     }
     if (!MediaFileUtils::DeleteFile(localPath)) {
         // 删除文件失败，兜底重试一次
         CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(localPath),
-            "Failed to delete localPath, path: %{public}s", localPath.c_str());
+            "Failed to delete localPath, path: %{public}s", MediaFileUtils::DesensitizePath(localPath).c_str());
         return E_ERR;
     }
     return E_OK;
@@ -287,7 +287,7 @@ bool LcdAgingManager::CheckLocalLcd(LcdAgingFileInfo &agingFileInfo)
     bool isValid = !localLcdPath.empty();
     isValid = isValid && (stat(localLcdPath.c_str(), &statInfo) == E_SUCCESS);
     CHECK_AND_RETURN_RET_LOG(isValid, false,
-        "local lcd not exist, path: %{public}s", localLcdPath.c_str());
+        "local lcd not exist, path: %{public}s", MediaFileUtils::DesensitizePath(localLcdPath).c_str());
     agingFileInfo.lcdFileSize = statInfo.st_size;
     RegenerateAstcWithLocal(agingFileInfo);
     return true;
