@@ -142,7 +142,7 @@ int32_t MediaAlbumChangeRequestImpl::CJRemoveAssets(std::vector<std::string> ass
         LOGE("Only user album can add assets");
         return OHOS_INVALID_PARAM_CODE;
     }
-    if (!CheckDuplicatedAssetArray(assetUriArray, assetsToAdd_)) {
+    if (!CheckDuplicatedAssetArray(assetUriArray, assetsToRemove_)) {
         LOGE("The previous addAssets operation has contained the same asset");
         return JS_E_OPERATION_NOT_SUPPORT;
     }
@@ -259,8 +259,6 @@ static void GetAlbumUpdateCoverUri(shared_ptr<PhotoAlbum>& photoAlbum, string& u
         uri = CONST_PAH_PORTRAIT_ANAALBUM_COVER_URI;
     } else if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::GROUP_PHOTO) {
         uri = CONST_PAH_GROUP_ANAALBUM_COVER_URI;
-    } else if (PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) {
-        uri = CONST_PAH_UPDATE_USER_ALBUM_COVER_URI;
     } else if (PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) {
         uri = CONST_PAH_UPDATE_USER_ALBUM_COVER_URI;
     } else if (PhotoAlbum::IsSourceAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) {
