@@ -1451,7 +1451,11 @@ function encrypt(data) {
   if (!data || data?.indexOf('file:///data/storage/') !== -1) {
     return '';
   }
-  return data.replace(/(\/\w+)\./g, '/******.');
+  let encryptedData = data.replace(/(\/[\w()%+-]+)\./g, '/******.');
+  encryptedData = encryptedData.replace(/"userComment":"([^"]|\")*"/g, '"userComment":"******"');
+  encryptedData = encryptedData.replace(/"albumName":"([^"]|\")*"/g, '"albumName":"******"');
+  encryptedData = encryptedData.replace(/"displayName":"([^"]|\")*"/g, '"displayName":"******"');
+  return encryptedData;
 }
 
 class MediaAssetChangeRequest extends photoAccessHelper.MediaAssetChangeRequest {
