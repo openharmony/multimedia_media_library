@@ -176,11 +176,11 @@ protected:
             auto threadNum = ++threadNum_;
             auto pthread_slf = pthread_self();
             auto tid = gettid();
-            MEDIA_DEBUG_LOG("tid: %{public}d, thread(%{public}s-%{public}llu) enter. thread num:%{public}llu",
+            MEDIA_DEBUG_LOG("tid: %{public}d, thread(%{public}s-%{public}llu) enter. thread num:%{public}" PRIu64,
                 tid, name_.c_str(), static_cast<unsigned long long>(pthread_self()), threadNum);
             func_();
             threadNum = --threadNum_;
-            MEDIA_INFO_LOG("tid: %{public}d, thread(%{public}s-%{public}llu): exit. thread num :%{public}llu",
+            MEDIA_INFO_LOG("tid: %{public}d, thread(%{public}s-%{public}llu): exit. thread num :%{public}" PRIu64,
                 tid, name_.c_str(), static_cast<unsigned long long>(pthread_slf), threadNum);
         }
     private:

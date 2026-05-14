@@ -331,7 +331,7 @@ int32_t FolderParser::InsertAlbum(CommonAlbumInfo &commonAlbumInfo)
     AccurateRefresh::AlbumAccurateRefresh albumRefresh;
     int32_t ret = albumRefresh.Insert(albumId, PhotoAlbumColumns::TABLE, value);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK && albumId > 0, E_ERR,
-        "Insert photo albums failed, failed albumId is %{public}lld and lpath is %{public}s",
+        "Insert photo albums failed, failed albumId is %{public}" PRId64 " and lpath is %{public}s",
         albumId, FileScanUtils::GarbleFilePath(commonAlbumInfo.lpath).c_str());
     commonAlbumInfo.albumId = static_cast<int32_t>(albumId);
 
