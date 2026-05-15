@@ -223,7 +223,7 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> me
     {static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_CANCEL_MOVE_TASK),
         {{SYSTEMAPI_PERM, READ_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CREATE_FILE_MANAGER_ASSET),
-        {{SYSTEMINNERAPI_PERM, WRITE_PERM}}},
+        {{SYSTEMINNERAPI_PERM, WRITE_PERM}, {SYSTEMAPI_PERM, WRITE_PERM}}},
 };
 
 static std::unordered_set<uint32_t> mediaAssetsPermissionDbBypass = {
