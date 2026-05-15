@@ -558,7 +558,7 @@ static bool IsLakeModify(const std::string& editPath, int64_t editTime)
     }
 
     // 1000ms 5000ms
-    MEDIA_INFO_LOG("RealEditTime:%{public}lld, editTime:%{public}lld", realEditTime, editTime);
+    MEDIA_INFO_LOG("[RealEditTime:%{public}" PRId64 "], editTime:%{public}" PRId64, realEditTime, editTime);
     if (realEditTime - editTime * SEC_TO_MSEC >= LAKE_MODIFY_TIME_THRESHOLD_MS) {
         MEDIA_INFO_LOG("Lake modify");
         return true;
