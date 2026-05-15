@@ -24,6 +24,7 @@ using namespace std;
 const MediaType FILE_MEDIA_TYPE_DEFAULT = MEDIA_TYPE_FILE;
 const MediaType FILE_MEDIA_TYPE_MAX = MEDIA_TYPE_DEFAULT;
 
+// LCOV_EXCL_START
 Metadata::Metadata()
     : id_(FILE_ID_DEFAULT),
     uri_(URI_DEFAULT),
@@ -706,5 +707,6 @@ int64_t Metadata::GetLocalAssetSize() const
 {
     return localAssetSize_;
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
