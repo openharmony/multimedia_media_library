@@ -1809,7 +1809,7 @@ static bool IsDeleteOtherAlbum(int32_t oldAlbumId)
 static int32_t UpdateStoragePath(
     MediaLibraryAlbumFusionUtils::ExecuteObject& executeObject, int64_t newAlbumId)
 {
-    MEDIA_INFO_LOG("enter UpdateStoragePath, newAlbumId:%{public}lld", newAlbumId);
+    MEDIA_INFO_LOG("enter UpdateStoragePath, newAlbumId:%{public}" PRId64, newAlbumId);
     CHECK_AND_RETURN_RET_LOG(executeObject.trans != nullptr, E_HAS_DB_ERROR, "transactionOprn is null");
     const std::string updateSql = "UPDATE Photos "
     "SET storage_path = '/storage/media/local/files/Docs' "
@@ -2803,7 +2803,7 @@ int32_t MediaLibraryAlbumFusionUtils::CloneProgressAsset(const CloneAssetInfo &c
     const std::string queryAssetSql = queryAssetSqlPrefix + to_string(cloneAssetInfo.fileId);
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(queryAssetSql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("CloneSingleAsset query asset meta failed, assetId: %{public}lld", cloneAssetInfo.fileId);
+        MEDIA_ERR_LOG("CloneSingleAsset query asset meta failed, assetId: %{public}" PRId64, cloneAssetInfo.fileId);
         return E_DB_FAIL;
     }
 
@@ -2815,7 +2815,7 @@ int32_t MediaLibraryAlbumFusionUtils::CloneProgressAsset(const CloneAssetInfo &c
     targetAssetInfo.progressCallback = progressCallback;
     targetAssetInfo.requestId = to_string(cloneAssetInfo.requestId);
     int32_t err = CopyLocalSingleFileSync(assetRefresh, targetAlbumId, resultSet, targetAssetInfo);
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Clone local asset failed, ret = %{public}d, assetId = %{public}lld",
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Clone local asset failed, ret = %{public}d, assetId = %{public}" PRId64,
         err, cloneAssetInfo.fileId);
 
     RdbPredicates newPredicates(PhotoColumn::PHOTOS_TABLE);

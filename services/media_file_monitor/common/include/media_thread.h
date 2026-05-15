@@ -181,7 +181,8 @@ protected:
             func_();
             threadNum = --threadNum_;
             MEDIA_INFO_LOG("tid: %{public}d, thread(%{public}s-%{public}llu): exit. thread num :%{public}llu",
-                tid, name_.c_str(), static_cast<unsigned long long>(pthread_slf), threadNum);
+                tid, name_.c_str(), static_cast<unsigned long long>(pthread_slf),
+                static_cast<unsigned long long>(threadNum));
         }
     private:
         std::string name_;
