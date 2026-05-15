@@ -176,12 +176,13 @@ protected:
             auto threadNum = ++threadNum_;
             auto pthread_slf = pthread_self();
             auto tid = gettid();
-            MEDIA_DEBUG_LOG("tid: %{public}d, thread(%{public}s-%{public}llu) enter. thread num:%{public}" PRIu64,
+            MEDIA_DEBUG_LOG("tid: %{public}d, thread(%{public}s-%{public}llu) enter. thread num:%{public}llu",
                 tid, name_.c_str(), static_cast<unsigned long long>(pthread_self()), threadNum);
             func_();
             threadNum = --threadNum_;
-            MEDIA_INFO_LOG("tid: %{public}d, thread(%{public}s-%{public}llu): exit. thread num :%{public}" PRIu64,
-                tid, name_.c_str(), static_cast<unsigned long long>(pthread_slf), threadNum);
+            MEDIA_INFO_LOG("tid: %{public}d, thread(%{public}s-%{public}llu): exit. thread num :%{public}llu",
+                tid, name_.c_str(), static_cast<unsigned long long>(pthread_slf),
+                static_cast<unsigned long long>(threadNum));
         }
     private:
         std::string name_;
