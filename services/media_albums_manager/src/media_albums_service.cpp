@@ -17,6 +17,7 @@
 
 #include "media_albums_service.h"
 
+#include <charconv>
 #include <string>
 #include <map>
 #include <sys/stat.h>
@@ -67,12 +68,25 @@ using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS::Media {
+namespace {
+bool ParseInt32(const std::string &value, int32_t &result)
+{
+    const char *begin = value.data();
+    const char *end = begin + value.size();
+    auto parsed = std::from_chars(begin, end, result);
+    return parsed.ec == std::errc{} && parsed.ptr == end;
+}
+} // namespace
+
 static std::shared_ptr<PhotoAlbum> BuildAnalysisAlbumTarget(const ChangeRequestOperateAlbumAttributeDto &dto)
 {
     CHECK_AND_RETURN_RET_LOG(!dto.albumId.empty() && MediaLibraryDataManagerUtils::IsNumber(dto.albumId), nullptr,
         "invalid albumId: %{public}s", dto.albumId.c_str());
+    int32_t albumId = 0;
+    CHECK_AND_RETURN_RET_LOG(ParseInt32(dto.albumId, albumId), nullptr,
+        "albumId is out of range: %{public}s", dto.albumId.c_str());
     auto photoAlbum = std::make_shared<PhotoAlbum>();
-    photoAlbum->SetAlbumId(std::atoi(dto.albumId.c_str()));
+    photoAlbum->SetAlbumId(albumId);
     photoAlbum->SetPhotoAlbumType(static_cast<PhotoAlbumType>(dto.albumType));
     photoAlbum->SetPhotoAlbumSubType(static_cast<PhotoAlbumSubType>(dto.albumSubType));
     return photoAlbum;
@@ -398,7 +412,8 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAlbumsService::AlbumGetSelec
         std::string fileId = filterJson["currentFileId"].get<std::string>();
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsValidInteger(fileId), nullptr,
             "AlbumGetSelectedAssets get score fail");
-        curFileId = std::stoi(fileId);
+        CHECK_AND_RETURN_RET_LOG(ParseInt32(fileId, curFileId), nullptr,
+            "AlbumGetSelectedAssets file id is out of range");
         maxScore = this->rdbOperation_.GetAssetScore(dto, curFileId);
     }
     minScore = this->rdbOperation_.GetLimitScore(dto);
