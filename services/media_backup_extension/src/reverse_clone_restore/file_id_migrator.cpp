@@ -16,6 +16,7 @@
 #define MLOG_TAG "Media_Reverse_Restore"
 #include "file_id_migrator.h"
 #include "media_log.h"
+#include <charconv>
 #include <regex>
 #include <algorithm>
 #include <sstream>
@@ -445,7 +446,15 @@ bool FileIdMigrator::UpdateEmbeddedBatch(const std::string &table,
                     lastMaxId = id;  // 更新游标
                     continue;
                 }
-                int64_t fileId = std::stoll(fileIdStr);
+                int64_t fileId = 0;
+                const char *begin = fileIdStr.data();
+                const char *end = begin + fileIdStr.size();
+                auto parsed = std::from_chars(begin, end, fileId);
+                if (parsed.ec != std::errc{} || parsed.ptr != end) {
+                    MEDIA_ERR_LOG("invalid fileIdStr range: %{public}s", fileIdStr.c_str());
+                    lastMaxId = id;
+                    continue;
+                }
                 if (fileId > 0 && fileId <= newMaxExtended) {
                     // 需要偏移：生成新的 file_id 并替换
                     int64_t newFileId = fileId + oldMax;
