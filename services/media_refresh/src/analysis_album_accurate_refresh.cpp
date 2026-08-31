@@ -16,6 +16,7 @@
 #define MLOG_TAG "AccurateRefresh::AnalysisAlbumAccurateRefresh"
 #include "analysis_album_accurate_refresh.h"
 
+#include <charconv>
 #include <cstdint>
 
 #include "analysis_strategy_registry.h"
@@ -139,7 +140,12 @@ void AnalysisAlbumAccurateRefresh::BuildRefreshItems(int32_t deltaCount, const v
         refresh.deltaCount_ = deltaCount;
         for (auto &idStr : deletedAssetIds) {
             CHECK_AND_CONTINUE(MediaFileUtils::IsValidInteger(idStr));
-            refresh.removeFileIds_.emplace(std::stoi(idStr));
+            int32_t fileId = 0;
+            const char *begin = idStr.data();
+            const char *end = begin + idStr.size();
+            auto parsed = std::from_chars(begin, end, fileId);
+            CHECK_AND_CONTINUE(parsed.ec == std::errc{} && parsed.ptr == end);
+            refresh.removeFileIds_.emplace(fileId);
         }
 
         auto analyzer = AnalysisStrategyRegistry::GetAnalyzer(base.albumSubtype);
