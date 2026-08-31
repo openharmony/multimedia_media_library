@@ -17,6 +17,7 @@
 
 #include "analysis_album_refresh_execution.h"
 
+#include <charconv>
 #include <sstream>
 
 #include "accurate_common_data.h"
@@ -384,7 +385,12 @@ void AnalysisAlbumRefreshExecution::RefreshAllAlbum(const vector<string> &albumI
         // 1. 构造受影响的albumId
         for (auto albumIdStr : albumIdList) {
             CHECK_AND_CONTINUE(MediaFileUtils::IsValidInteger(albumIdStr));
-            affectedAlbumIds.emplace_back(std::stoi(albumIdStr));
+            int32_t albumId = 0;
+            const char *begin = albumIdStr.data();
+            const char *end = begin + albumIdStr.size();
+            auto parsed = std::from_chars(begin, end, albumId);
+            CHECK_AND_CONTINUE(parsed.ec == std::errc{} && parsed.ptr == end);
+            affectedAlbumIds.emplace_back(albumId);
         }
 
         // 2. 初始化精准刷新上下文
