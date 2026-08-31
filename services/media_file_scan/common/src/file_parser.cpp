@@ -15,6 +15,7 @@
 #define MLOG_TAG "FileParser"
 
 #include "file_parser.h"
+#include "parse_file_id.h"
 
 #include <regex>
 #include <sys/stat.h>
@@ -882,8 +883,8 @@ int64_t FileParser::GetFileDateAdded(const struct stat &statInfo)
 
 void FileParser::SetFileManagerScanFlagBySingle(const std::string &fileIdStr, bool stopScan)
 {
-    CHECK_AND_RETURN_LOG(all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit), "fileIdStr is not digit.");
-    int32_t fileId = std::stoi(fileIdStr);
+    int32_t fileId = 0;
+    CHECK_AND_RETURN_LOG(ParseFileId(fileIdStr, fileId), "fileIdStr is not digit.");
     std::lock_guard<std::mutex> lock(g_fileManagerScanFlagMutex);
     if (stopScan) {
         g_fileManagerScanFlag[fileId] = stopScan;
