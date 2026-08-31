@@ -16,6 +16,7 @@
 #define MLOG_TAG "BackgroundCloudBatchSelectedFileProcessor"
 
 #include "background_cloud_batch_selected_file_processor.h"
+#include <charconv>
 #include <sys/statvfs.h>
 
 #include "abs_rdb_predicates.h"
@@ -74,6 +75,18 @@ static const int32_t ABLE_RESTORE_DOWNLOAD_POWER = 30;
 #endif
 
 static const int64_t DOWNLOAD_ID_DEFAULT = -1;
+
+static int32_t ParseFileId(const std::string &value)
+{
+    int32_t result = -1;
+    const char *begin = value.data();
+    const char *end = begin + value.size();
+    auto parsed = std::from_chars(begin, end, result);
+    if (parsed.ec != std::errc{} || parsed.ptr != end) {
+        return -1;
+    }
+    return result;
+}
 
 int32_t BackgroundCloudBatchSelectedFileProcessor::downloadInterval_ = DOWNLOAD_INTERVAL;  // 1 minute
 int32_t BackgroundCloudBatchSelectedFileProcessor::downloadSelectedInterval_ = DOWNLOAD_SELECTED_INTERVAL;
@@ -568,7 +581,7 @@ void BackgroundCloudBatchSelectedFileProcessor::DownloadSelectedBatchFilesExecut
         "BatchSelectFileDownload Failed to start Executor UpdateDBProgress, ret: %{public}d", ret);
     // 检查点 批量下载 通知应用 notify type 0 开始进度
     int32_t retProgress = NotificationMerging::ProcessNotifyDownloadProgressInfo(
-        DownloadAssetsNotifyType::DOWNLOAD_PROGRESS, std::stoi(fileId), percentDB);
+        DownloadAssetsNotifyType::DOWNLOAD_PROGRESS, ParseFileId(fileId), percentDB);
     MEDIA_INFO_LOG("BatchSelectFileDownload StartNotify DOWNLOAD_PROGRESS downloadId: %{public}" PRId64
         ", ret: %{public}d", downloadId, retProgress);
 }
@@ -676,7 +689,7 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedRunningCallba
         // 检查点 批量下载 通知应用 notify type 0 进度
         if (MediaLibraryDataManagerUtils::IsNumber(fileId)) {
             int32_t ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(
-                DownloadAssetsNotifyType::DOWNLOAD_PROGRESS, std::stoi(fileId), percent);
+                DownloadAssetsNotifyType::DOWNLOAD_PROGRESS, ParseFileId(fileId), percent);
             MEDIA_INFO_LOG("BatchSelectFileDownload RunningCallback NotifyDownloadProgressInfo, ret: %{public}d", ret);
         }
     }
@@ -705,7 +718,7 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedSuccessCallba
     // 检查点 批量下载 通知应用 notify type 1 完成
     if (MediaLibraryDataManagerUtils::IsNumber(fileId)) {
         ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(DownloadAssetsNotifyType::DOWNLOAD_FINISH,
-            std::stoi(fileId), 100); // 100 finish
+            ParseFileId(fileId), 100); // 100 finish
         MEDIA_INFO_LOG("BatchSelectFileDownload SuccessCallback NotifyDownloadProgressInfo, ret: %{public}d", ret);
     }
     unique_lock<mutex> downloadLock(downloadResultMutex_);
@@ -750,7 +763,7 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedFailedCallbac
         // 检查点 批量下载 通知应用 notify type 2 失败
         if (MediaLibraryDataManagerUtils::IsNumber(fileId)) {
             ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(DownloadAssetsNotifyType::DOWNLOAD_FAILED,
-                std::stoi(fileId), percent);
+                ParseFileId(fileId), percent);
             MEDIA_INFO_LOG("BatchSelectFileDownload FailedCallback NotifyDownloadProgressInfo, ret: %{public}d", ret);
         }
     }
@@ -1339,7 +1352,7 @@ void BackgroundCloudBatchSelectedFileProcessor::TriggerCancelBatchDownloadProces
             CHECK_AND_RETURN_LOG(MediaLibraryDataManagerUtils::IsNumber(fileId), "Error fileId: %{public}s",
                 fileId.c_str());
             int32_t ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(
-                DownloadAssetsNotifyType::DOWNLOAD_ASSET_DELETE, std::stoi(fileId), -1);
+                DownloadAssetsNotifyType::DOWNLOAD_ASSET_DELETE, ParseFileId(fileId), -1);
             MEDIA_INFO_LOG("BatchSelectFileDownload StartNotify DOWNLOAD_ASSET_DELETE fileId: %{public}s,"
                 " ret: %{public}d", fileId.c_str(), ret);
         }
