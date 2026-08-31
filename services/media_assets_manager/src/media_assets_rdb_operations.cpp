@@ -17,6 +17,8 @@
  
 #include "media_assets_rdb_operations.h"
 
+#include <charconv>
+
 #include "map_operation_flag.h"
 #include "form_map.h"
 #include "medialibrary_formmap_operations.h"
@@ -125,8 +127,14 @@ int32_t MediaAssetsRdbOperations::SaveFormInfo(const string& formId, const strin
         CHECK_AND_RETURN_RET_LOG(QueryFileIdIfExists(mediaUri.GetFileId()),
             E_GET_PRAMS_FAIL, "the fileId is not exist");
         if (MediaLibraryDataManagerUtils::IsNumber(formId)) {
-            vector<int64_t> formIds = { std::stoll(formId) };
-            MediaLibraryFormMapOperations::PublishedChange(uri, formIds, true);
+            int64_t parsedFormId = 0;
+            const char *begin = formId.data();
+            const char *end = begin + formId.size();
+            auto parsed = std::from_chars(begin, end, parsedFormId);
+            if (parsed.ec == std::errc{} && parsed.ptr == end) {
+                vector<int64_t> formIds = { parsedFormId };
+                MediaLibraryFormMapOperations::PublishedChange(uri, formIds, true);
+            }
         }
     }
     if (QueryFormIdIfExists(formId)) {
