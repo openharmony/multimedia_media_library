@@ -15,6 +15,8 @@
 
 #include "media_analysis_callback_stub.h"
 
+#include <charconv>
+
 #include "media_log.h"
 #include "media_file_utils.h"
 #include "medialibrary_common_utils.h"
@@ -64,9 +66,17 @@ int32_t MediaAnalysisCallbackStub::PortraitCoverSelectionCompleted(const std::st
         return ERR_INVALID_DATA;
     }
 
+    int32_t parsedAlbumId = 0;
+    const char *begin = albumId.data();
+    const char *end = begin + albumId.size();
+    auto parsed = std::from_chars(begin, end, parsedAlbumId);
+    if (parsed.ec != std::errc{} || parsed.ptr != end) {
+        MEDIA_ERR_LOG("PortraitCoverSelectionCompleted albumId is out of range");
+        return ERR_INVALID_DATA;
+    }
     int32_t ret =
         watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, albumId),
-        NotifyType::NOTIFY_UPDATE, std::stoi(albumId));
+        NotifyType::NOTIFY_UPDATE, parsedAlbumId);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("PortraitCoverSelectionCompleted Notify error: %{public}d", ret);
         return ret;
