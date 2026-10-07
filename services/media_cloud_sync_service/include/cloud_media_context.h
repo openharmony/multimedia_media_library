@@ -17,6 +17,7 @@
 #define OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_CONTEXT_H
 
 #include <atomic>
+#include <charconv>
 #include <string>
 #include <unordered_map>
 
@@ -27,6 +28,14 @@
 #include "cloud_share_album_define.h"
 
 namespace OHOS::Media::CloudSync {
+inline bool ParseInt32(const std::string &value, int32_t &result)
+{
+    const char *begin = value.data();
+    const char *end = begin + value.size();
+    auto parsed = std::from_chars(begin, end, result);
+    return parsed.ec == std::errc{} && parsed.ptr == end;
+}
+
 class CloudMediaContext {
 public:
     static CloudMediaContext& GetInstance()
@@ -60,7 +69,8 @@ public:
         bool isValid = headerIt != headerMap.end();
         isValid = isValid && MediaLibraryDataManagerUtils::IsNumber(headerIt->second.c_str());
         CHECK_AND_RETURN(isValid);
-        int32_t cloudType = std::atoi(headerIt->second.c_str());
+        int32_t cloudType = 0;
+        CHECK_AND_RETURN(ParseInt32(headerIt->second, cloudType));
         this->SetCloudType(cloudType);
     }
 
@@ -74,7 +84,11 @@ public:
             this->SetSceneType(static_cast<int32_t>(SceneType::NORMAL));
             return;
         }
-        int32_t sceneType = std::atoi(headerIt->second.c_str());
+        int32_t sceneType = 0;
+        if (!ParseInt32(headerIt->second, sceneType)) {
+            this->SetSceneType(static_cast<int32_t>(SceneType::NORMAL));
+            return;
+        }
         this->SetSceneType(sceneType);
     }
 
