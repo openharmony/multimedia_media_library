@@ -17,6 +17,8 @@
 
 #include "multistages_capture_manager.h"
 
+#include <charconv>
+
 #include "database_adapter.h"
 #include "image_packer.h"
 #include "exif_utils.h"
@@ -54,6 +56,17 @@ namespace OHOS {
 namespace Media {
 const int32_t SAVE_PICTURE_TIMEOUT_SEC = 20;
 constexpr int32_t HIGH_PIXEL_SIDE = 12 * 1024;
+
+namespace {
+bool ParseInt32(const std::string &value, int32_t &result)
+{
+    const char *begin = value.data();
+    const char *end = begin + value.size();
+    auto parsed = std::from_chars(begin, end, result);
+    return parsed.ec == std::errc{} && parsed.ptr == end;
+}
+} // namespace
+
 MultiStagesPhotoCaptureManager::MultiStagesPhotoCaptureManager()
 {
     deferredProcSession_ = make_shared<DeferredPhotoProcessingAdapter>();
@@ -76,7 +89,8 @@ bool MultiStagesPhotoCaptureManager::Init()
 void MultiStagesPhotoCaptureManager::CancelRequestAndRemoveImage(const vector<string> &columns)
 {
     CHECK_AND_RETURN_LOG(columns.size() >= 1, "invalid param");
-    int32_t fileId = stoi(columns[0]);
+    int32_t fileId = 0;
+    CHECK_AND_RETURN_LOG(ParseInt32(columns[0], fileId), "invalid file id");
     string photoId = MultiStagesCaptureRequestTaskManager::GetProcessingPhotoId(fileId);
     MEDIA_INFO_LOG("fileId: %{public}d, photoId: %{public}s", fileId, photoId.c_str());
     CancelProcessRequest(photoId);
@@ -88,8 +102,16 @@ shared_ptr<OHOS::NativeRdb::ResultSet> MultiStagesPhotoCaptureManager::HandleMul
 {
     switch (cmd.GetOprnType()) {
         case OperationType::PROCESS_IMAGE: {
-            int fileId = std::stoi(columns[0]); // 0 indicates file id
-            int deliveryMode = std::stoi(columns[1]); // 1 indicates delivery mode
+            if (columns.size() < 2) {
+                MEDIA_ERR_LOG("invalid process image columns");
+                break;
+            }
+            int32_t fileId = 0;
+            int32_t deliveryMode = 0;
+            if (!ParseInt32(columns[0], fileId) || !ParseInt32(columns[1], deliveryMode)) {
+                MEDIA_ERR_LOG("invalid process image numeric arguments");
+                break;
+            }
             ProcessImage(fileId, deliveryMode);
             MultiStagesCaptureDfxTriggerRatio::GetInstance().SetTrigger(MultiStagesCaptureTriggerType::THIRD_PART);
             break;
