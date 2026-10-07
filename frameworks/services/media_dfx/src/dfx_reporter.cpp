@@ -15,6 +15,7 @@
 #define MLOG_TAG "DfxReporter"
 
 #include "dfx_reporter.h"
+#include "parse_dfx_int.h"
 
 #include <vector>
 
@@ -122,10 +123,13 @@ void DfxReporter::ReportThumbnailError()
         // 0 means index of path
         string path = thumbnailInfo[0];
         // 1 means index of method
-        int32_t method = MediaLibraryDataManagerUtils::IsNumber(thumbnailInfo[1]) ? stoi(thumbnailInfo[1]) : 0;
+        int32_t method = 0;
+        (void)ParseDfxInt32(thumbnailInfo[1], method);
         // 2 means index of error code
-        int32_t errorCode = MediaLibraryDataManagerUtils::IsNumber(thumbnailInfo[2]) ? stoi(thumbnailInfo[2]) : 0;
-        int64_t time = MediaLibraryDataManagerUtils::IsNumber(value) ? stol(value) : 0;
+        int32_t errorCode = 0;
+        (void)ParseDfxInt32(thumbnailInfo[2], errorCode);
+        int64_t time = 0;
+        (void)ParseDfxInt64(value, time);
         int ret = HiSysEventWrite(
             MEDIA_LIBRARY,
             "MEDIALIB_THUMBNAIL_ERROR",
@@ -188,7 +192,8 @@ void DfxReporter::ReportDeleteStatistic()
         // 0 means index of bundleName
         string bundleName = deleteInfo[0];
         // 1 means index of type
-        int32_t type = MediaLibraryDataManagerUtils::IsNumber(deleteInfo[1]) ? stoi(deleteInfo[1]) : 0;
+        int32_t type = 0;
+        (void)ParseDfxInt32(deleteInfo[1], type);
         int32_t times = static_cast<int32_t>(info.second);
         int ret = HiSysEventWrite(
             MEDIA_LIBRARY,
