@@ -14,6 +14,7 @@
  */
 
 #include "medialibrary_formmap_operations.h"
+#include "parse_formmap_int.h"
 
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -114,12 +115,13 @@ void MediaLibraryFormMapOperations::GetFormMapFormId(const string &uri, vector<i
     }
     while (queryResult->GoToNextRow() == NativeRdb::E_OK) {
         string formId = GetStringVal(FormMap::FORMMAP_FORM_ID, queryResult);
-        if (!MediaLibraryDataManagerUtils::IsNumber(formId)) {
+        int64_t parsed = 0;
+        if (!ParseFormmapInt64(formId, parsed)) {
             MEDIA_WARN_LOG("invalid formId: %{public}s", formId.c_str());
             continue;
         }
         if (GetStringVal(FormMap::FORMMAP_URI, queryResult) == uri) {
-            formIds.push_back(std::stoll(formId));
+            formIds.push_back(parsed);
         }
     }
 }
@@ -143,13 +145,14 @@ void MediaLibraryFormMapOperations::GetFormIdsByUris(const vector<string> &notif
     }
     while (queryResult->GoToNextRow() == NativeRdb::E_OK) {
         string formId = GetStringVal(FormMap::FORMMAP_FORM_ID, queryResult);
-        if (!MediaLibraryDataManagerUtils::IsNumber(formId)) {
+        int64_t parsed = 0;
+        if (!ParseFormmapInt64(formId, parsed)) {
             MEDIA_WARN_LOG("invalid formId: %{public}s", formId.c_str());
             continue;
         }
         string uri = GetStringVal(FormMap::FORMMAP_URI, queryResult);
         if (std::count(notifyUris.begin(), notifyUris.end(), uri) > 0) {
-            formIds.push_back(std::stoll(formId));
+            formIds.push_back(parsed);
         }
     }
     queryResult->Close();
@@ -305,9 +308,10 @@ int32_t MediaLibraryFormMapOperations::HandleStoreFormIdOperation(MediaLibraryCo
         MediaFileUri mediaUri(uri);
         CHECK_AND_RETURN_RET_LOG(MediaLibraryFormMapOperations::CheckQueryIsInDb(OperationObject::UFM_PHOTO,
             mediaUri.GetFileId()), E_GET_PRAMS_FAIL, "the fileId is not exist");
-        CHECK_AND_RETURN_RET_LOG(MediaLibraryDataManagerUtils::IsNumber(formId),
+        int64_t parsed = 0;
+        CHECK_AND_RETURN_RET_LOG(ParseFormmapInt64(formId, parsed),
             E_GET_PRAMS_FAIL, "invalid formId: %{public}s", formId.c_str());
-        vector<int64_t> formIds = { std::stoll(formId) };
+        vector<int64_t> formIds = { parsed };
         MediaLibraryFormMapOperations::PublishedChange(uri, formIds, true);
     }
     if (MediaLibraryFormMapOperations::CheckQueryIsInDb(OperationObject::PAH_FORM_MAP, formId)) {
